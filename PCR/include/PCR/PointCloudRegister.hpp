@@ -3,6 +3,7 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <types/EigenTypes.hpp>
+#include <macro/templates.hpp>
 
 namespace PCR
 {

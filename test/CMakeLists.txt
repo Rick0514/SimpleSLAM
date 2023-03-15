@@ -12,6 +12,6 @@ target_include_directories(align PUBLIC
     ${PCL_INCLUDE_DIRS}
 )
 
-target_link_libraries(align
+target_link_libraries(align PUBLIC
     pcr
 )

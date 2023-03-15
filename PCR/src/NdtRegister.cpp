@@ -1,13 +1,11 @@
 #include <PCR/NdtRegister.hpp>
 
-
 namespace PCR
 {
 
 template<typename PointType>
 NdtRegister<PointType>::NdtRegister()
 {
-    PointCloudRegister<PointType>();
     _ndt_omp.reset(new pclomp::NormalDistributionsTransform<PointType, PointType>());
     _ndt_omp->setResolution(resol);
     _ndt_omp->setNumThreads(4);
@@ -22,9 +20,13 @@ bool NdtRegister<PointType>::scan2Map(PC_Ptr src, PC_Ptr dst, Pose6d& res)
 
     typename pcl::PointCloud<PointType>::Ptr aligned(new pcl::PointCloud<PointType>());
 
-    _ndt_omp->align(*aligned, res.matrix());
+    _ndt_omp->align(*aligned, res.matrix().cast<float>());
+    Eigen::Matrix4f mf = _ndt_omp->getFinalTransformation();
+    res.matrix() = mf.cast<double>();
 
     return _ndt_omp->hasConverged();
 }
     
+PCRTemplateInstantiateExplicitly(NdtRegister)
+
 } // namespace PCR

@@ -1,13 +1,13 @@
 #include <PCR/LoamRegister.hpp>
 #include <pcl/kdtree/kdtree_flann.h>
 #include <geometry/manifolds.hpp>
+#include <Eigen/Eigenvalues>
 
 namespace PCR
 {
 
 template<typename PointType>
 LoamRegister<PointType>::LoamRegister(){
-    PointCloudRegister<PointType>();
     mKdtree.reset(new pcl::KdTreeFLANN<PointType>());
 }
 
@@ -28,7 +28,7 @@ bool LoamRegister<PointType>::_extractPlaneCoeffs(const Eigen::Matrix<double, N,
 }
 
 template<typename PointType>
-bool LoamRegister<PointType>::_extractPlaneMatrix(const V3d& pointInMap, PC_Ptr dst, Eigen::Matrix<double, mPlanePtsNum, 3>& A)
+bool LoamRegister<PointType>::_extractPlaneMatrix(const PointType& pointInMap, PC_Ptr dst, Eigen::Matrix<double, mPlanePtsNum, 3>& A)
 {
     std::vector<int> pointSearchInd;
     std::vector<float> pointSearchSqDis;
@@ -52,7 +52,7 @@ void LoamRegister<PointType>::_removeDegeneratePart(const M6d& JtJ, V6d& x){
     if(!degenerateProjSet){
         degenerateProjSet = true;
 
-        V6d ev = JtJ.eigenvalues();
+        V6d ev = JtJ.eigenvalues().real();
         M6d JtJ_copy = JtJ;
         for(int i=0; i<6; i++){
             if(ev(i) < mDegenerateThresh){
@@ -92,7 +92,7 @@ bool LoamRegister<PointType>::scan2Map(PC_Ptr src, PC_Ptr dst, Pose6d& res)
             {
                 // extract plane
                 V4d hx;
-                if(_extractPlaneCoeffs(A, hx)){
+                if(_extractPlaneCoeffs<mPlanePtsNum>(A, hx)){
                     // check good point to optimize
                     V3d p(pointInMap.x, pointInMap.y, pointInMap.z);
                     float dist = hx.dot(p.homogeneous());
@@ -105,7 +105,7 @@ bool LoamRegister<PointType>::scan2Map(PC_Ptr src, PC_Ptr dst, Pose6d& res)
                         E_vec.emplace_back(_error(hx, p));
                         Eigen::Matrix<double, 3, 6> jse3;
                         manifolds::J_SE3(p, jse3);
-                        J_vec.emplace_back(_J_e_wrt_x(hx) * jse3);
+                        J_vec.emplace_back(_J_e_wrt_x(hx).transpose() * jse3);
                     }
                 }
             }
@@ -129,14 +129,16 @@ bool LoamRegister<PointType>::scan2Map(PC_Ptr src, PC_Ptr dst, Pose6d& res)
         _removeDegeneratePart(JtJ, x);
         M4d Tse3;
         manifolds::exp(x, Tse3);
-        res = Tse3 * res;
-
+        
+        res.matrix() = Tse3 * res.matrix();
         // check converge
         
     }
 
     return this->isConverge;
 }
+
+PCRTemplateInstantiateExplicitly(LoamRegister)
 
 } // namespace PCR
 
