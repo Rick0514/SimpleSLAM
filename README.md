@@ -1,3 +1,3 @@
 # PointCloudRegister(PCR)
 
-serve as a submodual of SLAM framework
+serve as a submodule of SLAM framework

@@ -3,6 +3,8 @@ project(PCLOMP VERSION "1.0.0")
 
 include(GNUInstallDirs)
 
+set(CMAKE_BUILD_TYPE Release)
+
 find_package(PCL REQUIRED COMPONENTS registration)
 find_package(OpenMP REQUIRED)
 

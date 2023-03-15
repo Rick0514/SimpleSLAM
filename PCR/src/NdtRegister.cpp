@@ -8,7 +8,7 @@ NdtRegister<PointType>::NdtRegister()
 {
     _ndt_omp.reset(new pclomp::NormalDistributionsTransform<PointType, PointType>());
     _ndt_omp->setResolution(resol);
-    _ndt_omp->setNumThreads(4);
+    _ndt_omp->setNumThreads(2);
     _ndt_omp->setNeighborhoodSearchMethod(pclomp::DIRECT7);
 }
 
@@ -23,6 +23,8 @@ bool NdtRegister<PointType>::scan2Map(PC_Ptr src, PC_Ptr dst, Pose6d& res)
     _ndt_omp->align(*aligned, res.matrix().cast<float>());
     Eigen::Matrix4f mf = _ndt_omp->getFinalTransformation();
     res.matrix() = mf.cast<double>();
+
+    spdlog::debug("align fitness: {}", _ndt_omp->getFitnessScore());
 
     return _ndt_omp->hasConverged();
 }

@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 14)
 project(PCR)
 
 find_package(Eigen3 REQUIRED)
+find_package(spdlog REQUIRED)
 
 add_subdirectory(PCR)
 add_subdirectory(test)
