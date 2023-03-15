@@ -4,7 +4,7 @@ set(CMAKE_CXX_STANDARD 14)
 
 project(test)
 
-find_package(PCL REQUIRED COMPONENTS common io filters)
+find_package(PCL REQUIRED COMPONENTS common io filters visualization)
 
 add_definitions(-DDATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data")
 
