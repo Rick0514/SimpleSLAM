@@ -16,10 +16,11 @@ private:
 public:
 
     using typename PointCloudRegister<PointType>::PC_Ptr;
+    using typename PointCloudRegister<PointType>::PC_cPtr;
 
     NdtRegister();
 
-    virtual bool scan2Map(PC_Ptr src, PC_Ptr dst, Pose6d& res) override;
+    virtual bool scan2Map(PC_cPtr& src, PC_cPtr& dst, Pose6d& res) override;
 
 };
     

@@ -9,6 +9,10 @@ namespace PCR
 template<typename PointType>
 LoamRegister<PointType>::LoamRegister(){
     mKdtree.reset(new pcl::KdTreeFLANN<PointType>());
+
+#ifdef DEBUG_DIR
+    debug_file = std::ofstream(fmt::format("{}/{}.txt", DEBUG_DIR, "loam"));
+#endif
 }
 
 template<typename PointType>
@@ -22,18 +26,22 @@ bool LoamRegister<PointType>::_extractPlaneCoeffs(const Eigen::Matrix<double, N,
     hx = x.homogeneous();
     
     for(int i=0; i<N; i++){
-        if(hx.dot(A.row(i).homogeneous()) < mPlaneValidThresh)  return false;
+        if(std::abs(hx.dot(A.row(i).homogeneous())) > mPlaneValidThresh){
+            DEBUG(debug_file, fmt::format("dist large: {}", hx.dot(A.row(i).homogeneous())));
+            return false;
+        }
     }
     return true;        
 }
 
 template<typename PointType>
-bool LoamRegister<PointType>::_extractPlaneMatrix(const PointType& pointInMap, PC_Ptr dst, Eigen::Matrix<double, mPlanePtsNum, 3>& A)
+bool LoamRegister<PointType>::_extractPlaneMatrix(const PointType& pointInMap, PC_cPtr& dst, Eigen::Matrix<double, mPlanePtsNum, 3>& A)
 {
     std::vector<int> pointSearchInd;
     std::vector<float> pointSearchSqDis;
     mKdtree->nearestKSearch(pointInMap, mPlanePtsNum, pointSearchInd, pointSearchSqDis);
 
+    DEBUG(debug_file, fmt::format("nks: {}", pointSearchSqDis[mPlanePtsNum-1]));
     if(pointSearchSqDis[mPlanePtsNum-1] < mKdtreeMaxSearchDist)
     {
         for(int j=0; j<mPlanePtsNum; j++){
@@ -41,6 +49,8 @@ bool LoamRegister<PointType>::_extractPlaneMatrix(const PointType& pointInMap, P
             A(j, 1) = dst->points[pointSearchInd[j]].y;
             A(j, 2) = dst->points[pointSearchInd[j]].z;
         }
+
+        // DEBUG(debug_file, A);
         return true;
     }
 
@@ -67,7 +77,7 @@ void LoamRegister<PointType>::_removeDegeneratePart(const M6d& JtJ, V6d& x){
 }
 
 template<typename PointType>
-bool LoamRegister<PointType>::scan2Map(PC_Ptr src, PC_Ptr dst, Pose6d& res)
+bool LoamRegister<PointType>::scan2Map(PC_cPtr& src, PC_cPtr& dst, Pose6d& res)
 {
     isDegenerate = false;
     this->isConverge = false;
@@ -80,6 +90,9 @@ bool LoamRegister<PointType>::scan2Map(PC_Ptr src, PC_Ptr dst, Pose6d& res)
     mKdtree->setInputCloud(dst);
 
     for(int it=0; it<iters; it++){
+
+        J_vec.clear();
+        E_vec.clear();
 
         for(int i=0; i<src->points.size(); i++){
             // trans point to map frame
@@ -99,7 +112,8 @@ bool LoamRegister<PointType>::scan2Map(PC_Ptr src, PC_Ptr dst, Pose6d& res)
 
                     float s = 1 - 0.9 * fabs(dist) / sqrt(sqrt(pointOri.x * pointOri.x
                             + pointOri.y * pointOri.y + pointOri.z * pointOri.z));
-
+                    
+                    DEBUG(debug_file, fmt::format("weight: {}", s));
                     if (s > mPointValidThresh) {
                         // good point is selected!!
                         E_vec.emplace_back(_error(hx, p));
@@ -113,6 +127,12 @@ bool LoamRegister<PointType>::scan2Map(PC_Ptr src, PC_Ptr dst, Pose6d& res)
 
         // make J and E
         int n = J_vec.size();
+        spdlog::debug("optimize size: {}", n);
+        if(n < 6){
+            spdlog::error("not enough valid point({}) to optimize!", n);
+            break;
+        }
+
         Eigen::MatrixXd J(n, 6);
         Eigen::MatrixXd E(n, 1);
 
@@ -124,15 +144,24 @@ bool LoamRegister<PointType>::scan2Map(PC_Ptr src, PC_Ptr dst, Pose6d& res)
         M6d JtJ = J.transpose() * J;
         V6d JtE = J.transpose() * E;
         
-        V6d x = JtJ.ldlt().solve(JtE);
+        V6d x = JtJ.ldlt().solve(-JtE);
+        
+        // check converge
+        if(x.head<3>().norm() <= mPosConverge && x.tail<3>().norm() <= mRotConverge){
+            this->isConverge = true;
+            spdlog::debug("converge at iter {}!", it);
+            break;
+        }
+        
+        std::stringstream ss;
+        ss << "optimize res: " << x.transpose();
+        DEBUG(debug_file, ss.str());
 
-        _removeDegeneratePart(JtJ, x);
+        // _removeDegeneratePart(JtJ, x);
         M4d Tse3;
         manifolds::exp(x, Tse3);
         
         res.matrix() = Tse3 * res.matrix();
-        // check converge
-        
     }
 
     return this->isConverge;

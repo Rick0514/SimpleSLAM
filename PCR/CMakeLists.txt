@@ -9,6 +9,7 @@ file(GLOB_RECURSE srcs CONFIGURE_DEPENDS src/*.cpp include/*.hpp)
 add_library(pcr SHARED ${srcs})
 
 target_compile_definitions(pcr PRIVATE LOG_LEVEL=1)
+# target_compile_definitions(pcr PRIVATE DEBUG_DIR="${PCR_SOURCE_DIR}/test/data")
 
 target_link_libraries(pcr PUBLIC
     ${PCL_LIBRARIES}

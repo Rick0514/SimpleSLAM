@@ -11,11 +11,17 @@ namespace manifolds
     inline void exp(const V3d& w, M3d& SO3)
     {
         double t = w.norm();
-        double t2 = t * t;
-        M3d omega;
-        matrix::skew(w, omega);
-        M3d omega2 = omega * omega;
-        SO3 = M3d::Identity() + (sin(t) / t) * omega + ((1 - cos(t)) / t2) * omega2;        
+        if(t < 1e-6){
+            SO3 = M3d::Identity();
+            return;
+        }
+
+        V3d a = w / t;
+        double ct = cos(t);
+
+        M3d a_hat;
+        matrix::skew(a, a_hat);
+        SO3 = ct * M3d::Identity() + (1.0 - ct) * a * a.transpose() + sin(t) * a_hat;        
     }
 
     inline void exp(const V6d& k, M4d& SE3)
@@ -24,14 +30,24 @@ namespace manifolds
         V3d w = k.tail<3>();
 
         double t = w.norm();
-        double t2 = t * t;
-        double t3 = t * t2;
-        M3d omega;
-        matrix::skew(w, omega);
-        M3d omega2 = omega * omega;
+        SE3 = M4d::Identity();
 
-        M3d R = M3d::Identity() + (sin(t) / t) * omega + ((1 - cos(t)) / t2) * omega2;
-        M3d V = M3d::Identity() + ((1 - cos(t)) / t2) * omega + ((t - sin(t)) / t3) * omega2;
+        if(t < 1e-6){
+            SE3.block<3, 1>(0, 3) = p;
+            return;
+        }
+
+        V3d a = w / t;
+        double ct = cos(t);
+        double st = sin(t);
+
+        M3d a_hat;
+        matrix::skew(a, a_hat);
+
+        M3d aa = a * a.transpose();
+
+        M3d R = ct * M3d::Identity() + (1.0 - ct) * aa + sin(t) * a_hat;
+        M3d V = st / t * M3d::Identity() + (1.0 - st / t) * aa + ((1 - ct) / t) * a_hat;
 
         SE3.block<3, 3>(0, 0) = R;
         SE3.block<3, 1>(0, 3) = V * p;

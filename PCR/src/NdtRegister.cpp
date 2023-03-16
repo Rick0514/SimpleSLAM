@@ -8,12 +8,12 @@ NdtRegister<PointType>::NdtRegister()
 {
     _ndt_omp.reset(new pclomp::NormalDistributionsTransform<PointType, PointType>());
     _ndt_omp->setResolution(resol);
-    _ndt_omp->setNumThreads(2);
+    _ndt_omp->setNumThreads(1);
     _ndt_omp->setNeighborhoodSearchMethod(pclomp::DIRECT7);
 }
 
 template<typename PointType>
-bool NdtRegister<PointType>::scan2Map(PC_Ptr src, PC_Ptr dst, Pose6d& res)
+bool NdtRegister<PointType>::scan2Map(PC_cPtr& src, PC_cPtr& dst, Pose6d& res)
 {
     _ndt_omp->setInputTarget(dst);
     _ndt_omp->setInputSource(src);

@@ -21,7 +21,9 @@ protected:
 
 public:
     using Ptr = std::shared_ptr<PointCloudRegister<PointType>>;
+    using cPtr = std::shared_ptr<const PointCloudRegister<PointType>>;
     using PC_Ptr = typename pcl::PointCloud<PointType>::Ptr;
+    using PC_cPtr = const typename pcl::PointCloud<PointType>::Ptr;
 
 public:
     PointCloudRegister(){
@@ -29,7 +31,7 @@ public:
         spdlog::set_level(static_cast<spdlog::level::level_enum>(LOG_LEVEL));
 #endif
     }
-    virtual bool scan2Map(PC_Ptr src, PC_Ptr dst, Pose6d& res) = 0;
+    virtual bool scan2Map(PC_cPtr& src, PC_cPtr& dst, Pose6d& res) = 0;
 
 };
 

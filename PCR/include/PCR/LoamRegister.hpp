@@ -2,7 +2,14 @@
 
 #include <pcl/kdtree/kdtree_flann.h>
 #include <PCR/PointCloudRegister.hpp>
+#include <fstream>
 
+
+#if defined(DEBUG_DIR)
+#define DEBUG(f, msg)   f << msg << std::endl;
+#else
+#define DEBUG(...) (void)0
+#endif                      
 
 namespace PCR
 { 
@@ -14,6 +21,7 @@ class LoamRegister : public PointCloudRegister<PointType>
 
 public:
     using typename PointCloudRegister<PointType>::PC_Ptr;
+    using typename PointCloudRegister<PointType>::PC_cPtr;
     using M6d = Eigen::Matrix<double, 6, 6>;
 
 private:
@@ -25,16 +33,21 @@ private:
 
     const float mDegenerateThresh{100};
 
-    int iters{20};
+    const float mPosConverge{5e-3};
+    const float mRotConverge{1e-3};
+
+    int iters{5};
 
     bool isDegenerate;
     bool degenerateProjSet;
     M6d degenerateProj;
     pcl::shared_ptr<pcl::KdTreeFLANN<PointType>> mKdtree;
 
+    std::ofstream debug_file;
+
 private:
 
-    static inline void _pointAssociateToMap(PointType const * const pi, PointType * const po, const Pose6d& p)
+    void _pointAssociateToMap(PointType const * const pi, PointType * const po, const Pose6d& p)
     {
         const M3d& rot = p.rotation();
         const V3d& t = p.translation();
@@ -42,12 +55,13 @@ private:
         po->y = rot(1,0) * pi->x + rot(1,1) * pi->y + rot(1,2) * pi->z + t(1);
         po->z = rot(2,0) * pi->x + rot(2,1) * pi->y + rot(2,2) * pi->z + t(2);
         // po->intensity = pi->intensity;
+        DEBUG(debug_file, fmt::format("{} {} {}", po->x, po->y, po->z));
     }
 
     template<unsigned int N>
     bool _extractPlaneCoeffs(const Eigen::Matrix<double, N, 3>& A, V4d& hx);
 
-    bool _extractPlaneMatrix(const PointType& pointInMap, PC_Ptr dst, Eigen::Matrix<double, mPlanePtsNum, 3>& A);
+    bool _extractPlaneMatrix(const PointType& pointInMap, PC_cPtr& dst, Eigen::Matrix<double, mPlanePtsNum, 3>& A);
 
     // independ of x
     static inline V3d _J_e_wrt_x(const V4d& coff){
@@ -64,7 +78,8 @@ private:
 
 public:
     LoamRegister();
-    virtual bool scan2Map(PC_Ptr src, PC_Ptr dst, Pose6d& res) override;
+
+    virtual bool scan2Map(PC_cPtr& src, PC_cPtr& dst, Pose6d& res) override;
 
 };
 

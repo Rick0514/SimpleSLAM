@@ -1,4 +1,5 @@
 #include <PCR/NdtRegister.hpp>
+#include <PCR/LoamRegister.hpp>
 
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
@@ -51,6 +52,7 @@ int main(int argc, char const *argv[])
     }
 
     PointCloudRegister<PointType>::Ptr pcr = std::make_shared<NdtRegister<PointType>>();
+    // PointCloudRegister<PointType>::Ptr pcr = std::make_shared<LoamRegister<PointType>>();
     
     Pose6d init_pose = Eigen::Isometry3d::Identity();
     
