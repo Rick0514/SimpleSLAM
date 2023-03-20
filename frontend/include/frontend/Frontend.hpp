@@ -2,24 +2,32 @@
 
 #include <thread>
 
-using namespace EigenTypes;
 
 namespace frontend
 {
+using namespace EigenTypes;
+using namespace utils;
+
 class Frontend
 {
 private:
 
     Pose6d mOdom2Map;
 
+    std::shared_ptr<concurrency::SafeDeque<Odometry, UseBag>> mLocalOdometry;
+    std::shared_ptr<concurrency::SafeDeque<Odometry, UseBag>> mGlobalOdometry;
 
 public:
     Frontend();
 
-
-
     void publish() const;
 
+    Pose6d get() const { return mOdom2Map; }
+
+    void pushLocalOdometry(const Odometry&);
+    void pushGlobalOdometry(const Odometry&);
+    
+    void getClosestLocalOdom(double stamp, Odometry&) const;
 
     ~Frontend();
 };
