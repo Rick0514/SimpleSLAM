@@ -1,15 +1,23 @@
 #pragma once
 
+#include <types/EigenTypes.hpp>
 #include <utils/SafeDeque.hpp>
+
+using namespace EigenTypes;
+using namespace utils;
 
 namespace dataproxy
 {
 
-static constexpr bool UseBag = false;
+struct Odometry
+{
+    double stamp;
+    Pose6d odom;
+    Odometry(){}
+    Odometry(double t, const Pose6d& p) : stamp(t), odom(p){}
+};
 
-using namespace utils;
-
-template <typename T>
+template <typename T, bool UseBag>
 class DataProxy
 {
 public:

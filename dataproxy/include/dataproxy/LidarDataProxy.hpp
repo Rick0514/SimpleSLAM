@@ -7,19 +7,16 @@
 namespace dataproxy
 {
 
-template <typename T>
-class LidarDataProxy : public DataProxy<T>
+template <typename T, bool UseBag>
+class LidarDataProxy : public DataProxy<T, UseBag>
 {
-private:
-    std::shared_ptr<ros::NodeHandle> mNh;
-
 public:
 
-    explicit LidarDataProxy(std::shared_ptr<ros::NodeHandle>& nh, int size);
+    explicit LidarDataProxy(ros::NodeHandle& nh, int size);
 
     void subscribe(const sensor_msgs::PointCloud2ConstPtr&);
 
-    ~LidarDataProxy();
+    ~LidarDataProxy(){};
 };
 
 } // namespace dataproxy

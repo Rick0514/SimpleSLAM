@@ -30,7 +30,7 @@ public:
 
     T at(int idx) const;
 
-    void push_back(T&&);
+    void push_back(const T&);
 
     void pop_back();
     void pop_front();
@@ -56,11 +56,11 @@ T SafeDeque<T, blocking>::at(int idx) const
 }
 
 template <typename T, bool blocking>
-void SafeDeque<T, blocking>::push_back(T&& item)
+void SafeDeque<T, blocking>::push_back(const T& item)
 {
     std::lock_guard<std::mutex> lk(mLock);
     if constexpr (blocking){
-        mCv.wait(lk, [&](){return mDq.size() < mSize});
+        mCv.wait(lk, [&](){return mDq.size() < mSize;});
     }else{        
         if(mDq.size() == mSize){
             mDq.pop_front();
@@ -100,9 +100,7 @@ T SafeDeque<T, blocking>::back() const
     return mDq.back();
 }
 
-
 } // namespace concurrency
-
 
 } // namespace utils
 

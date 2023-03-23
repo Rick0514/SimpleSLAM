@@ -7,25 +7,21 @@
 namespace dataproxy
 {
 
-template <typename T>
-LidarDataProxy<T>::LidarDataProxy(std::shared_ptr<ros::NodeHandle>& nh, int size) : DataProxy<T>(size), mNh(nh)
+template <typename T, bool UseBag>
+LidarDataProxy<T, UseBag>::LidarDataProxy(ros::NodeHandle& nh, int size) : DataProxy<T, UseBag>(size)
 {
-    mNh->subscribe("/lidar_points", 5, &LidarDataProxy<T>::subscribe, this);
+    auto pc_sub = nh.subscribe("/lidar_points", 5, &LidarDataProxy<T, UseBag>::subscribe, this);
 }
 
-template <typename T>
-void LidarDataProxy<T>::subscribe(const sensor_msgs::PointCloud2ConstPtr& msg)
+template <typename T, bool UseBag>
+void LidarDataProxy<T, UseBag>::subscribe(const sensor_msgs::PointCloud2ConstPtr& msg)
 {
     // preprocess
     T cloud;
     pcl::fromROSMsg(*msg, cloud);
     std::vector<int> indices;
     pcl::removeNaNFromPointCloud(cloud, cloud, indices);
-    mDataPtr->push_back(cloud);
+    this->mDataPtr->push_back(cloud);
 }
-
-template <typename T>
-LidarDataProxy<T>::LidarDataProxy::~LidarDataProxy(){}
-
 
 } // namespace dataproxy
