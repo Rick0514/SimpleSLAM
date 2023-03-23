@@ -27,6 +27,7 @@ public:
     SafeDeque& operator= (SafeDeque&&) = delete;
 
     bool empty() const noexcept;
+    int size() const noexcept;
 
     T at(int idx) const;
 
@@ -35,17 +36,25 @@ public:
     void pop_back();
     void pop_front();
 
-    T front() const;
-    T back() const;
+    bool front(T&) const;
+    bool back(T&) const;
 
-    ~SafeDeque();
+    ~SafeDeque(){};
 };
 
 
 template <typename T, bool blocking>
 bool SafeDeque<T, blocking>::empty() const noexcept
 {
+    std::lock_guard<std::mutex> lk(mLock);
     return mDq.empty();
+}
+
+template <typename T, bool blocking>
+int SafeDeque<T, blocking>::size() const noexcept
+{
+    std::lock_guard<std::mutex> lk(mLock);
+    return mDq.size();
 }
 
 template <typename T, bool blocking>
@@ -58,7 +67,7 @@ T SafeDeque<T, blocking>::at(int idx) const
 template <typename T, bool blocking>
 void SafeDeque<T, blocking>::push_back(const T& item)
 {
-    std::lock_guard<std::mutex> lk(mLock);
+    std::unique_lock<std::mutex> lk(mLock);
     if constexpr (blocking){
         mCv.wait(lk, [&](){return mDq.size() < mSize;});
     }else{        
@@ -87,17 +96,21 @@ void SafeDeque<T, blocking>::pop_front()
 }
 
 template <typename T, bool blocking>
-T SafeDeque<T, blocking>::front() const
+bool SafeDeque<T, blocking>::front(T& f) const
 {
     std::lock_guard<std::mutex> lk(mLock);
-    return mDq.front();
+    if(mDq.empty()) return false;
+    f = mDq.front();
+    return true;
 }
 
 template <typename T, bool blocking>
-T SafeDeque<T, blocking>::back() const
+bool SafeDeque<T, blocking>::back(T& b) const
 {
     std::lock_guard<std::mutex> lk(mLock);
-    return mDq.back();
+    if(mDq.empty()) return false;
+    b = mDq.back();
+    return true;
 }
 
 } // namespace concurrency

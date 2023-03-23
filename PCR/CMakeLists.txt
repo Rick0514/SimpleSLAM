@@ -11,7 +11,7 @@ target_compile_definitions(pcr PRIVATE LOG_LEVEL=1)
 
 target_link_libraries(pcr PUBLIC
     ${PCL_LIBRARIES}
-    spdlog::spdlog
+    spdlog
     pclomp::registration
 )
 

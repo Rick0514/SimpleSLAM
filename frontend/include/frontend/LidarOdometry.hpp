@@ -18,12 +18,13 @@ using namespace utils;
 using namespace dataproxy;
 using namespace backend;
 
-class LidarOdometry : public OdometryBase
+template <bool UseBag>
+class LidarOdometry : public OdometryBase<UseBag>
 {
 
 public:
-    using DataProxyPtr = std::shared_ptr<DataProxy<PCxyz>>;
-    using ConstDataProxyPtr = const std::shared_ptr<DataProxy<PCxyz>>;
+    using DataProxyPtr = std::shared_ptr<DataProxy<PCxyz, UseBag>>;
+    using ConstDataProxyPtr = const std::shared_ptr<DataProxy<PCxyz, UseBag>>;
 
     using FrontendPtr = std::shared_ptr<Frontend>;
     using ConstFrontendPtr = const std::shared_ptr<Frontend>;

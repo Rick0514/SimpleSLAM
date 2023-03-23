@@ -24,4 +24,11 @@ void LidarDataProxy<T, UseBag>::subscribe(const sensor_msgs::PointCloud2ConstPtr
     this->mDataPtr->push_back(cloud);
 }
 
+
+template class LidarDataProxy<PCxyz, true>;
+template class LidarDataProxy<PCxyz, false>;
+
+template class LidarDataProxy<PCxyzi, true>;
+template class LidarDataProxy<PCxyzi, false>;
+
 } // namespace dataproxy

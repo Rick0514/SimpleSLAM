@@ -1,6 +1,6 @@
 project(dataproxy)
 
-find_package(PCL REQUIRED COMPONENTS common)
+find_package(PCL REQUIRED COMPONENTS common filters)
 
 find_package(catkin REQUIRED COMPONENTS
     roscpp

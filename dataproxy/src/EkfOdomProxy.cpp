@@ -27,4 +27,7 @@ void EkfOdomProxy<UseBag>::subscribe(const nav_msgs::OdometryConstPtr& msg)
     this->mDataPtr->push_back(odom);
 }
 
+template class EkfOdomProxy<true>;
+template class EkfOdomProxy<false>;
+
 }

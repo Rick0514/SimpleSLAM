@@ -11,6 +11,7 @@ static constexpr bool UseBag = false;
 using namespace EigenTypes;
 using namespace utils;
 
+template <bool UseBag>
 class OdometryBase
 {
 protected:

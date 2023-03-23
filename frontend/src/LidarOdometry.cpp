@@ -3,14 +3,16 @@
 namespace frontend
 {
 
-LidarOdometry::LidarOdometry(ConstDataProxyPtr& dp, ConstFrontendPtr& ft, ConstBackendPtr& bk)
+template <bool UseBag>
+LidarOdometry<UseBag>::LidarOdometry(ConstDataProxyPtr& dp, ConstFrontendPtr& ft, ConstBackendPtr& bk)
 : mDataProxyPtr(dp), mFrontendPtr(ft), mBackendPtr(bk)
 {
     // xyz for temp
     mPcr.reset(new PCR::LoamRegister<Pxyz>());
 }
 
-void LidarOdometry::generateOdom()
+template <bool UseBag>
+void LidarOdometry<UseBag>::generateOdom()
 {
     // get current scan
     const auto& scans = mDataProxyPtr->get();

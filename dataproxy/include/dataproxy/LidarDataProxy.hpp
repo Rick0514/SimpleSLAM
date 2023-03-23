@@ -2,7 +2,10 @@
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 
+#include <types/PCLTypes.hpp>
 #include <dataproxy/DataProxy.hpp>
+
+using namespace PCLTypes;
 
 namespace dataproxy
 {
