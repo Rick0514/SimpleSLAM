@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
     ros::NodeHandle nh;
 
     int q_size = 10;
-    EkfOdomProxy<true> eop(nh, q_size);
+    EkfOdomProxy eop(nh, q_size);
     
     return 0;
 }

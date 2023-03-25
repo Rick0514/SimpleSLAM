@@ -8,6 +8,7 @@ using namespace utils;
 
 namespace dataproxy
 {
+constexpr bool UseBag{false};
 
 struct Odometry
 {
@@ -17,18 +18,20 @@ struct Odometry
     Odometry(double t, const Pose6d& p) : stamp(t), odom(p){}
 };
 
-template <typename T, bool UseBag>
+template <typename T>
 class DataProxy
 {
 public:
-    using DataPtr = std::shared_ptr<concurrency::SafeDeque<T, UseBag>>;
+
+    using SafeDequeType = concurrency::SafeDeque<T>;
+    using DataPtr = std::shared_ptr<SafeDequeType>;
 
 protected:
     DataPtr mDataPtr;
 
 public:
     explicit DataProxy(int size){
-        mDataPtr = std::make_shared<concurrency::SafeDeque<T, UseBag>>(size);
+        mDataPtr = std::make_shared<SafeDequeType>(size);
     }
     
     const DataPtr get() const { return mDataPtr; }  

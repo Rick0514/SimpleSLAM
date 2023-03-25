@@ -8,8 +8,7 @@
 namespace dataproxy
 {
 
-template <bool UseBag>
-class EkfOdomProxy : public DataProxy<Odometry, UseBag>
+class EkfOdomProxy : public DataProxy<Odometry>
 {
 public:
     explicit EkfOdomProxy(ros::NodeHandle& nh, int size);

@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.0.2)
 
+set(CMAKE_BUILD_TYPE Debug)
+
 project(test)
 
 find_package(PCL REQUIRED COMPONENTS common io filters visualization)
@@ -35,3 +37,10 @@ target_link_libraries(test_dataproxy
     dataproxy
 )
 
+add_executable(safedeque safedeque.cpp)
+target_include_directories(safedeque PUBLIC
+    ${COMMON_HEADER}
+)
+target_link_libraries(safedeque
+    pthread
+)
