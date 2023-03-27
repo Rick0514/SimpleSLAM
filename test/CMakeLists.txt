@@ -44,3 +44,14 @@ target_include_directories(safedeque PUBLIC
 target_link_libraries(safedeque
     pthread
 )
+
+add_executable(testlog logger.cpp)
+target_include_directories(testlog PUBLIC
+    ${COMMON_HEADER}
+)
+target_link_libraries(testlog
+    pthread
+    spdlog
+)
+target_compile_definitions(testlog PRIVATE SPDLOG_ACTIVE_LEVEL=0)
+# target_compile_definitions(testlog PRIVATE LOG_FILE="${CMAKE_CURRENT_SOURCE_DIR}/data/testlog.log")

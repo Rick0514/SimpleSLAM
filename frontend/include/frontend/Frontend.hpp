@@ -1,7 +1,7 @@
 #include <types/EigenTypes.hpp>
+#include <utils/SafeDeque.hpp>
 
 #include <thread>
-
 
 namespace frontend
 {
@@ -14,8 +14,8 @@ private:
 
     Pose6d mOdom2Map;
 
-    std::shared_ptr<concurrency::SafeDeque<Odometry, UseBag>> mLocalOdometry;
-    std::shared_ptr<concurrency::SafeDeque<Odometry, UseBag>> mGlobalOdometry;
+    std::shared_ptr<concurrency::SafeDeque<Odometry>> mLocalOdometry;
+    std::shared_ptr<concurrency::SafeDeque<Odometry>> mGlobalOdometry;
 
 public:
     Frontend();
