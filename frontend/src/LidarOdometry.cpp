@@ -23,7 +23,7 @@ void LidarOdometry<UseBag>::generateOdom()
     // make init pose
     // 1. get latest scan
     PCxyz::Ptr scan(new PCxyz());
-    pcl::copyPointCloud(scans->back(), *scan);
+    pcl::copyPointCloud(*scans->back(), *scan);
     // 2. localodom * odom2map
     auto odom2map = mFrontendPtr->get();
     // find closest localodom
@@ -39,6 +39,7 @@ void LidarOdometry<UseBag>::generateOdom()
 
     mFrontendPtr->pushGlobalOdometry(Odometry(stamp, init_pose));
     // push the refined odom to deque  
+
 }
 
     

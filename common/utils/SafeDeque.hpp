@@ -1,9 +1,8 @@
+#pragma once
 #include <deque>
 #include <atomic>
 #include <mutex>
 #include <condition_variable>
-
-static constexpr bool DEBUG = true;
 
 namespace utils
 {

@@ -1,3 +1,4 @@
+#pragma once
 #include <types/PCLTypes.hpp>
 #include <pcl/kdtree/kdtree_flann.h>
 
@@ -23,8 +24,8 @@ class LidarOdometry : public OdometryBase<UseBag>
 {
 
 public:
-    using DataProxyPtr = std::shared_ptr<DataProxy<PCxyz, UseBag>>;
-    using ConstDataProxyPtr = const std::shared_ptr<DataProxy<PCxyz, UseBag>>;
+    using DataProxyPtr = std::shared_ptr<DataProxy<PCxyz>>;
+    using ConstDataProxyPtr = const std::shared_ptr<DataProxy<PCxyz>>;
 
     using FrontendPtr = std::shared_ptr<Frontend>;
     using ConstFrontendPtr = const std::shared_ptr<Frontend>;

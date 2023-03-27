@@ -1,12 +1,15 @@
 #include <types/EigenTypes.hpp>
 #include <utils/SafeDeque.hpp>
 
+#include <dataproxy/DataProxy.hpp>
+
 #include <thread>
 
 namespace frontend
 {
 using namespace EigenTypes;
 using namespace utils;
+using namespace dataproxy;
 
 class Frontend
 {

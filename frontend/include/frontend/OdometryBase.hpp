@@ -1,3 +1,4 @@
+#pragma once
 #include <utils/SafeDeque.hpp>
 #include <types/EigenTypes.hpp>
 
