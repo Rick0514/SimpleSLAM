@@ -2,19 +2,27 @@
 #include <types/PCLTypes.hpp>
 #include <pcl/kdtree/kdtree_flann.h>
 
-#include <dataproxy/LidarDataProxy.hpp>
 #include <frontend/OdometryBase.hpp>
 #include <frontend/Frontend.hpp>
-#include <backend/Backend.hpp>
+#include <dataproxy/DataProxy.hpp>
+
+// forward declaration
+// #include <backend/Backend.hpp>
 
 #include <PCR/LoamRegister.hpp>
 #include <PCR/NdtRegister.hpp>
 
+using namespace EigenTypes;
+using namespace PCLTypes;
+
+namespace backend
+{
+    class Backend;
+}
+
 namespace frontend
 {
 
-using namespace EigenTypes;
-using namespace PCLTypes;
 using namespace utils;
 using namespace dataproxy;
 using namespace backend;

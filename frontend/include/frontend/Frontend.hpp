@@ -1,9 +1,11 @@
+#pragma once
+
 #include <types/EigenTypes.hpp>
+
 #include <utils/SafeDeque.hpp>
+#include <utils/Math.hpp>
 
 #include <dataproxy/DataProxy.hpp>
-
-#include <thread>
 
 namespace frontend
 {
@@ -27,10 +29,13 @@ public:
 
     Pose6d get() const { return mOdom2Map; }
 
-    void pushLocalOdometry(const Odometry&);
-    void pushGlobalOdometry(const Odometry&);
+    template<typename Elem>
+    void pushLocalOdometry(Elem&&);
+
+    template<typename Elem>
+    void pushGlobalOdometry(Elem&&);
     
-    void getClosestLocalOdom(double stamp, Odometry&) const;
+    Odometry::Ptr getClosestLocalOdom(double stamp) const;
 
     ~Frontend();
 };
