@@ -2,12 +2,13 @@
 
 #include <types/EigenTypes.hpp>
 #include <geometry/matrix.hpp>
-using namespace EigenTypes;
 
 namespace PCR
 {
 namespace manifolds
 {
+    using namespace EigenTypes;
+    
     inline void exp(const V3d& w, M3d& SO3)
     {
         double t = w.norm();

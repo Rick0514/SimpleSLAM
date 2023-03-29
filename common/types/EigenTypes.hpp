@@ -11,7 +11,12 @@ namespace EigenTypes
     using M4d = Eigen::Matrix4d;
     using M3d = Eigen::Matrix3d;
     using V3d = Eigen::Vector3d;
+    using V3f = Eigen::Vector3f;
+
     using V4d = Eigen::Vector4d;
     using V6d = Eigen::Matrix<double, 6, 1>;
+
+    using Qd = Eigen::Quaterniond;
+    using Qf = Eigen::Quaternionf;
 
 } // namespace EigenTypes
