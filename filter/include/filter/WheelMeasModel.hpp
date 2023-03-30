@@ -15,8 +15,8 @@ public:
     T x() const { return (*this)[0]; }
     T& x() { return (*this)[0]; }
 
-    T y() const { return (*this)[0]; }
-    T& y() { return (*this)[0]; }
+    T y() const { return (*this)[1]; }
+    T& y() { return (*this)[1]; }
 };
 
 template<typename T, template<class> class CovarianceBase = Kalman::StandardBase>

@@ -19,15 +19,7 @@ public:
 
     virtual S f(const S& x, const Control& u) const override
     {
-        //! Predicted state vector after transition
-        S x_;
-        
-        // keep still for temp
-        x_.x() = x.x();
-        x_.y() = x.y();
-        x_.yaw() = x.yaw();
-        
-        return x_;
+        return x;
     }
     
 protected:

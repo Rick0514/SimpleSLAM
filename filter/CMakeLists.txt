@@ -6,11 +6,14 @@ set(KalmanFilterHeaders ../third_parties/KalmanFilter/include)
 
 find_package(catkin REQUIRED COMPONENTS
     roscpp
+    rosbag
     sensor_msgs
     nav_msgs
 )
 
 add_executable(ekf test/ekf.cpp)
+
+target_compile_definitions(ekf PRIVATE DATA_FILE="${CMAKE_CURRENT_SOURCE_DIR}/test/data")
 
 target_include_directories(ekf PRIVATE
     include
