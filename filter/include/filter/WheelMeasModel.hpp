@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filter/State.hpp>
 #include <kalman/LinearizedMeasurementModel.hpp>
 
 namespace filter {

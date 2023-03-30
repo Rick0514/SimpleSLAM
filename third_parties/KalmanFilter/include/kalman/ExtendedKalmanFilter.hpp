@@ -89,12 +89,13 @@ namespace Kalman {
          * @return The updated state estimate
          */
         template<class Control, template<class> class CovarianceBase>
-        const State& predict( SystemModelType<Control, CovarianceBase>& s )
+        const State& predict( SystemModelType<Control, CovarianceBase>& s, double dt=1.0 )
         {
+            dt = std::max(1e-6, dt);
             // predict state (without control)
             Control u;
             u.setZero();
-            return predict( s, u );
+            return predict( s, u, dt );
         }
         
         /**
@@ -105,7 +106,7 @@ namespace Kalman {
          * @return The updated state estimate
          */
         template<class Control, template<class> class CovarianceBase>
-        const State& predict( SystemModelType<Control, CovarianceBase>& s, const Control& u )
+        const State& predict( SystemModelType<Control, CovarianceBase>& s, const Control& u, double dt=1.0 )
         {
             s.updateJacobians( x, u );
             
@@ -113,7 +114,8 @@ namespace Kalman {
             x = s.f(x, u);
             
             // predict covariance
-            P  = ( s.F * P * s.F.transpose() ) + ( s.W * s.getCovariance() * s.W.transpose() );
+            // Covariance is (rad/s)^2 or (m/s)^2, so update gap time should be considered
+            P  = ( s.F * P * s.F.transpose() ) + ( s.W * ( dt * dt * s.getCovariance() ) * s.W.transpose() );
             
             // return state prediction
             return this->getState();
@@ -127,13 +129,16 @@ namespace Kalman {
          * @return The updated state estimate
          */
         template<class Measurement, template<class> class CovarianceBase>
-        const State& update( MeasurementModelType<Measurement, CovarianceBase>& m, const Measurement& z )
+        const State& update( MeasurementModelType<Measurement, CovarianceBase>& m, const Measurement& z, double dt=1.0 )
         {
+            dt = std::max(dt, 1e-6);
+            
             m.updateJacobians( x );
             
             // COMPUTE KALMAN GAIN
             // compute innovation covariance
-            Covariance<Measurement> S = ( m.H * P * m.H.transpose() ) + ( m.V * m.getCovariance() * m.V.transpose() );
+            // Covariance is (rad/s)^2 or (m/s)^2, so update gap time should be considered
+            Covariance<Measurement> S = ( m.H * P * m.H.transpose() ) + ( m.V * ( dt * dt * m.getCovariance() ) * m.V.transpose() );
             
             // compute kalman gain
             KalmanGain<Measurement> K = P * m.H.transpose() * S.inverse();

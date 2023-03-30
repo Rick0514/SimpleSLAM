@@ -1,41 +1,23 @@
 #pragma once
 
 #include <cmath>
+#include <filter/State.hpp>
 #include <kalman/LinearizedSystemModel.hpp>
 
 namespace filter
 {
 
-template<typename T>
-class State : public Kalman::Vector<T, 3>
-{
-public:
-    KALMAN_VECTOR(State, T, 3)
-    
-    //! X-position
-    static constexpr size_t X = 0;
-    //! Y-Position
-    static constexpr size_t Y = 1;
-    //! Orientation
-    static constexpr size_t THETA = 2;
-    
-    T x()       const { return (*this)[ X ]; }
-    T y()       const { return (*this)[ Y ]; }
-    T theta()   const { return (*this)[ THETA ]; }
-    
-    T& x()      { return (*this)[ X ]; }
-    T& y()      { return (*this)[ Y ]; }
-    T& theta()  { return (*this)[ THETA ]; }
-};
-
-template<typename T>
-class SystemModel : public Kalman::LinearizedSystemModel<State<T>>
+template<class T, class ControlType = Kalman::Vector<T, 0>, template<class> class CovarianceBase = Kalman::StandardBase >
+class SystemModel : public Kalman::LinearizedSystemModel<State<T>, ControlType, CovarianceBase>
 {
 public:
     //! State type shortcut definition
 	typedef State<T> S;
-    
-    S f(const S& x) const
+    typedef Kalman::LinearizedSystemModel<State<T>> Base;
+
+    using typename Base::Control;
+
+    virtual S f(const S& x, const Control& u) const override
     {
         //! Predicted state vector after transition
         S x_;
@@ -43,14 +25,14 @@ public:
         // keep still for temp
         x_.x() = x.x();
         x_.y() = x.y();
-        x_.theta() = x.theta();
+        x_.yaw() = x.yaw();
         
         return x_;
     }
     
 protected:
     
-    void updateJacobians( const S& x )
+    virtual void updateJacobians(const S& x, const Control& u) override
     {
         // F = df/dx (Jacobian of state transition w.r.t. the state)
         this->F.setIdentity();

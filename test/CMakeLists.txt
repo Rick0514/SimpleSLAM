@@ -33,7 +33,6 @@ target_include_directories(test_dataproxy PUBLIC
     ${PCR_SOURCE_DIR}/dataproxy/include
 )
 target_link_libraries(test_dataproxy
-    ${catkin_LIBRARIES}
     dataproxy
 )
 

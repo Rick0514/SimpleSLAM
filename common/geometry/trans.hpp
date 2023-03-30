@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Eigen/src/Geometry/Quaternion.h>
 #include <types/EigenTypes.hpp>
 
 namespace geometry {

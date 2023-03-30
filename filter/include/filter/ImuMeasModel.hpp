@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filter/State.hpp>
 #include <kalman/LinearizedMeasurementModel.hpp>
 
 namespace filter {
@@ -30,7 +31,7 @@ public:
     M h(const S& x) const
     {
         M m;
-        m.yaw() = x(2);
+        m.yaw() = x.yaw();
         return m;
     }
 
@@ -40,7 +41,7 @@ protected:
     {
         // H = dh/dx (Jacobian of measurement function w.r.t. the state)
         this->H.setZero();
-        this->H(0, S::THETA) = 1.0;
+        this->H(0, S::YAW) = 1.0;
     }
 
 };

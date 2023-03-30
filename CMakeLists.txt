@@ -11,6 +11,7 @@ find_package(Eigen3 REQUIRED)
 find_package(spdlog REQUIRED)
 
 add_subdirectory(PCR)
+add_subdirectory(filter)
 add_subdirectory(dataproxy)
 add_subdirectory(test)
 add_subdirectory(frontend)
