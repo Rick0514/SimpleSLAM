@@ -6,6 +6,8 @@ set(CMAKE_CXX_COMPILER clang++-12)
 
 project(robot_ekf)
 
+set(CMAKE_BUILD_TYPE Debug)
+
 # bfl (Bayesian Filtering Library) is a third party package that uses pkg-config
 find_package(PkgConfig)
 pkg_check_modules(BFL REQUIRED orocos-bfl)

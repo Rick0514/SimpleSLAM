@@ -321,8 +321,8 @@ namespace estimation
 	// correct for angle overflow
 	void OdomEstimation::angleOverflowCorrect(double& a, double ref)
 	{
-	while ((a-ref) >  M_PI) a -= 2*M_PI;
-	while ((a-ref) < -M_PI) a += 2*M_PI;
+		while ((a-ref) >  M_PI) a -= 2*M_PI;
+		while ((a-ref) < -M_PI) a += 2*M_PI;
 	};
 
 	// decompose Transform into x,y,z,Rx,Ry,Rz

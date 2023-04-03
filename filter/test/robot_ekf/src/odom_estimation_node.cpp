@@ -162,13 +162,15 @@ namespace estimation
 		imu_time_  = imu_stamp_;
 
 		// manually set covariance untile imu sends covariance
-		if (imu_covariance_(1,1) == 0.0){
-			SymmetricMatrix measNoiseImu_Cov(3);  measNoiseImu_Cov = 0;
-			measNoiseImu_Cov(1,1) = pow(0.00017,2);  // = 0.01 degrees / sec
-			measNoiseImu_Cov(2,2) = pow(0.00017,2);  // = 0.01 degrees / sec
-			measNoiseImu_Cov(3,3) = pow(0.00017,2);  // = 0.01 degrees / sec
-			imu_covariance_ = measNoiseImu_Cov;
-		}
+		// if (imu_covariance_(1,1) == 0.0){
+		// }
+		SymmetricMatrix measNoiseImu_Cov(3);  
+		measNoiseImu_Cov = 0;
+		double ns = 0.5 / 180 * M_PI;
+		measNoiseImu_Cov(1,1) = pow(ns, 2);  // = 0.01 degrees / sec
+		measNoiseImu_Cov(2,2) = pow(ns, 2);  // = 0.01 degrees / sec
+		measNoiseImu_Cov(3,3) = pow(ns, 2);  // = 0.01 degrees / sec
+		imu_covariance_ = measNoiseImu_Cov;
 
 		my_filter_.addMeasurement(StampedTransform(imu_meas_.inverse(), imu_stamp_, base_footprint_frame_, Param::getInstance().imu_frame), imu_covariance_);
 

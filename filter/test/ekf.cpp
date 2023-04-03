@@ -44,6 +44,7 @@ private:
     bool init{false};
 
     nav_msgs::Odometry last_wheel;
+    sensor_msgs::Imu last_imu;
 
     double pre_last_time;
     double imu_last_time;
@@ -101,6 +102,7 @@ public:
                 pre_last_time = msg->header.stamp.toSec();
                 imu_last_time = pre_last_time;
                 wheel_last_time = pre_last_time;
+                last_imu = *msg;
             }
             return;
         }
@@ -108,34 +110,44 @@ public:
         double now = msg->header.stamp.toSec(); 
         double dt = now - imu_last_time;
 
+        // get relative meas
         auto q = msg->orientation;
+        auto lq = last_imu.orientation;
         Qf eq(q.w, q.x, q.y, q.z);
-        V3f ypr = trans::q2ypr(eq);
+        Qf elq(lq.w, lq.x, lq.y, lq.z);
+        Qf dq = elq.inverse() * eq;
+        V3f ypr = trans::q2ypr(dq);
         // important!!
-        utils::math::correctAngles(ypr(0), x.yaw());
+        utils::math::correctAngles(ypr(0), 0.0f);
 
         filter::ImuMeas<float> ims;
-        ims.yaw() = ypr(0);
+        ims.yaw() = x.yaw() + ypr(0);
         x = ekf.update(imu, ims, dt);
 
         imu_last_time = now;
+        last_imu = *msg;
     }
 
     void wheelHandler(const nav_msgs::OdometryConstPtr& msg)
     {
-        if(!init){
-            last_wheel = *msg;
-            return;
-        }
         double now = msg->header.stamp.toSec();
-        double dt = now - wheel_last_time;
+        if(init){
+            double dt = now - wheel_last_time;
 
-        filter::WheelMeas<float> wms;
-        wms.x() = msg->pose.pose.position.x;
-        wms.y() = msg->pose.pose.position.y;
-        x = ekf.update(wheel, wms, dt);
+            // get relative meas
+            auto dx = msg->pose.pose.position.x - last_wheel.pose.pose.position.x;
+            auto dy = msg->pose.pose.position.y - last_wheel.pose.pose.position.y;
+            auto tdx = std::cos(x.yaw()) * dx - std::sin(x.yaw()) * dy;
+            auto tdy = std::sin(x.yaw()) * dx + std::cos(x.yaw()) * dy;
+
+            filter::WheelMeas<float> wms;
+            wms.x() = x.x() + tdx;
+            wms.y() = x.y() + tdy;
+            x = ekf.update(wheel, wms, dt);
+        }
 
         wheel_last_time = now;
+        last_wheel = *msg;
     }
 
     void predHandler(const ros::TimerEvent& e)
