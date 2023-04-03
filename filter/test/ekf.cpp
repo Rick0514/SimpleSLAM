@@ -85,21 +85,23 @@ public:
 
     void imuHandler(const sensor_msgs::ImuConstPtr& msg)
     {
-        if(!init && utils::math::absClose(msg->header.stamp.toSec(), last_wheel.header.stamp.toSec(), 0.01))
+        if(!init)
         {
-            x.x() = last_wheel.pose.pose.position.x;
-            x.y() = last_wheel.pose.pose.position.y;
-            auto q = msg->orientation;
-            Qf eq(q.w, q.x, q.y, q.z);
-            V3f ypr = trans::q2ypr(eq);
-            x.yaw() = ypr(0);
-            ekf.init(x);
-            init = true;
+            if(utils::math::absClose(msg->header.stamp.toSec(), last_wheel.header.stamp.toSec(), 0.01))
+            {
+                x.x() = last_wheel.pose.pose.position.x;
+                x.y() = last_wheel.pose.pose.position.y;
+                auto q = msg->orientation;
+                Qf eq(q.w, q.x, q.y, q.z);
+                V3f ypr = trans::q2ypr(eq);
+                x.yaw() = ypr(0);
+                ekf.init(x);
+                init = true;
 
-            pre_last_time = msg->header.stamp.toSec();
-            imu_last_time = pre_last_time;
-            wheel_last_time = pre_last_time;
-
+                pre_last_time = msg->header.stamp.toSec();
+                imu_last_time = pre_last_time;
+                wheel_last_time = pre_last_time;
+            }
             return;
         }
         

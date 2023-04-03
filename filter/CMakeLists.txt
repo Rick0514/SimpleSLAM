@@ -3,6 +3,7 @@ project(filter)
 set(KalmanFilterHeaders ../third_parties/KalmanFilter/include)
 
 # target_compile_definitions(pcr PRIVATE LOG_LEVEL=1)
+# set(CMAKE_BUILD_TYPE Debug)
 
 find_package(catkin REQUIRED COMPONENTS
     roscpp

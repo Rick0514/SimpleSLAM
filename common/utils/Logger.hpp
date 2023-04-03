@@ -31,7 +31,7 @@ private:
         _lg->set_level(static_cast<spdlog::level::level_enum>(SPDLOG_ACTIVE_LEVEL));
 #endif
 
-        _lg->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [td %t] [%s:%#] %^[%l] %v%$");
+        _lg->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [td %t] %^[%l] %v%$");
     }
 
 public:
