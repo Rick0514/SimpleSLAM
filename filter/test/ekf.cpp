@@ -18,8 +18,11 @@
 #include <kalman/ExtendedKalmanFilter.hpp>
 #include <vector>
 
+#include <time/tictoc.hpp>
+
 using namespace geometry;
 using namespace EigenTypes;
+using namespace common;
 
 template<typename T>
 using NoiseVector = Eigen::Matrix<typename T::Scalar, T::RowsAtCompileTime, 1>;
@@ -237,7 +240,9 @@ int main(int argc, char** argv)
     lg->info("start ekf...");
 
     TestEKF _;
+    time::tictoc tt;
     _.run();
+    lg->info("run elapsed {:.3f}s", tt);    
 
     // ros::spin();
 

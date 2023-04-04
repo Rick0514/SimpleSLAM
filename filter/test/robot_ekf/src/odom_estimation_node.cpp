@@ -38,7 +38,9 @@
 #include <robot_ekf/param.h>
 #include <rosbag/bag.h>
 #include <rosbag/view.h>
+#include <spdlog/spdlog.h>
 #include <spdlog/fmt/fmt.h>
+#include <time/tictoc.hpp>
 
 using namespace MatrixWrapper;
 using namespace std;
@@ -262,10 +264,8 @@ int main(int argc, char **argv)
 
 	// create filter class
 	OdomEstimationNode my_filter_node;
-	std::ofstream tum;
-//   ros::spin();
 
-// run rosbag
+	std::ofstream tum;
 	rosbag::Bag bag;
 	std::string bag_fn;
 #ifdef DATA_FILE
@@ -273,6 +273,7 @@ int main(int argc, char **argv)
 	my_filter_node.tum = std::ofstream(DATA_FILE "/rekf.txt");
 #endif
 
+	common::time::tictoc tt;
 	bag.open(bag_fn, rosbag::bagmode::Read);
 	std::string imu_topic = "/imu/data";
 	std::string odom_topic = "/odom/raw";
@@ -302,5 +303,6 @@ int main(int argc, char **argv)
 
 	bag.close();
 	
+	SPDLOG_INFO("run elapsed {:.3f}s", tt);
 	return 0;
 }

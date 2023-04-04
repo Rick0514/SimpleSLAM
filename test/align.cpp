@@ -59,7 +59,7 @@ int main(int argc, char const *argv[])
     SPDLOG_INFO("target cloud size: {}", target_cloud->points.size());
     SPDLOG_INFO("source cloud size: {}", source_cloud->points.size());
 
-    time::tictoc tt;
+    common::time::tictoc tt;
     SPDLOG_INFO("start to downsample pc!");
     voxelDownSample(target_cloud, 0.1f);
     voxelDownSample(source_cloud, 0.1f);

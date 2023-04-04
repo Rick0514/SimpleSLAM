@@ -22,7 +22,7 @@
 // using std::chrono::milliseconds;
 // spdlog::info("Elapsed {}", duration_cast<milliseconds>(sw.elapsed())); => "Elapsed 5ms"
 
-namespace PCR
+namespace common
 {
 namespace time
 {
@@ -52,10 +52,10 @@ public:
 }
 
 template<>
-struct fmt::formatter<PCR::time::tictoc> : fmt::formatter<double>
+struct fmt::formatter<common::time::tictoc> : fmt::formatter<double>
 {
     template<typename FormatContext>
-    auto format(const PCR::time::tictoc &tt, FormatContext &ctx) -> decltype(ctx.out())
+    auto format(const common::time::tictoc &tt, FormatContext &ctx) -> decltype(ctx.out())
     {
         return formatter<double>::format(tt.elapsed().count(), ctx);
     }

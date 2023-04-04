@@ -6,7 +6,7 @@ set(CMAKE_CXX_COMPILER clang++-12)
 
 project(robot_ekf)
 
-set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Release)
 
 # bfl (Bayesian Filtering Library) is a third party package that uses pkg-config
 find_package(PkgConfig)
@@ -34,6 +34,7 @@ include_directories(
     include
     ${catkin_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../common
 )
 
 add_executable(${PROJECT_NAME} src/odom_estimation.cpp src/odom_estimation_node.cpp)
