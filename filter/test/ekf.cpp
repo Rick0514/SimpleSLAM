@@ -42,6 +42,7 @@ private:
     Kalman::ExtendedKalmanFilter<filter::State<float>> ekf;
 
     bool init{false};
+    bool update_imu{false};
 
     nav_msgs::Odometry last_wheel;
     sensor_msgs::Imu last_imu;
@@ -72,12 +73,12 @@ public:
         // imu yaw noise
         NoiseVector<filter::ImuMeas<float>> imuNoise;
         imuNoise << utils::math::to_rad(0.5);   // assume 0.5deg/s
-        imu.setCovarianceSquareRoot(imuNoise.array().square().matrix().asDiagonal());
+        imu.setCovariance(imuNoise.array().square().matrix().asDiagonal());
 
         // odom xy noise
         NoiseVector<filter::WheelMeas<float>> wheelNoise;
-        wheelNoise << 0.01, 0.01; // assume 0.1m/s
-        wheel.setCovarianceSquareRoot(wheelNoise.array().square().matrix().asDiagonal());
+        wheelNoise << 0.1, 0.1; // assume 0.1m/s
+        wheel.setCovariance(wheelNoise.array().square().matrix().asDiagonal());
 
         // imu_sub = nh.subscribe("/imu/data", 100, &TestEKF::imuHandler, this);
         // wheel_sub = nh.subscribe("/odom/raw", 100, &TestEKF::wheelHandler, this);
@@ -107,25 +108,31 @@ public:
             return;
         }
         
-        double now = msg->header.stamp.toSec(); 
-        double dt = now - imu_last_time;
+        if(update_imu){
+            update_imu = false;
 
-        // get relative meas
-        auto q = msg->orientation;
-        auto lq = last_imu.orientation;
-        Qf eq(q.w, q.x, q.y, q.z);
-        Qf elq(lq.w, lq.x, lq.y, lq.z);
-        Qf dq = elq.inverse() * eq;
-        V3f ypr = trans::q2ypr(dq);
-        // important!!
-        utils::math::correctAngles(ypr(0), 0.0f);
+            double now = msg->header.stamp.toSec(); 
+            double dt = now - imu_last_time;
 
-        filter::ImuMeas<float> ims;
-        ims.yaw() = x.yaw() + ypr(0);
-        x = ekf.update(imu, ims, dt);
+            // get relative meas
+            auto q = msg->orientation;
+            auto lq = last_imu.orientation;
+            Qf eq(q.w, q.x, q.y, q.z);
+            Qf elq(lq.w, lq.x, lq.y, lq.z);
+            // avoid singularity
+            Qf dq = elq.inverse() * eq;
+            V3f ypr = trans::q2ypr(dq);
+            // std::cout << ypr.transpose() << std::endl;
+            // important!!
+            filter::ImuMeas<float> ims;
+            ims.yaw() = x.yaw() + ypr(0);
+            utils::math::correctAngles(ims.yaw(), x.yaw());
+            x = ekf.update(imu, ims, dt);
+            
+            imu_last_time = now;
+            last_imu = *msg;
+        }
 
-        imu_last_time = now;
-        last_imu = *msg;
     }
 
     void wheelHandler(const nav_msgs::OdometryConstPtr& msg)
@@ -135,14 +142,28 @@ public:
             double dt = now - wheel_last_time;
 
             // get relative meas
-            auto dx = msg->pose.pose.position.x - last_wheel.pose.pose.position.x;
-            auto dy = msg->pose.pose.position.y - last_wheel.pose.pose.position.y;
-            auto tdx = std::cos(x.yaw()) * dx - std::sin(x.yaw()) * dy;
-            auto tdy = std::sin(x.yaw()) * dx + std::cos(x.yaw()) * dy;
+            Pose6<float> pcur, plast;
+            auto p = msg->pose.pose.position;
+            auto q = msg->pose.pose.orientation;
+            pcur.setIdentity();
+            pcur.translate(V3f(p.x, p.y, p.z));
+            pcur.rotate(Qf(q.w, q.x, q.y, q.z));
+            p = last_wheel.pose.pose.position;
+            q = last_wheel.pose.pose.orientation;
+            plast.setIdentity();
+            plast.translate(V3f(p.x, p.y, p.z));
+            plast.rotate(Qf(q.w, q.x, q.y, q.z));
 
+            Pose6<float> pold;
+            pold.setIdentity();
+            pold.translate(V3f(x.x(), x.y(), 0.0f));
+            pold.rotate(trans::ypr2q(V3f(x.yaw(), 0, 0)));
+
+            Pose6<float> delta = pold * (plast.inverse() * pcur);            
+            
             filter::WheelMeas<float> wms;
-            wms.x() = x.x() + tdx;
-            wms.y() = x.y() + tdy;
+            wms.x() = delta.translation().x();
+            wms.y() = delta.translation().y();
             x = ekf.update(wheel, wms, dt);
         }
 
@@ -161,7 +182,8 @@ public:
             double dt = now - pre_last_time;
             x = ekf.predict(sys, dt);
             pre_last_time = now;
-        }    
+            update_imu = true;
+        }
     }
 
     void run()
@@ -186,8 +208,9 @@ public:
             if(m.getTime().toSec() - start_time > 50){
                 run_lg->info("50s pass...");
                 start_time = m.getTime().toSec();
+                // break;
             }
-
+            
             if(m.getTopic() == odom_topic){
                 nav_msgs::OdometryConstPtr odom = m.instantiate<nav_msgs::Odometry>();
                 // pred freq equal to wheel

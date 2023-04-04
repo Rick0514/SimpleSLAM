@@ -26,7 +26,9 @@ public:
     //! Measurement type shortcut definition
     typedef  filter::ImuMeas<T> M;
 
-    ImuMeasModel() = default;
+    ImuMeasModel(){
+        this->V.setIdentity();
+    }
 
     M h(const S& x) const
     {

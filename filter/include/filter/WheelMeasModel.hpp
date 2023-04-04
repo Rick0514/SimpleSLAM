@@ -29,7 +29,9 @@ public:
     //! Measurement type shortcut definition
     typedef  filter::WheelMeas<T> M;
     
-    WheelMeasModel() = default;
+    WheelMeasModel(){
+        this->V.setIdentity();
+    }
 
     M h(const S& x) const
     {

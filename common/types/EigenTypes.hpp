@@ -7,6 +7,18 @@
 
 namespace EigenTypes
 {
+    template<typename Scalar>
+    using Pose6 = Eigen::Transform<Scalar, 3, Eigen::Isometry>;
+    
+    template<typename Scalar>
+    using V3 = Eigen::Matrix<Scalar, 3, 1>;
+    
+    template<typename Scalar>
+    using Qt = Eigen::Quaternion<Scalar>;
+
+    template<typename Scalar>
+    using M3 = Eigen::Matrix<Scalar, 3, 3>;
+
     using Pose6d = Eigen::Isometry3d;
     using M4d = Eigen::Matrix4d;
     using M3d = Eigen::Matrix3d;
