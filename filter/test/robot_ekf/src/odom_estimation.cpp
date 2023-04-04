@@ -63,7 +63,8 @@ namespace estimation
 		// create SYSTEM MODEL
 		ColumnVector sysNoise_Mu(6);  sysNoise_Mu = 0;
 		SymmetricMatrix sysNoise_Cov(6); sysNoise_Cov = 0;
-		for (unsigned int i=1; i<=6; i++) sysNoise_Cov(i,i) = pow(1000.0,2);
+		for (unsigned int i=1; i<=3; i++) sysNoise_Cov(i,i) = pow(1.0, 2);
+		for (unsigned int i=4; i<=6; i++) sysNoise_Cov(i,i) = pow(M_PI * 5. / 180, 2);
 		Gaussian system_Uncertainty(sysNoise_Mu, sysNoise_Cov);
 		sys_pdf_   = new NonLinearAnalyticConditionalGaussianOdo(system_Uncertainty);
 		sys_model_ = new AnalyticSystemModelGaussianUncertainty(sys_pdf_);
@@ -111,7 +112,7 @@ namespace estimation
 		SymmetricMatrix prior_Cov(6); 
 		for (unsigned int i=1; i<=6; i++) {
 			for (unsigned int j=1; j<=6; j++){
-				if (i==j)  prior_Cov(i,j) = pow(0.001,2);
+				if (i==j)  prior_Cov(i,j) = pow(0.01,2);
 				else prior_Cov(i,j) = 0;
 			}
 		}

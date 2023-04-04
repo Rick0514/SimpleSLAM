@@ -127,6 +127,8 @@ namespace estimation
 		for (unsigned int i=0; i<6; i++)
 			for (unsigned int j=0; j<6; j++)
 				odom_covariance_(i+1, j+1) = odom->pose.covariance[6*i+j];
+		
+		for(int i=1; i<=6; i++)	odom_covariance_(i, i) = pow(5.0, 2);
 
 		my_filter_.addMeasurement(StampedTransform(odom_meas_.inverse(), odom_stamp_, base_footprint_frame_, Param::getInstance().wheel_frame), odom_covariance_);
     

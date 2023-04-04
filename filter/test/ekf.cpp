@@ -75,7 +75,7 @@ public:
 
         // imu yaw noise
         NoiseVector<filter::ImuMeas<float>> imuNoise;
-        imuNoise << utils::math::to_rad(0.5);   // assume 0.5deg/s
+        imuNoise << utils::math::to_rad(0.1);   // assume 0.5deg/s
         imu.setCovariance(imuNoise.array().square().matrix().asDiagonal());
 
         // odom xy noise
