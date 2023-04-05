@@ -10,8 +10,8 @@ using namespace PCLTypes;
 namespace dataproxy
 {
 
-template <typename T>
-class LidarDataProxy : public DataProxy<T>
+template <typename T, bool UseBag=false>
+class LidarDataProxy : public DataProxy<T, UseBag>
 {
 public:
 

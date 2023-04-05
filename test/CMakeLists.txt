@@ -5,6 +5,9 @@ set(CMAKE_BUILD_TYPE Debug)
 project(test)
 
 find_package(PCL REQUIRED COMPONENTS common io filters visualization)
+find_package(catkin REQUIRED COMPONENTS
+    rosbag
+)
 
 add_definitions(-DDATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data")
 
@@ -31,8 +34,10 @@ target_include_directories(test_dataproxy PUBLIC
     ${EIGEN3_INCLUDE_DIRS}
     ${COMMON_HEADER}
     ${PCR_SOURCE_DIR}/dataproxy/include
+    ${catkin_INCLUDE_DIRS}
 )
 target_link_libraries(test_dataproxy
+    ${catkin_LIBRARIES}
     dataproxy
 )
 

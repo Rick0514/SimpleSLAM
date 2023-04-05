@@ -27,13 +27,13 @@ using namespace utils;
 using namespace dataproxy;
 using namespace backend;
 
-template <bool UseBag>
-class LidarOdometry : public OdometryBase<UseBag>
+template <typename PointType, bool UseBag=false>
+class LidarOdometry : public OdometryBase
 {
 
 public:
-    using DataProxyPtr = std::shared_ptr<DataProxy<PCxyz>>;
-    using ConstDataProxyPtr = const std::shared_ptr<DataProxy<PCxyz>>;
+    using DataProxyPtr = std::shared_ptr<DataProxy<PointType, UseBag>>;
+    using ConstDataProxyPtr = const std::shared_ptr<DataProxy<PointType, UseBag>>;
 
     using FrontendPtr = std::shared_ptr<Frontend>;
     using ConstFrontendPtr = const std::shared_ptr<Frontend>;
@@ -48,7 +48,7 @@ private:
     BackendPtr mBackendPtr;
 
     // pointtype xyz for temp
-    std::unique_ptr<PCR::PointCloudRegister<pcl::PointXYZ>> mPcr; 
+    std::unique_ptr<PCR::PointCloudRegister<PointType>> mPcr; 
 
 public:
     explicit LidarOdometry(ConstDataProxyPtr& dp, ConstFrontendPtr& ft, ConstBackendPtr& bk);

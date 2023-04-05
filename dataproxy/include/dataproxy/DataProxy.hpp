@@ -9,8 +9,6 @@ using namespace utils;
 
 namespace dataproxy
 {
-constexpr bool UseBag{false};
-
 struct Odometry
 {
     double stamp;
@@ -21,7 +19,7 @@ struct Odometry
     using Ptr = std::shared_ptr<Odometry>;
 };
 
-template <typename T>
+template <typename T, bool UseBag=false>
 class DataProxy
 {
 public:
@@ -37,7 +35,7 @@ public:
         mDataPtr = std::make_shared<SafeDequeType>(size);
     }
     
-    const DataPtr get() const { return mDataPtr; }  
+    DataPtr get() const { return mDataPtr; }  
     
     virtual ~DataProxy() {};
 };

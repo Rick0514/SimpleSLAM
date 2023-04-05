@@ -5,16 +5,16 @@
 namespace frontend
 {
 
-template <bool UseBag>
-LidarOdometry<UseBag>::LidarOdometry(ConstDataProxyPtr& dp, ConstFrontendPtr& ft, ConstBackendPtr& bk)
+template <typename PointType, bool UseBag>
+LidarOdometry<PointType, UseBag>::LidarOdometry(ConstDataProxyPtr& dp, ConstFrontendPtr& ft, ConstBackendPtr& bk)
 : mDataProxyPtr(dp), mFrontendPtr(ft), mBackendPtr(bk)
 {
     // xyz for temp
     mPcr.reset(new PCR::LoamRegister<Pxyz>());
 }
 
-template <bool UseBag>
-void LidarOdometry<UseBag>::generateOdom()
+template <typename PointType, bool UseBag>
+void LidarOdometry<PointType, UseBag>::generateOdom()
 {
     // get current scan
     const auto& scans = mDataProxyPtr->get();
@@ -24,7 +24,7 @@ void LidarOdometry<UseBag>::generateOdom()
 
     // make init pose
     // 1. get latest scan
-    PCxyz::Ptr scan(new PCxyz());
+    typename PointType::Ptr scan(new PointType());
     pcl::copyPointCloud(*scans->back(), *scan);
     // 2. localodom * odom2map
     auto odom2map = mFrontendPtr->get();

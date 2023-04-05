@@ -2,14 +2,15 @@
 
 namespace dataproxy
 {
-
-EkfOdomProxy::EkfOdomProxy(ros::NodeHandle& nh, int size)
+template<bool UseBag>
+EkfOdomProxy<UseBag>::EkfOdomProxy(ros::NodeHandle& nh, int size)
 : DataProxy<Odometry>(size)
 {
     auto ekf_sub = nh.subscribe("/ekf_odom", 50, &EkfOdomProxy::subscribe, this);
 }
 
-void EkfOdomProxy::subscribe(const nav_msgs::OdometryConstPtr& msg)
+template<bool UseBag>
+void EkfOdomProxy<UseBag>::subscribe(const nav_msgs::OdometryConstPtr& msg)
 {
     auto odom = std::make_shared<Odometry>();
     odom->stamp = msg->header.stamp.toSec();
