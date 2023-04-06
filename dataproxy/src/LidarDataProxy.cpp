@@ -7,27 +7,28 @@
 namespace dataproxy
 {
 
-template <typename T, bool UseBag>
-LidarDataProxy<T, UseBag>::LidarDataProxy(ros::NodeHandle& nh, int size) : DataProxy<T, UseBag>(size)
+template <typename PCType, bool UseBag>
+LidarDataProxy<PCType, UseBag>::LidarDataProxy(ros::NodeHandle& nh, int size) : DataProxy<PCType, UseBag>(size)
 {
-    auto pc_sub = nh.subscribe("/lidar_points", 5, &LidarDataProxy<T, UseBag>::subscribe, this);
+    this->mLg->info("get in LidarDataProxy");
+    mSub = nh.subscribe("/lidar_points", 5, &LidarDataProxy<PCType, UseBag>::subscribe, this);
 }
 
-template <typename T, bool UseBag>
-void LidarDataProxy<T, UseBag>::subscribe(const sensor_msgs::PointCloud2ConstPtr& msg)
+template <typename PCType, bool UseBag>
+void LidarDataProxy<PCType, UseBag>::subscribe(const sensor_msgs::PointCloud2ConstPtr& msg)
 {
     // preprocess
-    auto cloud = std::make_shared<T>();
+    auto cloud = std::make_shared<PCType>();
     pcl::fromROSMsg(*msg, *cloud);
     std::vector<int> indices;
     pcl::removeNaNFromPointCloud(*cloud, *cloud, indices);
     this->mDataPtr->template push_back<UseBag>(std::move(cloud));
 }
 
-template class LidarDataProxy<PCxyz>;
-template class LidarDataProxy<PCxyzi>;
+template class LidarDataProxy<PC<Pxyz>>;
+template class LidarDataProxy<PC<Pxyzi>>;
 
-template class LidarDataProxy<PCxyz, true>;
-template class LidarDataProxy<PCxyzi, true>;
+template class LidarDataProxy<PC<Pxyz>, true>;
+template class LidarDataProxy<PC<Pxyzi>, true>;
 
 } // namespace dataproxy

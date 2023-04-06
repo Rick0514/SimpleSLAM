@@ -3,6 +3,7 @@
 #include <memory>
 #include <types/EigenTypes.hpp>
 #include <utils/SafeDeque.hpp>
+#include <utils/Logger.hpp>
 
 using namespace EigenTypes;
 using namespace utils;
@@ -29,10 +30,12 @@ public:
 
 protected:
     DataPtr mDataPtr;
+    std::shared_ptr<utils::logger::Logger> mLg;
 
 public:
     explicit DataProxy(int size){
         mDataPtr = std::make_shared<SafeDequeType>(size);
+        mLg = utils::logger::Logger::getInstance();
     }
     
     DataPtr get() const { return mDataPtr; }  

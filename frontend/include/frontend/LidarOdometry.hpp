@@ -1,45 +1,37 @@
 #pragma once
-#include <types/PCLTypes.hpp>
-#include <pcl/kdtree/kdtree_flann.h>
-
 #include <frontend/OdometryBase.hpp>
-#include <frontend/Frontend.hpp>
-#include <dataproxy/DataProxy.hpp>
 
-// forward declaration
-// #include <backend/Backend.hpp>
+#include <types/PCLTypes.hpp>
 
-#include <PCR/LoamRegister.hpp>
-#include <PCR/NdtRegister.hpp>
-
-using namespace EigenTypes;
-using namespace PCLTypes;
-
-namespace backend
-{
-    class Backend;
-}
+// ------------ forward declaration ------------
+namespace frontend { class Frontend; }
+namespace backend { template<typename PointType> class Backend; }
+namespace dataproxy { template <typename T, bool> class DataProxy; }
+namespace PCR { template<typename PointType> class PointCloudRegister; }
+// ------------ forward declaration ------------
 
 namespace frontend
 {
 
-using namespace utils;
 using namespace dataproxy;
 using namespace backend;
+using namespace PCLTypes;
+
+class Frontend;
 
 template <typename PointType, bool UseBag=false>
 class LidarOdometry : public OdometryBase
 {
 
 public:
-    using DataProxyPtr = std::shared_ptr<DataProxy<PointType, UseBag>>;
-    using ConstDataProxyPtr = const std::shared_ptr<DataProxy<PointType, UseBag>>;
+    using DataProxyPtr = std::shared_ptr<DataProxy<PC<PointType>, UseBag>>;
+    using ConstDataProxyPtr = const std::shared_ptr<DataProxy<PC<PointType>, UseBag>>;
 
     using FrontendPtr = std::shared_ptr<Frontend>;
     using ConstFrontendPtr = const std::shared_ptr<Frontend>;
 
-    using BackendPtr = std::shared_ptr<Backend>;
-    using ConstBackendPtr = const std::shared_ptr<Backend>;
+    using BackendPtr = std::shared_ptr<Backend<PointType>>;
+    using ConstBackendPtr = const std::shared_ptr<Backend<PointType>>;
 
 private:
 
@@ -55,7 +47,7 @@ public:
 
     virtual void generateOdom() override;
 
-    ~LidarOdometry();
+    ~LidarOdometry(){};
 };
     
 } // namespace frontend

@@ -3,7 +3,6 @@
 #include <types/EigenTypes.hpp>
 
 #include <utils/SafeDeque.hpp>
-#include <utils/Math.hpp>
 
 #include <dataproxy/DataProxy.hpp>
 
@@ -15,7 +14,9 @@ using namespace dataproxy;
 
 class Frontend
 {
-private:
+protected:
+    using OdomDequePtr = std::shared_ptr<concurrency::SafeDeque<Odometry>>;
+    using ConstOdomDequePtrRef = const OdomDequePtr&;
 
     Pose6d mOdom2Map;
 
@@ -37,7 +38,14 @@ public:
     
     Odometry::Ptr getClosestLocalOdom(double stamp) const;
 
-    ~Frontend();
+    ConstOdomDequePtrRef getLocal() const { return mLocalOdometry; }
+    ConstOdomDequePtrRef getGlobal() const { return mGlobalOdometry; } 
+
+    // q should be pointer to iterable container of shared ptr to Odometry
+    template<typename T>
+    static int getClosestItem(T&& q, double stamp);
+
+    ~Frontend(){};
 };
 
     

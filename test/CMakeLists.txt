@@ -59,3 +59,15 @@ target_link_libraries(testlog
 )
 target_compile_definitions(testlog PRIVATE SPDLOG_ACTIVE_LEVEL=0)
 # target_compile_definitions(testlog PRIVATE LOG_FILE="${CMAKE_CURRENT_SOURCE_DIR}/data/testlog.log")
+
+add_executable(loc loc.cpp)
+target_include_directories(loc PUBLIC
+    ${PCR_SOURCE_DIR}/dataproxy/include
+    ${PCR_SOURCE_DIR}/frontend/include
+    ${PCR_SOURCE_DIR}/backend/include
+)
+target_link_libraries(loc
+    dataproxy
+    frontend
+    backend
+)

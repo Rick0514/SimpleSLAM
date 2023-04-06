@@ -10,9 +10,12 @@ using namespace PCLTypes;
 namespace dataproxy
 {
 
-template <typename T, bool UseBag=false>
-class LidarDataProxy : public DataProxy<T, UseBag>
+template <typename PCType, bool UseBag=false>
+class LidarDataProxy : public DataProxy<PCType, UseBag>
 {
+private:
+    ros::Subscriber mSub;
+
 public:
 
     explicit LidarDataProxy(ros::NodeHandle& nh, int size);
