@@ -1,30 +1,53 @@
 #pragma once
 
 #include <types/EigenTypes.hpp>
+#include <types/PCLTypes.hpp>
 
 #include <utils/SafeDeque.hpp>
 
 #include <dataproxy/DataProxy.hpp>
 
+namespace backend { template<typename PointType> class Backend; }
+
 namespace frontend
 {
-using namespace EigenTypes;
-using namespace utils;
+// forward declaration
+class OdometryBase;
+
+using namespace backend;
 using namespace dataproxy;
 
-class Frontend
+using namespace EigenTypes;
+using namespace PCLTypes;
+using namespace utils;
+
+template<typename PointType, bool UseBag=false>
+using DataProxyPtr = std::shared_ptr<DataProxy<PC<PointType>, UseBag>>;
+
+template<typename PointType>
+using BackendPtr = std::shared_ptr<Backend<PointType>>;
+
+class Frontend : std::enable_shared_from_this<Frontend>
 {
 protected:
+
     using OdomDequePtr = std::shared_ptr<concurrency::SafeDeque<Odometry>>;
-    using ConstOdomDequePtrRef = const OdomDequePtr&;
 
     Pose6d mOdom2Map;
 
     std::shared_ptr<concurrency::SafeDeque<Odometry>> mLocalOdometry;
     std::shared_ptr<concurrency::SafeDeque<Odometry>> mGlobalOdometry;
 
+    std::unique_ptr<OdometryBase> mLO;
+    std::unique_ptr<std::thread> mLOthdPtr;
+
+    std::atomic_bool mLORunning;
+
 public:
     Frontend();
+
+    template<typename PointType, bool UseBag=false>
+    void initLO(DataProxyPtr<PointType, UseBag>&, BackendPtr<PointType>&);
 
     void publish() const;
 
@@ -39,7 +62,9 @@ public:
     template<typename T>
     static int getClosestItem(T&& q, double stamp);
 
-    ~Frontend(){};
+    void LOHandler();
+
+    ~Frontend();
 };
 
 template<typename T>

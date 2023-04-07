@@ -14,11 +14,6 @@ using namespace PCLTypes;
 using namespace dataproxy;
 using PointType = Pxyzi;
 
-void LO()
-{
-
-}
-
 int main(int argc, char* argv[])
 {
     string pcd_file = "/home/hgy/.robot/data/maps/lvisam/lvisam.pcd";  
@@ -27,9 +22,9 @@ int main(int argc, char* argv[])
 
     ros::init(argc, argv, "loc");
     ros::NodeHandle nh;
-    auto ldp = std::make_shared<dataproxy::LidarDataProxy<PC<PointType>>>(nh, 10);   
+    shared_ptr<DataProxy<PC<PointType>>> ldp = std::make_shared<LidarDataProxy<PC<PointType>>>(nh, 10);   
 
-    frontend::LidarOdometry<PointType> lo(ldp, ftd, bkd);
+    ftd->initLO<PointType>(ldp, bkd);
 
     ros::spin();
 

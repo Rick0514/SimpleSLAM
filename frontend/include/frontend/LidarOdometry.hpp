@@ -25,13 +25,8 @@ class LidarOdometry : public OdometryBase
 
 public:
     using DataProxyPtr = std::shared_ptr<DataProxy<PC<PointType>, UseBag>>;
-    using ConstDataProxyPtr = const std::shared_ptr<DataProxy<PC<PointType>, UseBag>>;
-
     using FrontendPtr = std::shared_ptr<Frontend>;
-    using ConstFrontendPtr = const std::shared_ptr<Frontend>;
-
     using BackendPtr = std::shared_ptr<Backend<PointType>>;
-    using ConstBackendPtr = const std::shared_ptr<Backend<PointType>>;
 
 private:
 
@@ -42,7 +37,7 @@ private:
     std::unique_ptr<PCR::PointCloudRegister<PointType>> mPcr; 
 
 public:
-    explicit LidarOdometry(ConstDataProxyPtr& dp, ConstFrontendPtr& ft, ConstBackendPtr& bk);
+    explicit LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, BackendPtr& bk);
 
     virtual void generateOdom() override;
 

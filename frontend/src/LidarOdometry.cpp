@@ -17,7 +17,7 @@ namespace frontend
 {
 
 template <typename PointType, bool UseBag>
-LidarOdometry<PointType, UseBag>::LidarOdometry(ConstDataProxyPtr& dp, ConstFrontendPtr& ft, ConstBackendPtr& bk)
+LidarOdometry<PointType, UseBag>::LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, BackendPtr& bk)
 : mDataProxyPtr(dp), mFrontendPtr(ft), mBackendPtr(bk)
 {
     // xyz for temp
