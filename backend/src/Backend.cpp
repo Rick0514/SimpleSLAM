@@ -38,5 +38,5 @@ const typename pcl::PointCloud<PointType>::Ptr& Backend<PointType>::getSubMap() 
     return mSubMap;
 }
 
-PCRTemplateInstantiateExplicitly(Backend);
+PCTemplateInstantiateExplicitly(Backend);
 }

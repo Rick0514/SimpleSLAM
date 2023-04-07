@@ -29,6 +29,6 @@ bool NdtRegister<PointType>::scan2Map(PC_cPtr& src, PC_cPtr& dst, Pose6d& res)
     return _ndt_omp->hasConverged();
 }
     
-PCRTemplateInstantiateExplicitly(NdtRegister)
+PCTemplateInstantiateExplicitly(NdtRegister)
 
 } // namespace PCR

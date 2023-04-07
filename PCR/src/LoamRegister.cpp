@@ -167,7 +167,7 @@ bool LoamRegister<PointType>::scan2Map(PC_cPtr& src, PC_cPtr& dst, Pose6d& res)
     return this->isConverge;
 }
 
-PCRTemplateInstantiateExplicitly(LoamRegister)
+PCTemplateInstantiateExplicitly(LoamRegister)
 
 } // namespace PCR
 

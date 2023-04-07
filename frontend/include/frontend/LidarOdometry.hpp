@@ -39,7 +39,6 @@ private:
     FrontendPtr mFrontendPtr;
     BackendPtr mBackendPtr;
 
-    // pointtype xyz for temp
     std::unique_ptr<PCR::PointCloudRegister<PointType>> mPcr; 
 
 public:
@@ -47,7 +46,7 @@ public:
 
     virtual void generateOdom() override;
 
-    ~LidarOdometry(){};
+    ~LidarOdometry();
 };
     
 } // namespace frontend

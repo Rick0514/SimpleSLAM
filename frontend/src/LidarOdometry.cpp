@@ -8,6 +8,9 @@
 
 #include <pcl/kdtree/kdtree_flann.h>
 
+#include <macro/templates.hpp>
+#include <utils/Shared_ptr.hpp>
+
 using namespace PCLTypes;
 
 namespace frontend
@@ -18,7 +21,7 @@ LidarOdometry<PointType, UseBag>::LidarOdometry(ConstDataProxyPtr& dp, ConstFron
 : mDataProxyPtr(dp), mFrontendPtr(ft), mBackendPtr(bk)
 {
     // xyz for temp
-    mPcr.reset(new PCR::NdtRegister<Pxyz>());
+    mPcr.reset(new PCR::NdtRegister<PointType>());
 }
 
 template <typename PointType, bool UseBag>
@@ -32,7 +35,9 @@ void LidarOdometry<PointType, UseBag>::generateOdom()
 
     // make init pose
     // 1. get latest scan
-    auto scan = scans->consume_front();
+    auto stdscan = scans->consume_front();
+    auto scan = utils::make_shared_ptr(stdscan);    // convert std::shared_ptr to boost::shared_ptr
+
     if(scan){
         // 2. localodom * odom2map
         auto odom2map = mFrontendPtr->get();
@@ -67,7 +72,7 @@ void LidarOdometry<PointType, UseBag>::generateOdom()
         mPcr->scan2Map(scan, submap, init_pose);
 
         auto global_odom = std::make_shared<Odometry>(stamp, init_pose);
-        mFrontendPtr->pushGlobalOdometry(std::move(global_odom));
+        mFrontendPtr->getGlobal()->push_back<UseBag>(std::move(global_odom));
 
         // push the refined odom to deque  
     }else{
@@ -76,6 +81,12 @@ void LidarOdometry<PointType, UseBag>::generateOdom()
     }
 
 }
-   
+
+template <typename PointType, bool UseBag>
+LidarOdometry<PointType, UseBag>::~LidarOdometry(){}
+
+PCTemplateInstantiateExplicitly(LidarOdometry)
+PCTemplateInstantiateExplicitlyWithFixedType(LidarOdometry, true)
+
 } // namespace frontend
 

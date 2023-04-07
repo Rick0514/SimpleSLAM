@@ -30,16 +30,10 @@ public:
 
     Pose6d get() const { return mOdom2Map; }
 
-    template<typename Elem>
-    void pushLocalOdometry(Elem&&);
-
-    template<typename Elem>
-    void pushGlobalOdometry(Elem&&);
-    
     Odometry::Ptr getClosestLocalOdom(double stamp) const;
 
-    ConstOdomDequePtrRef getLocal() const { return mLocalOdometry; }
-    ConstOdomDequePtrRef getGlobal() const { return mGlobalOdometry; } 
+    OdomDequePtr& getLocal() { return mLocalOdometry; }
+    OdomDequePtr& getGlobal() { return mGlobalOdometry; } 
 
     // q should be pointer to iterable container of shared ptr to Odometry
     template<typename T>
@@ -48,7 +42,24 @@ public:
     ~Frontend(){};
 };
 
-    
+template<typename T>
+int Frontend::getClosestItem(T&& q, double stamp)
+{
+    if(q->empty())  return -1;
+    int idx = 0;
+    double m = std::abs(stamp - q->front()->stamp);
+
+    for(int i=1; i<q->size(); i++){
+        double tmp = std::abs(q->at(i)->stamp - stamp);
+        if(tmp < m){
+            m = tmp;
+            idx = i; 
+        }
+    }
+
+    return idx;
+}
+
 } // namespace frontend
 
 

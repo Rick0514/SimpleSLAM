@@ -7,18 +7,6 @@ Frontend::Frontend()
 
 }
 
-template<typename Elem>
-void Frontend::pushLocalOdometry(Elem&& elem)
-{
-    mLocalOdometry->push_back(std::forward<Elem>(elem));
-}
-
-template<typename Elem>
-void Frontend::pushGlobalOdometry(Elem&& elem)
-{
-    mGlobalOdometry->push_back(std::forward<Elem>(elem));
-}
-
 Odometry::Ptr Frontend::getClosestLocalOdom(double stamp) const
 {
     // 1.  stamp > back()
@@ -34,24 +22,5 @@ Odometry::Ptr Frontend::getClosestLocalOdom(double stamp) const
 
     // 2. stamp <= back()
 }
-
-template<typename T>
-static int getClosestItem(T&& q, double stamp)
-{
-    if(q->empty())  return -1;
-    int idx = 0;
-    double m = std::abs(stamp - q->front()->stamp);
-
-    for(int i=1; i<q->size(); i++){
-        double tmp = std::abs(q->at(i)->stamp - stamp);
-        if(tmp < m){
-            m = tmp;
-            idx = i; 
-        }
-    }
-
-    return idx;
-}
-
 
 }

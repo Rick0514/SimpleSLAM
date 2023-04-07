@@ -13,12 +13,12 @@ add_definitions(-DDATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data")
 
 add_executable(align align.cpp)
 target_include_directories(align PUBLIC
-    ${PCR_SOURCE_DIR}/PCR/include
+    ${ROOT_DIR}/PCR/include
     ${PCL_INCLUDE_DIRS}
 )
 
 target_link_libraries(align PUBLIC
-    pcr
+    PCR
     spdlog::spdlog
     ${PCL_LIBRARIES}
 )
@@ -33,7 +33,7 @@ add_executable(test_dataproxy dataproxy.cpp)
 target_include_directories(test_dataproxy PUBLIC
     ${EIGEN3_INCLUDE_DIRS}
     ${COMMON_HEADER}
-    ${PCR_SOURCE_DIR}/dataproxy/include
+    ${ROOT_DIR}/dataproxy/include
     ${catkin_INCLUDE_DIRS}
 )
 target_link_libraries(test_dataproxy
@@ -62,9 +62,9 @@ target_compile_definitions(testlog PRIVATE SPDLOG_ACTIVE_LEVEL=0)
 
 add_executable(loc loc.cpp)
 target_include_directories(loc PUBLIC
-    ${PCR_SOURCE_DIR}/dataproxy/include
-    ${PCR_SOURCE_DIR}/frontend/include
-    ${PCR_SOURCE_DIR}/backend/include
+    ${ROOT_DIR}/dataproxy/include
+    ${ROOT_DIR}/frontend/include
+    ${ROOT_DIR}/backend/include
 )
 target_link_libraries(loc
     dataproxy

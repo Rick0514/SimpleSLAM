@@ -4,7 +4,6 @@
 #include <PCR/PointCloudRegister.hpp>
 #include <fstream>
 
-
 #if defined(DEBUG_DIR)
 #define DEBUG(f, msg)   f << msg << std::endl;
 #else

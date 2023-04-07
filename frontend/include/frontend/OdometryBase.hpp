@@ -15,7 +15,7 @@ public:
 
     virtual void generateOdom() = 0;
 
-    ~OdometryBase();
+    virtual ~OdometryBase(){}
 };
     
 } // namespace frontend

@@ -33,6 +33,7 @@ public:
     }
     virtual bool scan2Map(PC_cPtr& src, PC_cPtr& dst, Pose6d& res) = 0;
 
+    virtual ~PointCloudRegister(){}
 };
 
 }
