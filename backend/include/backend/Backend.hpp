@@ -1,21 +1,22 @@
 #pragma once
 
-#include <types/PCLTypes.hpp>
 #include <utils/Logger.hpp>
+#include <types/PCLTypes.hpp>
 #include <pcl/kdtree/kdtree_flann.h>
 
 namespace backend
 {
 
-using namespace PCLTypes;
 using namespace utils;
+using namespace PCLTypes;
 
+template <typename PointType>
 class Backend
 {
 private:
 
-    PCxyz::Ptr mSubMap;
-    pcl::KdTreeFLANN<Pxyz>::Ptr mSubMapKdtree;
+    typename pcl::PointCloud<PointType>::Ptr mSubMap;
+    typename pcl::KdTreeFLANN<PointType>::Ptr mSubMapKdtree;
 
     std::shared_ptr<logger::Logger> mLg;
 
@@ -24,8 +25,8 @@ public:
     // pcd mode
     Backend(std::string pcd_file);
 
-    const pcl::KdTreeFLANN<Pxyz>::Ptr& getSubMapKdtree() const;
-    const PCxyz::Ptr& getSubMap() const;
+    const typename pcl::KdTreeFLANN<PointType>::Ptr& getSubMapKdtree() const;
+    const typename pcl::PointCloud<PointType>::Ptr& getSubMap() const;
     
     ~Backend(){};
 };

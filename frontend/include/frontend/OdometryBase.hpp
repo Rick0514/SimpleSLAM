@@ -1,28 +1,21 @@
 #pragma once
-#include <utils/SafeDeque.hpp>
-#include <types/EigenTypes.hpp>
-
 #include <memory>
+#include <utils/Logger.hpp>
 
 namespace frontend
 {
-
-static constexpr bool UseBag = false;
-
-using namespace EigenTypes;
 using namespace utils;
 
-template <bool UseBag>
 class OdometryBase
 {
 protected:
-
+    std::shared_ptr<logger::Logger> lg;
 public:
-    OdometryBase();
+    OdometryBase() { lg = logger::Logger::getInstance(); }
 
     virtual void generateOdom() = 0;
 
-    ~OdometryBase();
+    virtual ~OdometryBase(){}
 };
     
 } // namespace frontend

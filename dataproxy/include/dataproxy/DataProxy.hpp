@@ -3,14 +3,13 @@
 #include <memory>
 #include <types/EigenTypes.hpp>
 #include <utils/SafeDeque.hpp>
+#include <utils/Logger.hpp>
 
 using namespace EigenTypes;
 using namespace utils;
 
 namespace dataproxy
 {
-constexpr bool UseBag{false};
-
 struct Odometry
 {
     double stamp;
@@ -21,7 +20,7 @@ struct Odometry
     using Ptr = std::shared_ptr<Odometry>;
 };
 
-template <typename T>
+template <typename T, bool UseBag=false>
 class DataProxy
 {
 public:
@@ -31,13 +30,15 @@ public:
 
 protected:
     DataPtr mDataPtr;
+    std::shared_ptr<utils::logger::Logger> mLg;
 
 public:
     explicit DataProxy(int size){
         mDataPtr = std::make_shared<SafeDequeType>(size);
+        mLg = utils::logger::Logger::getInstance();
     }
     
-    const DataPtr get() const { return mDataPtr; }  
+    DataPtr get() const { return mDataPtr; }  
     
     virtual ~DataProxy() {};
 };

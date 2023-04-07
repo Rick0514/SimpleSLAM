@@ -2,22 +2,9 @@
 
 namespace frontend {
 
-
 Frontend::Frontend()
 {
 
-}
-
-template<typename Elem>
-void Frontend::pushLocalOdometry(Elem&& elem)
-{
-    mLocalOdometry->push_back(std::forward<Elem>(elem));
-}
-
-template<typename Elem>
-void Frontend::pushGlobalOdometry(Elem&& elem)
-{
-    mGlobalOdometry->push_back(std::forward<Elem>(elem));
 }
 
 Odometry::Ptr Frontend::getClosestLocalOdom(double stamp) const
@@ -34,7 +21,6 @@ Odometry::Ptr Frontend::getClosestLocalOdom(double stamp) const
     return Odometry::Ptr();
 
     // 2. stamp <= back()
-
 }
 
 }
