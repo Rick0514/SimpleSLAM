@@ -51,11 +51,21 @@ public:
     }
 };
 
+void test_lambda()
+{
+    utils::thread::ResidentThread rt([](){
+        logger::Logger::getInstance()->info("test lambda");
+        this_thread::sleep_for(1s);
+    });
+    this_thread::sleep_for(3s);
+}
+
 int main()
 {
 
     TestMemberFunc tfm;
     TEST_function();
-
+    test_lambda();
+    
     return 0;
 }
