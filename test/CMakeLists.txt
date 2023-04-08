@@ -71,3 +71,12 @@ target_link_libraries(loc
     frontend
     backend
 )
+
+add_executable(thread thread.cpp)
+target_include_directories(thread PUBLIC
+    ${COMMON_HEADER}
+)
+target_link_libraries(thread
+    pthread
+    spdlog
+)

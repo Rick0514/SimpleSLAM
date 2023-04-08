@@ -4,33 +4,37 @@
 #include <atomic>
 #include <mutex>
 #include <condition_variable>
+#include <utils/NonCopyable.hpp>
 
 namespace utils {
 
 namespace thread {
 
-class ResidentThread
+class ResidentThread : public noncopyable::NonCopyable
 {
 private:
 
-    std::atomic_bool running{true};
-    std::atomic_bool stop{false};
+    std::atomic_bool running;
+    std::atomic_bool stop;
     std::thread thd;
 
     mutable std::mutex lk;
     std::condition_variable cv;
+    std::function<void()> func;
 
 public:
 
+    ResidentThread() noexcept = default;
+
     template<typename Func, typename... Args>    
-    explicit ResidentThread(Func&& f, Args&&... args)
+    explicit ResidentThread(Func&& f, Args&&... args) : running(true), stop(false)
     {
-        auto fb = std::bind(std::forward<Func>(f), std::forward<Args>(args)...);
+        func = std::bind(std::forward<Func>(f), std::forward<Args>(args)...);
         thd = std::move(std::thread([&](){
             while(running.load()){
                 std::unique_lock<std::mutex> lock(lk);
-                cv.wait(lk, [&](){ return !stop; });
-                fb();
+                cv.wait(lock, [&](){ return !stop; });
+                func();
             }
         }));
     }
@@ -44,17 +48,18 @@ public:
         cv.notify_all();
     }
 
-    void Close(){
-        cv.notify_all();
-        running.store(true);
+    bool IsActive() {
+        return thd.get_id() != std::thread::id();
     }
-    
+
     ~ResidentThread()
     {
+        running.store(false);
+        Resume();
         if(thd.joinable())   thd.join();
     }
 
-}
+};
 
 }
 }
