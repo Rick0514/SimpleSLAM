@@ -6,13 +6,13 @@
 #include <utils/SafeDeque.hpp>
 
 #include <dataproxy/DataProxy.hpp>
+#include <frontend/OdometryBase.hpp>
+#include <frontend/LidarOdometry.hpp>
 
 namespace backend { template<typename PointType> class Backend; }
 
 namespace frontend
 {
-// forward declaration
-class OdometryBase;
 
 using namespace backend;
 using namespace dataproxy;
@@ -60,15 +60,16 @@ public:
 
     // q should be pointer to iterable container of shared ptr to Odometry
     template<typename T>
-    static int getClosestItem(T&& q, double stamp);
+    static int getClosestItem(const T& q, double stamp);
 
     void LOHandler();
 
     ~Frontend();
+    
 };
 
 template<typename T>
-int Frontend::getClosestItem(T&& q, double stamp)
+int Frontend::getClosestItem(const T& q, double stamp)
 {
     if(q->empty())  return -1;
     int idx = 0;
@@ -85,6 +86,14 @@ int Frontend::getClosestItem(T&& q, double stamp)
     return idx;
 }
 
-} // namespace frontend
+template<typename PointType, bool UseBag>
+void Frontend::initLO(DataProxyPtr<PointType, UseBag>& dp, BackendPtr<PointType>& ed)
+{
+    // make "this" lvalue or can't find matching constructor
+    auto ft = shared_from_this();
+    mLO = std::make_unique<LidarOdometry<PointType, UseBag>>(dp, ft, ed);
+    mLOthdPtr = std::make_unique<std::thread>(&Frontend::LOHandler, this);
+}
 
+} // namespace frontend
 

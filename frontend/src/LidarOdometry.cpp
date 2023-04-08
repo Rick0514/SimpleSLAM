@@ -35,8 +35,9 @@ void LidarOdometry<PointType, UseBag>::generateOdom()
 
     // make init pose
     // 1. get latest scan
-    auto stdscan = scans->consume_front();
-    auto scan = utils::make_shared_ptr(stdscan);    // convert std::shared_ptr to boost::shared_ptr
+    // auto stdscan = scans->consume_front();
+    // auto scan = utils::make_shared_ptr(stdscan);    // convert std::shared_ptr to boost::shared_ptr
+    auto scan = scans->consume_front();
 
     if(scan){
         // 2. localodom * odom2map
