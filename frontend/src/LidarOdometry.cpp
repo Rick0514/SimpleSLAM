@@ -51,7 +51,7 @@ void LidarOdometry<PointType, UseBag>::generateOdom()
         
         // find closest localodom
         // think how to get the stamp
-        double stamp;
+        double stamp = (double)scan->header.stamp / 1e6;
         Pose6d init_pose;
         init_pose.setIdentity();
 
@@ -65,6 +65,7 @@ void LidarOdometry<PointType, UseBag>::generateOdom()
             auto gbq = gb->getDequeInThreadUnsafeWay();
 
             auto cidx = Frontend::getClosestItem(gbq, stamp);
+            // here maybe some bug when dt is larger than 0.1
             if(cidx > 0 && std::abs(gbq->at(cidx)->stamp - stamp) < 0.1){
                 auto last_1 = gbq->at(cidx)->odom;
                 auto last_2 = gbq->at(cidx-1)->odom;
