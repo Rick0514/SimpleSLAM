@@ -8,6 +8,7 @@
 #include <backend/Backend.hpp>
 #include <frontend/LidarOdometry.hpp>
 #include <dataproxy/LidarDataProxy.hpp>
+#include <dataproxy/RelocDataProxy.hpp>
 
 using namespace std;
 using namespace PCLTypes;
@@ -24,8 +25,10 @@ int main(int argc, char* argv[])
     ros::init(argc, argv, "loc");
     ros::NodeHandle nh;
     shared_ptr<DataProxy<PC<PointType>>> ldp = std::make_shared<LidarDataProxy<PC<PointType>>>(nh, 10);   
+    RelocDataProxy rdp(nh);
 
     ftd->initLO<PointType>(ldp, bkd);
+    ftd->initReloc<PointType>(rdp);
 
     ros::spin();
 

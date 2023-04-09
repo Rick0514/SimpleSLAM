@@ -9,6 +9,8 @@
 #include <utils/Logger.hpp>
 
 #include <dataproxy/DataProxy.hpp>
+#include <dataproxy/RelocDataProxy.hpp>
+
 #include <frontend/OdometryBase.hpp>
 #include <frontend/LidarOdometry.hpp>
 
@@ -51,6 +53,9 @@ public:
 
     template<typename PointType, bool UseBag=false>
     void initLO(LODataProxyPtr<PointType, UseBag>&, BackendPtr<PointType>&);
+    
+    template<typename PointType, bool UseBag=false>
+    void initReloc(RelocDataProxy&);
 
     void publish() const;
 
@@ -96,6 +101,13 @@ void Frontend::initLO(LODataProxyPtr<PointType, UseBag>& dp, BackendPtr<PointTyp
     mLOthdPtr = std::make_unique<thread::ResidentThread>([&](){
         mLO->generateOdom();
     });
+}
+
+template<typename PointType, bool UseBag>
+void Frontend::initReloc(RelocDataProxy &rdp)
+{
+    auto loptr = static_cast<LidarOdometry<PointType, UseBag>*>(mLO.get());
+    rdp.registerFunc(std::bind(&LidarOdometry<PointType, UseBag>::setRelocFlag, loptr, std::placeholders::_1));
 }
 
 } // namespace frontend

@@ -1,7 +1,9 @@
 #pragma once
+#include <atomic>
 #include <frontend/OdometryBase.hpp>
 
 #include <types/PCLTypes.hpp>
+#include <types/EigenTypes.hpp>
 
 // ------------ forward declaration ------------
 namespace frontend { class Frontend; }
@@ -36,7 +38,13 @@ private:
 
     std::unique_ptr<PCR::PointCloudRegister<PointType>> mPcr; 
 
+    std::atomic_bool reloc;
+    EigenTypes::Pose6d mRelocPose;
+
 public:
+
+    void setRelocFlag(EigenTypes::Pose6d& p);
+
     explicit LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, BackendPtr& bk);
 
     virtual void generateOdom() override;

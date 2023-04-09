@@ -52,6 +52,8 @@ public:
     Tsptr consume_front();
     Tsptr consume_back();
 
+    void clear() noexcept;
+
     void abort() noexcept;
 
     // provide a more fine-grain and thread-safe api to operate deque
@@ -178,6 +180,15 @@ void SafeDeque<T>::abort() noexcept
     running.store(false);
     mCv.notify_all();
 }
+
+template <typename T>
+void SafeDeque<T>::clear() noexcept
+{
+    std::lock_guard<std::mutex> lk(mLock);
+    mDq.clear();
+    mCv.notify_all();
+}
+
 
 template <typename T>
 std::mutex* SafeDeque<T>::getLock() noexcept

@@ -18,10 +18,18 @@ namespace frontend
 
 template <typename PointType, bool UseBag>
 LidarOdometry<PointType, UseBag>::LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, BackendPtr& bk)
-: mDataProxyPtr(dp), mFrontendPtr(ft), mBackendPtr(bk)
+: mDataProxyPtr(dp), mFrontendPtr(ft), mBackendPtr(bk), reloc(false)
 {
     // xyz for temp
     mPcr.reset(new PCR::NdtRegister<PointType>());
+}
+
+template <typename PointType, bool UseBag>
+void LidarOdometry<PointType, UseBag>::setRelocFlag(EigenTypes::Pose6d& p)
+{
+    // atomic bool ensure compiler not to reorder exec!! so when reloc is set, mRelocPose is set already
+    mRelocPose = p;
+    reloc.store(true);
 }
 
 template <typename PointType, bool UseBag>
@@ -48,15 +56,20 @@ void LidarOdometry<PointType, UseBag>::generateOdom()
     if(scan){
         // 2. localodom * odom2map
         auto odom2map = mFrontendPtr->get();
-        
         // find closest localodom
         // think how to get the stamp
         double stamp = (double)scan->header.stamp / 1e6;
         Pose6d init_pose;
         init_pose.setIdentity();
-
         auto local_odom = mFrontendPtr->getClosestLocalOdom(stamp);
-        if(local_odom){
+
+        // add if reloc
+        if(reloc.load()){
+            reloc.store(false);
+            init_pose = mRelocPose;
+            // clear global odom
+            mFrontendPtr->getGlobal()->clear();  
+        }else if(local_odom){
             init_pose.matrix() = local_odom->odom.matrix() * odom2map.matrix();
         }else{
             // if not get, use average velocity model
@@ -79,10 +92,13 @@ void LidarOdometry<PointType, UseBag>::generateOdom()
         // use pcr to get refined pose
         if(!mPcr->scan2Map(scan, submap, init_pose))    lg->warn("scan2map not converge!!");   
 
+        // push the refined odom to dequez
         auto global_odom = std::make_shared<Odometry>(stamp, init_pose);
         mFrontendPtr->getGlobal()->push_back<UseBag>(std::move(global_odom));
 
-        // push the refined odom to deque  
+        // update odom2map
+        if(local_odom)  odom2map = init_pose * local_odom->odom.inverse();
+
     }else{
         lg->warn("scan deque is empty for now, please check!!");
         std::this_thread::sleep_for(std::chrono::milliseconds(100));

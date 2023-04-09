@@ -1,5 +1,4 @@
 #include <frontend/Frontend.hpp>
-#include <memory>
 
 namespace frontend {
 
