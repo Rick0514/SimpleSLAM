@@ -1,6 +1,7 @@
 #include <string>
 
 #include <ros/ros.h>
+#include <pcl_conversions/pcl_conversions.h>
 
 #include <types/PCLTypes.hpp>
 
@@ -24,6 +25,14 @@ int main(int argc, char* argv[])
 
     ros::init(argc, argv, "loc");
     ros::NodeHandle nh;
+
+    // show global pc
+    ros::Publisher gpc_pub = nh.advertise<sensor_msgs::PointCloud2>("/global_map", 1, true);
+    sensor_msgs::PointCloud2 rospc;
+    pcl::toROSMsg(*bkd->getSubMap(), rospc);
+    rospc.header.frame_id = "map";
+    gpc_pub.publish(rospc);
+
     shared_ptr<DataProxy<PC<PointType>>> ldp = std::make_shared<LidarDataProxy<PC<PointType>>>(nh, 10);   
     RelocDataProxy rdp(nh);
 

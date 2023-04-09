@@ -20,6 +20,11 @@ void RelocDataProxy::subscriber(const geometry_msgs::PoseWithCovarianceStampedCo
     ep.setIdentity();
     ep.translate(V3d(p.x, p.y, p.z));
     ep.rotate(Qd(q.w, q.x, q.y, q.z));
+
+    std::stringstream ss;
+    ss << "get init pose:\n" << ep.matrix();
+    mLg->info("{}", ss.str());
+    
     mRelocFunc(ep);
 }
 

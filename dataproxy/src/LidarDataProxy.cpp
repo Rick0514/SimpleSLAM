@@ -22,7 +22,7 @@ void LidarDataProxy<PCType, UseBag>::subscribe(const sensor_msgs::PointCloud2Con
     pcl::fromROSMsg(*msg, *cloud);
     pcl_conversions::toPCL(msg->header.stamp, cloud->header.stamp);
     pcp::removeNaNFromPointCloud(*cloud);
-    pcp::voxelDownSample<typename PCType::PointType>(cloud, 0.1f);
+    pcp::voxelDownSample<typename PCType::PointType>(cloud, 0.5f);
     this->mDataPtr->template push_back<UseBag>(std::move(cloud));
 }
 
