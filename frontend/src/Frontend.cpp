@@ -1,15 +1,12 @@
 #include <frontend/Frontend.hpp>
+#include <memory>
 
 namespace frontend {
 
-Frontend::Frontend() : mLORunning(true) {}
-
-void Frontend::LOHandler()
-{
-    while(mLORunning.load())
-    {
-        mLO->generateOdom();
-    }
+Frontend::Frontend(int local_size, int global_size){
+    mLocalOdometry = std::make_shared<OdomDeque>(local_size);
+    mGlobalOdometry = std::make_shared<OdomDeque>(global_size);
+    mOdom2Map.setIdentity();
 }
 
 Odometry::Ptr Frontend::getClosestLocalOdom(double stamp) const
@@ -28,9 +25,9 @@ Odometry::Ptr Frontend::getClosestLocalOdom(double stamp) const
     // 2. stamp <= back()
 }
 
-Frontend::~Frontend()
-{
-
+Frontend::~Frontend() {
+    mLocalOdometry->abort();
+    mGlobalOdometry->abort();    
 }
 
 }

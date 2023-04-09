@@ -37,7 +37,13 @@ void LidarOdometry<PointType, UseBag>::generateOdom()
     // 1. get latest scan
     // auto stdscan = scans->consume_front();
     // auto scan = utils::make_shared_ptr(stdscan);    // convert std::shared_ptr to boost::shared_ptr
-    auto scan = scans->consume_front();
+    typename PC<PointType>::Ptr scan;
+    if constexpr (UseBag){
+        scan = scans->consume_front();
+    }else{
+        // for now, real-time mode use newest scan
+        scan = scans->back();
+    }
 
     if(scan){
         // 2. localodom * odom2map
@@ -70,7 +76,7 @@ void LidarOdometry<PointType, UseBag>::generateOdom()
         }
 
         // use pcr to get refined pose
-        mPcr->scan2Map(scan, submap, init_pose);
+        if(!mPcr->scan2Map(scan, submap, init_pose))    lg->warn("scan2map not converge!!");   
 
         auto global_odom = std::make_shared<Odometry>(stamp, init_pose);
         mFrontendPtr->getGlobal()->push_back<UseBag>(std::move(global_odom));

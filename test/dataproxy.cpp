@@ -1,8 +1,8 @@
-#include "ros/init.h"
-#include "types/PCLTypes.hpp"
 #include <atomic>
 #include <chrono>
 #include <memory>
+#include <thread>
+
 #include <ros/ros.h>
 #include <rosbag/bag.h>
 #include <rosbag/view.h>
@@ -11,14 +11,13 @@
 #include <dataproxy/EkfOdomProxy.hpp>
 #include <dataproxy/LidarDataProxy.hpp>
 
-#include <thread>
 #include <utils/Logger.hpp>
 
 using namespace dataproxy;
 using namespace utils;
 using namespace std;
 
-using PointType = PCxyz;
+using PCType = PCxyz;
 static constexpr bool UseBag = true;
 
 class Test
@@ -28,12 +27,12 @@ protected:
     thread thd;
 public:
 
-    Test(LidarDataProxy<PointType, UseBag>& ldp)
+    Test(LidarDataProxy<PCType, UseBag>& ldp)
     {
         thd = std::move(thread(&Test::test_blocking, this, std::ref(ldp)));
     }
 
-    void test_blocking(LidarDataProxy<PointType, UseBag>& ldp)
+    void test_blocking(LidarDataProxy<PCType, UseBag>& ldp)
     {
         auto lg = logger::Logger::getInstance();
         lg->info("test blocking pc dataproxy!!");
@@ -68,9 +67,9 @@ public:
     atomic_bool running{true};
     shared_ptr<logger::Logger> lg;
     unique_ptr<thread> thd;
-    DataProxy<PointType, UseBag>::DataPtr data;
+    DataProxy<PCType, UseBag>::DataPtr data;
 
-    Consumer(const DataProxy<PointType, UseBag>::DataPtr& d) : data(d){
+    Consumer(const DataProxy<PCType, UseBag>::DataPtr& d) : data(d){
         lg = logger::Logger::getInstance();
         thd = make_unique<thread>(&Consumer::run, this);
     }
@@ -100,7 +99,7 @@ int main(int argc, char *argv[])
     if(nh.ok()){
         int q_size = 10;
         // EkfOdomProxy eop(nh, q_size);
-        LidarDataProxy<PointType, UseBag> ldp(nh, q_size);
+        LidarDataProxy<PCType, UseBag> ldp(nh, q_size);
         Test t(ldp);
         Consumer c(ldp.get());
         ros::spin();

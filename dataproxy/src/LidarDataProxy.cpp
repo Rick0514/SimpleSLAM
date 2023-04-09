@@ -1,8 +1,8 @@
+#include "types/PCLTypes.hpp"
 #include <dataproxy/LidarDataProxy.hpp>
 
-#include <pcl/point_cloud.h>
-#include <pcl/filters/filter.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <pcp/pcp.hpp>
 
 namespace dataproxy
 {
@@ -20,8 +20,8 @@ void LidarDataProxy<PCType, UseBag>::subscribe(const sensor_msgs::PointCloud2Con
     // preprocess
     auto cloud = std::make_shared<PCType>();
     pcl::fromROSMsg(*msg, *cloud);
-    std::vector<int> indices;
-    pcl::removeNaNFromPointCloud(*cloud, *cloud, indices);
+    pcp::removeNaNFromPointCloud(*cloud);
+    pcp::voxelDownSample<typename PCType::PointType>(cloud, 0.1f);
     this->mDataPtr->template push_back<UseBag>(std::move(cloud));
 }
 

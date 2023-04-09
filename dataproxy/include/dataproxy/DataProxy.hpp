@@ -33,6 +33,7 @@ protected:
     std::shared_ptr<utils::logger::Logger> mLg;
 
 public:
+    DataProxy() = delete;
     explicit DataProxy(int size){
         mDataPtr = std::make_shared<SafeDequeType>(size);
         mLg = utils::logger::Logger::getInstance();
@@ -40,7 +41,7 @@ public:
     
     DataPtr get() const { return mDataPtr; }  
     
-    virtual ~DataProxy() {};
+    virtual ~DataProxy() { mDataPtr->abort(); };
 };
     
 } // namespace dataproxy

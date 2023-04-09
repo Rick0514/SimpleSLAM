@@ -13,12 +13,13 @@ using namespace std;
 using namespace PCLTypes;
 using namespace dataproxy;
 using PointType = Pxyzi;
+using PCType = PC<PointType>;
 
 int main(int argc, char* argv[])
 {
-    string pcd_file = "/home/hgy/.robot/data/maps/lvisam/lvisam.pcd";  
+    string pcd_file = "/home/gy/.robot/data/maps/hqc/hqc.pcd";  
     auto bkd = std::make_shared<backend::Backend<PointType>>(pcd_file);
-    auto ftd = std::make_shared<frontend::Frontend>();
+    auto ftd = std::make_shared<frontend::Frontend>(100, 10);
 
     ros::init(argc, argv, "loc");
     ros::NodeHandle nh;

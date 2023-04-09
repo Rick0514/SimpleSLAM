@@ -18,7 +18,8 @@ private:
 
 public:
 
-    explicit LidarDataProxy(ros::NodeHandle& nh, int size);
+    LidarDataProxy() = delete;
+    LidarDataProxy(ros::NodeHandle& nh, int size);
 
     void subscribe(const sensor_msgs::PointCloud2ConstPtr&);
 

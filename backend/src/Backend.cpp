@@ -2,6 +2,7 @@
 
 #include <macro/templates.hpp>
 #include <pcl/io/pcd_io.h>
+#include <pcp/pcp.hpp>
 
 namespace backend
 {
@@ -24,6 +25,9 @@ Backend<PointType>::Backend(std::string pcd_file)
     }
 
     mLg->info("load map success!!");
+
+    // downsample global pc
+    pcp::voxelDownSample<PointType>(mSubMap, 0.1);
 }
 
 template<typename PointType>

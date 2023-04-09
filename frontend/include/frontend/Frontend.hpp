@@ -1,9 +1,12 @@
 #pragma once
 
+#include <memory>
 #include <types/EigenTypes.hpp>
 #include <types/PCLTypes.hpp>
 
 #include <utils/SafeDeque.hpp>
+#include <utils/Thread.hpp>
+#include <utils/Logger.hpp>
 
 #include <dataproxy/DataProxy.hpp>
 #include <frontend/OdometryBase.hpp>
@@ -22,32 +25,32 @@ using namespace PCLTypes;
 using namespace utils;
 
 template<typename PointType, bool UseBag=false>
-using DataProxyPtr = std::shared_ptr<DataProxy<PC<PointType>, UseBag>>;
+using LODataProxyPtr = typename LidarOdometry<PointType, UseBag>::DataProxyPtr;
 
 template<typename PointType>
 using BackendPtr = std::shared_ptr<Backend<PointType>>;
 
-class Frontend : std::enable_shared_from_this<Frontend>
+class Frontend : public std::enable_shared_from_this<Frontend>
 {
 protected:
 
-    using OdomDequePtr = std::shared_ptr<concurrency::SafeDeque<Odometry>>;
+    using OdomDeque = concurrency::SafeDeque<Odometry>;
+    using OdomDequePtr = std::shared_ptr<OdomDeque>;
 
     Pose6d mOdom2Map;
 
-    std::shared_ptr<concurrency::SafeDeque<Odometry>> mLocalOdometry;
-    std::shared_ptr<concurrency::SafeDeque<Odometry>> mGlobalOdometry;
+    OdomDequePtr mLocalOdometry;
+    OdomDequePtr mGlobalOdometry;
 
     std::unique_ptr<OdometryBase> mLO;
-    std::unique_ptr<std::thread> mLOthdPtr;
-
-    std::atomic_bool mLORunning;
+    std::unique_ptr<thread::ResidentThread> mLOthdPtr;
 
 public:
-    Frontend();
+    Frontend() = delete;
+    Frontend(int local_size, int global_size);
 
     template<typename PointType, bool UseBag=false>
-    void initLO(DataProxyPtr<PointType, UseBag>&, BackendPtr<PointType>&);
+    void initLO(LODataProxyPtr<PointType, UseBag>&, BackendPtr<PointType>&);
 
     void publish() const;
 
@@ -56,13 +59,11 @@ public:
     Odometry::Ptr getClosestLocalOdom(double stamp) const;
 
     OdomDequePtr& getLocal() { return mLocalOdometry; }
-    OdomDequePtr& getGlobal() { return mGlobalOdometry; } 
+    OdomDequePtr& getGlobal() { return mGlobalOdometry; }
 
     // q should be pointer to iterable container of shared ptr to Odometry
     template<typename T>
     static int getClosestItem(const T& q, double stamp);
-
-    void LOHandler();
 
     ~Frontend();
     
@@ -87,12 +88,14 @@ int Frontend::getClosestItem(const T& q, double stamp)
 }
 
 template<typename PointType, bool UseBag>
-void Frontend::initLO(DataProxyPtr<PointType, UseBag>& dp, BackendPtr<PointType>& ed)
+void Frontend::initLO(LODataProxyPtr<PointType, UseBag>& dp, BackendPtr<PointType>& ed)
 {
     // make "this" lvalue or can't find matching constructor
-    auto ft = shared_from_this();
+    std::shared_ptr<Frontend> ft = shared_from_this();
     mLO = std::make_unique<LidarOdometry<PointType, UseBag>>(dp, ft, ed);
-    mLOthdPtr = std::make_unique<std::thread>(&Frontend::LOHandler, this);
+    mLOthdPtr = std::make_unique<thread::ResidentThread>([&](){
+        mLO->generateOdom();
+    });
 }
 
 } // namespace frontend
