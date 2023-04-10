@@ -5,8 +5,6 @@
 
 #include <utils/NonCopyable.hpp>
 
-#include <memory>
-
 namespace utils
 {
 
@@ -50,7 +48,10 @@ public:
     }
 
     template<typename ...ARGS>
-    void trace(ARGS ...args)    { SPDLOG_LOGGER_TRACE(_lg, args ...); }
+    void trace(ARGS ...args)    { _lg->trace(args ...); }
+
+    template<typename ...ARGS>
+    void debug(ARGS ...args)    { _lg->debug(args ...); }
 
     template<typename ...ARGS>
     void info(ARGS ...args)     { SPDLOG_LOGGER_INFO(_lg, args ...); }

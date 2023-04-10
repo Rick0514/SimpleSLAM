@@ -27,7 +27,7 @@ Backend<PointType>::Backend(std::string pcd_file)
     mLg->info("load map success!!");
 
     // downsample global pc
-    pcp::voxelDownSample<PointType>(mSubMap, 0.7f);
+    pcp::voxelDownSample<PointType>(mSubMap, 0.4f);
     mLg->info("submap size: {}", mSubMap->size());
 }
 

@@ -41,7 +41,7 @@ bool LoamRegister<PointType>::_extractPlaneMatrix(const PointType& pointInMap, P
     std::vector<float> pointSearchSqDis;
     mKdtree->nearestKSearch(pointInMap, mPlanePtsNum, pointSearchInd, pointSearchSqDis);
 
-    DEBUG(debug_file, fmt::format("nks: {}", pointSearchSqDis[mPlanePtsNum-1]));
+    // DEBUG(debug_file, fmt::format("nks: {}", pointSearchSqDis[mPlanePtsNum-1]));
     if(pointSearchSqDis[mPlanePtsNum-1] < mKdtreeMaxSearchDist)
     {
         for(int j=0; j<mPlanePtsNum; j++){
@@ -63,14 +63,19 @@ void LoamRegister<PointType>::_removeDegeneratePart(const M6d& JtJ, V6d& x){
         degenerateProjSet = true;
 
         V6d ev = JtJ.eigenvalues().real();
-        M6d JtJ_copy = JtJ;
-        for(int i=0; i<6; i++){
-            if(ev(i) < mDegenerateThresh){
-                isDegenerate = true;
-                JtJ_copy.row(i).setZero();
-            }
-        }
-        degenerateProj = JtJ.inverse() * JtJ;
+        
+        std::stringstream ss;
+        ss << "ev: " << ev.transpose();
+        DEBUG(debug_file, ss.str());
+
+        // M6d JtJ_copy = JtJ;
+        // for(int i=0; i<6; i++){
+        //     if(ev(i) < mDegenerateThresh){
+        //         isDegenerate = true;
+        //         JtJ_copy.row(i).setZero();
+        //     }
+        // }
+        // degenerateProj = JtJ.inverse() * JtJ;
     }
     
     if(isDegenerate)    x = degenerateProj * x;
@@ -113,7 +118,7 @@ bool LoamRegister<PointType>::scan2Map(PC_cPtr& src, PC_cPtr& dst, Pose6d& res)
                     float s = 1 - 0.9 * fabs(dist) / sqrt(sqrt(pointOri.x * pointOri.x
                             + pointOri.y * pointOri.y + pointOri.z * pointOri.z));
                     
-                    DEBUG(debug_file, fmt::format("weight: {}", s));
+                    // DEBUG(debug_file, fmt::format("weight: {}", s));
                     if (s > mPointValidThresh) {
                         // good point is selected!!
                         E_vec.emplace_back(_error(hx, p));
@@ -127,9 +132,9 @@ bool LoamRegister<PointType>::scan2Map(PC_cPtr& src, PC_cPtr& dst, Pose6d& res)
 
         // make J and E
         int n = J_vec.size();
-        spdlog::debug("optimize size: {}", n);
+        this->lg->debug("optimize size: {}", n);
         if(n < 6){
-            spdlog::error("not enough valid point({}) to optimize!", n);
+            this->lg->error("not enough valid point({}) to optimize!", n);
             break;
         }
 
@@ -149,15 +154,15 @@ bool LoamRegister<PointType>::scan2Map(PC_cPtr& src, PC_cPtr& dst, Pose6d& res)
         // check converge
         if(x.head<3>().norm() <= mPosConverge && x.tail<3>().norm() <= mRotConverge){
             this->isConverge = true;
-            spdlog::debug("converge at iter {}!", it);
+            this->lg->debug("converge at iter {}!", it);
             break;
         }
         
         std::stringstream ss;
-        ss << "optimize res: " << x.transpose();
+        ss << "optimize-" << it << " ==> res: " << x.transpose();
         DEBUG(debug_file, ss.str());
 
-        // _removeDegeneratePart(JtJ, x);
+        _removeDegeneratePart(JtJ, x);
         M4d Tse3;
         manifolds::exp(x, Tse3);
         

@@ -25,7 +25,7 @@ LidarOdometry<PointType, UseBag>::LidarOdometry(DataProxyPtr& dp, FrontendPtr& f
 {
     mRelocPose.setIdentity();
     // xyz for temp
-    mPcr.reset(new PCR::NdtRegister<PointType>());
+    mPcr.reset(new PCR::LoamRegister<PointType>());
 }
 
 template <typename PointType, bool UseBag>
@@ -109,12 +109,19 @@ void LidarOdometry<PointType, UseBag>::generateOdom()
 
         // use pcr to get refined pose
         common::time::tictoc tt;
-        if(!mPcr->scan2Map(scan, submap, init_pose))    lg->warn("scan2map not converge!!");   
+        Pose6d tmp_init_pose = init_pose;
+        if(!mPcr->scan2Map(scan, submap, init_pose)){
+            init_pose = tmp_init_pose;
+            lg->warn("scan2map not converge!!");   
+        }
         lg->info("scan2map cost: {:.3f}s", tt);
 
         // visualize
         auto ldp = static_cast<LidarDataProxy<PC<PointType>, UseBag>*>(mDataProxyPtr.get());
         ldp->setVisAligned(scan, init_pose);
+        std::stringstream ss;
+        ss << "pose: \n" << init_pose.matrix();
+        lg->info("{}", ss.str());
 
         // push the refined odom to dequez
         auto global_odom = std::make_shared<Odometry>(stamp, init_pose);

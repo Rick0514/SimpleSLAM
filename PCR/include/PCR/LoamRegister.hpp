@@ -35,7 +35,7 @@ private:
     const float mPosConverge{5e-3};
     const float mRotConverge{1e-3};
 
-    int iters{5};
+    int iters{8};
 
     bool isDegenerate;
     bool degenerateProjSet;
@@ -53,8 +53,9 @@ private:
         po->x = rot(0,0) * pi->x + rot(0,1) * pi->y + rot(0,2) * pi->z + t(0);
         po->y = rot(1,0) * pi->x + rot(1,1) * pi->y + rot(1,2) * pi->z + t(1);
         po->z = rot(2,0) * pi->x + rot(2,1) * pi->y + rot(2,2) * pi->z + t(2);
-        // po->intensity = pi->intensity;
-        DEBUG(debug_file, fmt::format("{} {} {}", po->x, po->y, po->z));
+        if constexpr (std::is_same_v<PointType, pcl::PointXYZI>){
+            po->intensity = pi->intensity;
+        }
     }
 
     template<unsigned int N>

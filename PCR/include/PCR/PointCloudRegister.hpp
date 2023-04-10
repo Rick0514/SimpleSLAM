@@ -5,8 +5,7 @@
 #include <types/EigenTypes.hpp>
 #include <macro/templates.hpp>
 
-#include <spdlog/spdlog.h>
-#include <spdlog/fmt/fmt.h>
+#include <utils/Logger.hpp>
 
 namespace PCR
 {
@@ -18,6 +17,7 @@ class PointCloudRegister
 
 protected:
     bool isConverge;
+    std::shared_ptr<utils::logger::Logger> lg;
 
 public:
     using Ptr = std::shared_ptr<PointCloudRegister<PointType>>;
@@ -27,9 +27,7 @@ public:
 
 public:
     PointCloudRegister(){
-#ifdef LOG_LEVEL
-        spdlog::set_level(static_cast<spdlog::level::level_enum>(LOG_LEVEL));
-#endif
+        lg = utils::logger::Logger::getInstance();
     }
     virtual bool scan2Map(PC_cPtr& src, PC_cPtr& dst, Pose6d& res) = 0;
 
