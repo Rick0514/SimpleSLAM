@@ -11,6 +11,8 @@
 #include <dataproxy/LidarDataProxy.hpp>
 #include <dataproxy/RelocDataProxy.hpp>
 
+#include <utils/Logger.hpp>
+
 using namespace std;
 using namespace PCLTypes;
 using namespace dataproxy;
@@ -19,7 +21,13 @@ using PCType = PC<PointType>;
 
 int main(int argc, char* argv[])
 {
-    string pcd_file = "/home/gy/.robot/data/maps/hqc/hqc.pcd";  
+    // set log first
+    auto lg = utils::logger::Logger::getInstance();
+#ifdef LOG_FILE
+    lg->setLogFile(LOG_FILE, spdlog::level::debug);
+#endif
+
+    string pcd_file = "/home/hgy/.robot/data/maps/hqc/hqc.pcd";  
     auto bkd = std::make_shared<backend::Backend<PointType>>(pcd_file);
     auto ftd = std::make_shared<frontend::Frontend>(100, 10);
 

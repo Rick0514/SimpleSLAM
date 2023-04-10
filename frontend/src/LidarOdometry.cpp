@@ -12,6 +12,7 @@
 
 #include <macro/templates.hpp>
 #include <utils/Shared_ptr.hpp>
+#include <time/tictoc.hpp>
 
 using namespace PCLTypes;
 
@@ -22,6 +23,7 @@ template <typename PointType, bool UseBag>
 LidarOdometry<PointType, UseBag>::LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, BackendPtr& bk)
 : mDataProxyPtr(dp), mFrontendPtr(ft), mBackendPtr(bk), reloc(false)
 {
+    mRelocPose.setIdentity();
     // xyz for temp
     mPcr.reset(new PCR::NdtRegister<PointType>());
 }
@@ -32,6 +34,9 @@ void LidarOdometry<PointType, UseBag>::setRelocFlag(EigenTypes::Pose6d& p)
     // atomic bool ensure compiler not to reorder exec!! so when reloc is set, mRelocPose is set already
     // but it is not safe for fast scenarios. if mRelocPose is call faster than generateOdom, generateOdom
     // will always get true flag, but mRelocPose is reading while be writing
+
+    // now use lock, safe now
+    std::lock_guard<std::mutex> lk(mRelocLock);
     mRelocPose = p;
     reloc.store(true);
 }
@@ -46,29 +51,16 @@ void LidarOdometry<PointType, UseBag>::generateOdom()
     const auto& submap = mBackendPtr->getSubMap();
 
     // make init pose
-    // 1. get latest scan
-    // auto stdscan = scans->consume_front();
-    // auto scan = utils::make_shared_ptr(stdscan);    // convert std::shared_ptr to boost::shared_ptr
+    // 1. get latest scan  
     typename PC<PointType>::Ptr scan;
-    if constexpr (UseBag){
 
-        #if PCL_VERSION_COMPARE(<=, 1, 10, 0)
-            auto stdscan = scans->consume_front();
-            scan = utils::make_shared_ptr(stdscan);
-        #else
-            scan = scans->consume_front();
-        #endif
-    }else{
-        // for now, real-time mode use newest scan
-
-        #if PCL_VERSION_COMPARE(<=, 1, 10, 0)   
-            auto stdscan = scans->back();
-            scan = utils::make_shared_ptr(stdscan);
-        #else
-            scan = scans->back();
-        #endif
-    }
-
+#if PCL_VERSION_COMPARE(<=, 1, 10, 0)
+    auto stdscan = scans->consume_front();
+    scan = utils::make_shared_ptr(stdscan); // convert std::shared_ptr to boost::shared_ptr
+#else
+    scan = scans->consume_front();
+#endif
+    
     if(scan){
         // 2. localodom * odom2map
         auto odom2map = mFrontendPtr->get();
@@ -76,13 +68,20 @@ void LidarOdometry<PointType, UseBag>::generateOdom()
         // think how to get the stamp
         double stamp = (double)scan->header.stamp / 1e6;
         Pose6d init_pose;
-        init_pose.setIdentity();
+
+        {
+            std::lock_guard<std::mutex> lk(mRelocLock);
+            init_pose = mRelocPose;
+        }
+
+        lg->info("get one scan, regist pc!");
         auto local_odom = mFrontendPtr->getClosestLocalOdom(stamp);
 
         // add if reloc
         if(reloc.load()){
             reloc.store(false);
             init_pose = mRelocPose;
+            lg->info("reloc-ing...");
             // clear global odom
             mFrontendPtr->getGlobal()->clear();  
         }else if(local_odom){
@@ -95,18 +94,23 @@ void LidarOdometry<PointType, UseBag>::generateOdom()
 
             auto cidx = Frontend::getClosestItem(gbq, stamp);
             // here maybe some bug when dt is larger than 0.1
-            if(cidx > 0 && std::abs(gbq->at(cidx)->stamp - stamp) < 0.1){
+            if(cidx <= 0){
+                lg->warn("global odom deque has not enough items to infer average velocity model!!");
+            }else{
+
+                if(std::abs(gbq->at(cidx)->stamp - stamp) > 0.15)
+                    lg->warn("closest odom is out-dated!!");
+                            
                 auto last_1 = gbq->at(cidx)->odom;
                 auto last_2 = gbq->at(cidx-1)->odom;
                 init_pose = last_1 * (last_2.inverse() * last_1);
-
-            }else{
-                lg->warn("global odom deque has not enough items to infer average velocity model!!");
             }
         }
 
         // use pcr to get refined pose
+        common::time::tictoc tt;
         if(!mPcr->scan2Map(scan, submap, init_pose))    lg->warn("scan2map not converge!!");   
+        lg->info("scan2map cost: {:.3f}s", tt);
 
         // visualize
         auto ldp = static_cast<LidarDataProxy<PC<PointType>, UseBag>*>(mDataProxyPtr.get());
@@ -114,7 +118,7 @@ void LidarOdometry<PointType, UseBag>::generateOdom()
 
         // push the refined odom to dequez
         auto global_odom = std::make_shared<Odometry>(stamp, init_pose);
-        mFrontendPtr->getGlobal()->push_back<UseBag>(std::move(global_odom));
+        mFrontendPtr->getGlobal()->push_back<UseBag>(global_odom);
 
         // update odom2map
         if(local_odom)  odom2map = init_pose * local_odom->odom.inverse();

@@ -39,6 +39,7 @@ private:
     std::unique_ptr<PCR::PointCloudRegister<PointType>> mPcr; 
 
     std::atomic_bool reloc;
+    std::mutex mRelocLock;
     EigenTypes::Pose6d mRelocPose;
 
 public:

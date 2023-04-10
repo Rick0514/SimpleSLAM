@@ -15,10 +15,11 @@ Odometry::Ptr Frontend::getClosestLocalOdom(double stamp) const
     // 1.2 
 
     // maybe 0.02 should be subtituded to local freq
-    if(stamp - mLocalOdometry->back()->stamp >= 0.02)
-    {
+    // if(stamp - mLocalOdometry->back()->stamp >= 0.02)
+    // {
 
-    } 
+    // } 
+
     return Odometry::Ptr();
 
     // 2. stamp <= back()

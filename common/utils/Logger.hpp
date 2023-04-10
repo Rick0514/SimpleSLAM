@@ -12,6 +12,7 @@ namespace utils
 
 namespace logger
 {
+using namespace spdlog;
 
 class Logger : public noncopyable::NonCopyable
 {
@@ -21,22 +22,27 @@ private:
 
     Logger()
     {
-#ifdef LOG_FILE
-        _lg = spdlog::basic_logger_mt("logger", LOG_FILE);
-#else
         _lg = spdlog::default_logger();
-#endif
-
-#ifdef SPDLOG_ACTIVE_LEVEL
-        _lg->set_level(static_cast<spdlog::level::level_enum>(SPDLOG_ACTIVE_LEVEL));
-#endif
-
         _lg->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [td %t] %^[%l] %v%$");
     }
 
 public:
 
     ~Logger() = default;
+
+    void setLogLevel(level::level_enum lvl)
+    {
+        if(!_lg) getInstance();
+        _lg->set_level(lvl);
+    }
+
+    void setLogFile(std::string fn, level::level_enum lvl=level::info)
+    {
+        _lg = spdlog::basic_logger_mt("logger", fn);
+        _lg->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [td %t] %^[%l] %v%$");
+        _lg->set_level(lvl);
+        _lg->flush_on(lvl);
+    }
 
     static std::shared_ptr<Logger> getInstance(){
         static auto lg = std::shared_ptr<Logger>(new Logger());

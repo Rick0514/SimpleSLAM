@@ -1,6 +1,7 @@
 #include <dataproxy/LidarDataProxy.hpp>
 
 #include <pcl/pcl_config.h>
+#include <pcl/common/transforms.h>
 #include <pcl_conversions/pcl_conversions.h>
 
 #include <pcp/pcp.hpp>
@@ -19,7 +20,6 @@ LidarDataProxy<PCType, UseBag>::LidarDataProxy(ros::NodeHandle& nh, int size) :
 
     mPubAligned = nh.advertise<sensor_msgs::PointCloud2>("/aligned", 1);
     mVisPCThd = std::make_unique<utils::trd::ResidentThread>(&LidarDataProxy<PCType, UseBag>::visPCHandler, this);
-
 }
 
 template <typename PCType, bool UseBag>
@@ -29,7 +29,7 @@ void LidarDataProxy<PCType, UseBag>::subscribe(const sensor_msgs::PointCloud2Con
     pcl::fromROSMsg(*msg, *cloud);
     pcl_conversions::toPCL(msg->header.stamp, cloud->header.stamp);
     pcp::removeNaNFromPointCloud(*cloud);
-    pcp::voxelDownSample<typename PCType::PointType>(cloud, 0.5f);
+    pcp::voxelDownSample<typename PCType::PointType>(cloud, 0.7f);
 #if PCL_VERSION_COMPARE(<=, 1, 10, 0)
     auto stdcloud = utils::make_shared_ptr(cloud);
     this->mDataPtr->template push_back<UseBag>(std::move(stdcloud));
@@ -47,8 +47,12 @@ void LidarDataProxy<PCType, UseBag>::visPCHandler()
     
     switch(mVisType){
         case VisType::Aligned: {
+            // trans
+            typename PCType::Ptr aligned(pcl::make_shared<PCType>());
+            pcl::transformPointCloud(*mAlignedKF.pc, *aligned, mAlignedKF.pose.matrix());
+            
             sensor_msgs::PointCloud2 rospc;
-            pcl::toROSMsg(*mAlignedKF.pc, rospc);
+            pcl::toROSMsg(*aligned, rospc);
             rospc.header.frame_id = "map";
             mPubAligned.publish(rospc);
             break;

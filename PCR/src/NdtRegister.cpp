@@ -24,8 +24,6 @@ bool NdtRegister<PointType>::scan2Map(PC_cPtr& src, PC_cPtr& dst, Pose6d& res)
     Eigen::Matrix4f mf = _ndt_omp->getFinalTransformation();
     res.matrix() = mf.cast<double>();
 
-    spdlog::debug("align fitness: {}", _ndt_omp->getFitnessScore());
-
     return _ndt_omp->hasConverged();
 }
     
