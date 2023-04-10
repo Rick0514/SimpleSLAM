@@ -17,7 +17,7 @@ void coutEverySeconds()
 
 void TEST_function()
 {
-    utils::thread::ResidentThread rt(coutEverySeconds);
+    utils::trd::ResidentThread rt(coutEverySeconds);
 
     this_thread::sleep_for(2s);
 
@@ -35,13 +35,13 @@ class TestMemberFunc
 
 protected:
 
-    std::unique_ptr<utils::thread::ResidentThread> rt;
+    std::unique_ptr<utils::trd::ResidentThread> rt;
 
 public:
 
     TestMemberFunc()
     {
-        rt = std::make_unique<utils::thread::ResidentThread>(&TestMemberFunc::echo, this);
+        rt = std::make_unique<utils::trd::ResidentThread>(&TestMemberFunc::echo, this);
     }
 
     void echo()
@@ -53,7 +53,7 @@ public:
 
 void test_lambda()
 {
-    utils::thread::ResidentThread rt([](){
+    utils::trd::ResidentThread rt([](){
         logger::Logger::getInstance()->info("test lambda");
         this_thread::sleep_for(1s);
     });

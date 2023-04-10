@@ -10,10 +10,16 @@ namespace dataproxy
 {
 
 template <typename PCType, bool UseBag>
-LidarDataProxy<PCType, UseBag>::LidarDataProxy(ros::NodeHandle& nh, int size) : DataProxy<PCType, UseBag>(size)
+LidarDataProxy<PCType, UseBag>::LidarDataProxy(ros::NodeHandle& nh, int size) :
+    DataProxy<PCType, UseBag>(size),
+    mVisType(VisType::None)
 {
     this->mLg->info("get in LidarDataProxy");
     mSub = nh.subscribe("/lidar_points", 5, &LidarDataProxy<PCType, UseBag>::subscribe, this);
+
+    mPubAligned = nh.advertise<sensor_msgs::PointCloud2>("/aligned", 1);
+    mVisPCThd = std::make_unique<utils::trd::ResidentThread>(&LidarDataProxy<PCType, UseBag>::visPCHandler, this);
+
 }
 
 template <typename PCType, bool UseBag>
@@ -31,6 +37,39 @@ void LidarDataProxy<PCType, UseBag>::subscribe(const sensor_msgs::PointCloud2Con
     this->mDataPtr->template push_back<UseBag>(std::move(cloud));
 #endif
 
+}
+
+template <typename PCType, bool UseBag>
+void LidarDataProxy<PCType, UseBag>::visPCHandler()
+{
+    std::unique_lock<std::mutex> lk(mVisLock);
+    mVisCV.wait(lk, [=](){ return mVisType != VisType::None; });
+    
+    switch(mVisType){
+        case VisType::Aligned: {
+            sensor_msgs::PointCloud2 rospc;
+            pcl::toROSMsg(*mAlignedKF.pc, rospc);
+            rospc.header.frame_id = "map";
+            mPubAligned.publish(rospc);
+            break;
+        }
+        case VisType::GlobalMap: {
+            break;
+        }
+        default: {}
+    }
+    
+    mVisType = VisType::None;
+}
+
+template <typename PCType, bool UseBag>
+void LidarDataProxy<PCType, UseBag>::setVisAligned(const typename PCType::Ptr& pc, const Pose6d& p)
+{
+    std::lock_guard<std::mutex> lk(mVisLock);
+    mVisType = VisType::Aligned;
+    mAlignedKF.pose = p;
+    mAlignedKF.pc = pc;
+    mVisCV.notify_all();
 }
 
 template class LidarDataProxy<PC<Pxyz>>;

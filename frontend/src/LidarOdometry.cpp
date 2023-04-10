@@ -2,6 +2,7 @@
 
 #include <frontend/Frontend.hpp>
 #include <backend/Backend.hpp>
+#include <dataproxy/LidarDataProxy.hpp>
 
 #include <PCR/LoamRegister.hpp>
 #include <PCR/NdtRegister.hpp>
@@ -29,6 +30,8 @@ template <typename PointType, bool UseBag>
 void LidarOdometry<PointType, UseBag>::setRelocFlag(EigenTypes::Pose6d& p)
 {
     // atomic bool ensure compiler not to reorder exec!! so when reloc is set, mRelocPose is set already
+    // but it is not safe for fast scenarios. if mRelocPose is call faster than generateOdom, generateOdom
+    // will always get true flag, but mRelocPose is reading while be writing
     mRelocPose = p;
     reloc.store(true);
 }
@@ -104,6 +107,10 @@ void LidarOdometry<PointType, UseBag>::generateOdom()
 
         // use pcr to get refined pose
         if(!mPcr->scan2Map(scan, submap, init_pose))    lg->warn("scan2map not converge!!");   
+
+        // visualize
+        auto ldp = static_cast<LidarDataProxy<PC<PointType>, UseBag>*>(mDataProxyPtr.get());
+        ldp->setVisAligned(scan, init_pose);
 
         // push the refined odom to dequez
         auto global_odom = std::make_shared<Odometry>(stamp, init_pose);

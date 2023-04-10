@@ -45,7 +45,7 @@ protected:
     OdomDequePtr mGlobalOdometry;
 
     std::unique_ptr<OdometryBase> mLO;
-    std::unique_ptr<thread::ResidentThread> mLOthdPtr;
+    std::unique_ptr<trd::ResidentThread> mLOthdPtr;
 
 public:
     Frontend() = delete;
@@ -98,7 +98,7 @@ void Frontend::initLO(LODataProxyPtr<PointType, UseBag>& dp, BackendPtr<PointTyp
     // make "this" lvalue or can't find matching constructor
     std::shared_ptr<Frontend> ft = shared_from_this();
     mLO = std::make_unique<LidarOdometry<PointType, UseBag>>(dp, ft, ed);
-    mLOthdPtr = std::make_unique<thread::ResidentThread>([&](){
+    mLOthdPtr = std::make_unique<trd::ResidentThread>([&](){
         mLO->generateOdom();
     });
 }

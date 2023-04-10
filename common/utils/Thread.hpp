@@ -8,7 +8,7 @@
 
 namespace utils {
 
-namespace thread {
+namespace trd {
 
 class ResidentThread : public noncopyable::NonCopyable
 {

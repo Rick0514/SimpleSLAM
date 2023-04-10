@@ -24,12 +24,12 @@ class Test
 {
 protected:
     atomic_bool running{true};
-    thread thd;
+    std::thread thd;
 public:
 
     Test(LidarDataProxy<PCType, UseBag>& ldp)
     {
-        thd = std::move(thread(&Test::test_blocking, this, std::ref(ldp)));
+        thd = std::move(std::thread(&Test::test_blocking, this, std::ref(ldp)));
     }
 
     void test_blocking(LidarDataProxy<PCType, UseBag>& ldp)
@@ -66,12 +66,12 @@ class Consumer
 public:
     atomic_bool running{true};
     shared_ptr<logger::Logger> lg;
-    unique_ptr<thread> thd;
+    unique_ptr<std::thread> thd;
     DataProxy<PCType, UseBag>::DataPtr data;
 
     Consumer(const DataProxy<PCType, UseBag>::DataPtr& d) : data(d){
         lg = logger::Logger::getInstance();
-        thd = make_unique<thread>(&Consumer::run, this);
+        thd = make_unique<std::thread>(&Consumer::run, this);
     }
 
     void run()

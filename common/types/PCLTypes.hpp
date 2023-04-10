@@ -1,4 +1,6 @@
 #pragma once
+#include <types/EigenTypes.hpp>
+
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
 
@@ -12,4 +14,12 @@ namespace PCLTypes
     
     using PCxyz = pcl::PointCloud<Pxyz>;
     using PCxyzi = pcl::PointCloud<Pxyzi>;
+
+    template<typename PointType, typename Scalar=double>
+    struct KeyFrame
+    {
+        EigenTypes::Pose6<Scalar> pose;
+        typename PC<PointType>::Ptr pc;    
+    };
+
 } // namespace PCLTypes
