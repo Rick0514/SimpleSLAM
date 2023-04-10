@@ -6,6 +6,7 @@
 #include <PCR/LoamRegister.hpp>
 #include <PCR/NdtRegister.hpp>
 
+#include <pcl/pcl_config.h>
 #include <pcl/kdtree/kdtree_flann.h>
 
 #include <macro/templates.hpp>
@@ -47,10 +48,22 @@ void LidarOdometry<PointType, UseBag>::generateOdom()
     // auto scan = utils::make_shared_ptr(stdscan);    // convert std::shared_ptr to boost::shared_ptr
     typename PC<PointType>::Ptr scan;
     if constexpr (UseBag){
-        scan = scans->consume_front();
+
+        #if PCL_VERSION_COMPARE(<=, 1, 10, 0)
+            auto stdscan = scans->consume_front();
+            scan = utils::make_shared_ptr(stdscan);
+        #else
+            scan = scans->consume_front();
+        #endif
     }else{
         // for now, real-time mode use newest scan
-        scan = scans->back();
+
+        #if PCL_VERSION_COMPARE(<=, 1, 10, 0)   
+            auto stdscan = scans->back();
+            scan = utils::make_shared_ptr(stdscan);
+        #else
+            scan = scans->back();
+        #endif
     }
 
     if(scan){
