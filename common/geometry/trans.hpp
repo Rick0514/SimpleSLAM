@@ -37,6 +37,21 @@ inline Qt<Scalar> ypr2q(const V3<Scalar>& ypr)
     return q;
 }
 
+// quaternion q = [qx, qy, qz, qw](Eigen convention)
+template<typename Scalar>
+inline Qt<Scalar> rot2q(const Eigen::Ref<const M3<Scalar>> R)
+{
+    Qt<Scalar> q(R);
+    return q.normalized();
+}
+
+template<typename Scalar>
+inline void T2SE3(M4<Scalar>& T)
+{
+    M3<Scalar> SO3 = T.template topLeftCorner<3, 3>();
+    T.template topLeftCorner<3, 3>() = rot2q<Scalar>(SO3).toRotationMatrix();
+}
+
 }
 }
 

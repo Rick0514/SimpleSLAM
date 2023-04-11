@@ -51,8 +51,8 @@ int main(int argc, char const *argv[])
         return 0;
     }
 
-    PointCloudRegister<PointType>::Ptr pcr = std::make_shared<NdtRegister<PointType>>();
-    // PointCloudRegister<PointType>::Ptr pcr = std::make_shared<LoamRegister<PointType>>();
+    // PointCloudRegister<PointType>::Ptr pcr = std::make_shared<NdtRegister<PointType>>();
+    PointCloudRegister<PointType>::Ptr pcr = std::make_shared<LoamRegister<PointType>>();
     
     Pose6d init_pose = Eigen::Isometry3d::Identity();
     

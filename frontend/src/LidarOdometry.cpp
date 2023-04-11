@@ -14,6 +14,8 @@
 #include <utils/Shared_ptr.hpp>
 #include <time/tictoc.hpp>
 
+#include <geometry/trans.hpp>
+
 using namespace PCLTypes;
 
 namespace frontend
@@ -26,6 +28,7 @@ LidarOdometry<PointType, UseBag>::LidarOdometry(DataProxyPtr& dp, FrontendPtr& f
     mRelocPose.setIdentity();
     // xyz for temp
     mPcr.reset(new PCR::LoamRegister<PointType>());
+    // mPcr.reset(new PCR::NdtRegister<PointType>());
 }
 
 template <typename PointType, bool UseBag>
@@ -101,27 +104,40 @@ void LidarOdometry<PointType, UseBag>::generateOdom()
                 if(std::abs(gbq->at(cidx)->stamp - stamp) > 0.15)
                     lg->warn("closest odom is out-dated!!");
                             
-                auto last_1 = gbq->at(cidx)->odom;
-                auto last_2 = gbq->at(cidx-1)->odom;
+                Pose6d last_1 = gbq->at(cidx)->odom;
+                Pose6d last_2 = gbq->at(cidx-1)->odom;
                 init_pose = last_1 * (last_2.inverse() * last_1);
+                geometry::trans::T2SE3(init_pose.matrix());
             }
         }
 
         // use pcr to get refined pose
         common::time::tictoc tt;
-        Pose6d tmp_init_pose = init_pose;
-        if(!mPcr->scan2Map(scan, submap, init_pose)){
-            init_pose = tmp_init_pose;
-            lg->warn("scan2map not converge!!");   
+        // Pose6d tmp_init_pose = init_pose;
+        
+        {
+            std::stringstream ss;
+            ss << "before pose: \n" << init_pose.matrix();
+            lg->debug("{}", ss.str());
         }
+
+        // for now, pure LO, scan2map should be considered always success!!
+        mPcr->scan2Map(scan, submap, init_pose);
         lg->info("scan2map cost: {:.3f}s", tt);
+        // if(!mPcr->scan2Map(scan, submap, init_pose)){
+        //     init_pose = tmp_init_pose;
+        //     lg->warn("scan2map not converge!!");   
+        // }
+
+        {
+            std::stringstream ss;
+            ss << "after pose: \n" << init_pose.matrix();
+            lg->debug("{}", ss.str());
+        }
 
         // visualize
         auto ldp = static_cast<LidarDataProxy<PC<PointType>, UseBag>*>(mDataProxyPtr.get());
         ldp->setVisAligned(scan, init_pose);
-        std::stringstream ss;
-        ss << "pose: \n" << init_pose.matrix();
-        lg->info("{}", ss.str());
 
         // push the refined odom to dequez
         auto global_odom = std::make_shared<Odometry>(stamp, init_pose);

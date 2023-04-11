@@ -33,9 +33,9 @@ private:
     const float mDegenerateThresh{100};
 
     const float mPosConverge{5e-3};
-    const float mRotConverge{1e-3};
+    const float mRotConverge{1e-2};
 
-    int iters{8};
+    int iters{5};
 
     bool isDegenerate;
     bool degenerateProjSet;
@@ -63,10 +63,10 @@ private:
 
     bool _extractPlaneMatrix(const PointType& pointInMap, PC_cPtr& dst, Eigen::Matrix<double, mPlanePtsNum, 3>& A);
 
-    // independ of x
+    // independent of x
     static inline V3d _J_e_wrt_x(const V4d& coff){
+        // cn is larger than 1 absolutely
         auto cn = coff.norm();
-        if(cn < 1e-6)   return V3d::Zero();
         return coff.head<3>(0) / coff.norm();
     }
     

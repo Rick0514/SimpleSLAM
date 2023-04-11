@@ -19,6 +19,9 @@ namespace EigenTypes
     template<typename Scalar>
     using M3 = Eigen::Matrix<Scalar, 3, 3>;
 
+    template<typename Scalar>
+    using M4 = Eigen::Matrix<Scalar, 4, 4>;
+
     using Pose6d = Eigen::Isometry3d;
     using M4d = Eigen::Matrix4d;
     using M3d = Eigen::Matrix3d;

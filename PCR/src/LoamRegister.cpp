@@ -2,9 +2,11 @@
 #include <pcl/kdtree/kdtree_flann.h>
 #include <geometry/manifolds.hpp>
 #include <Eigen/Eigenvalues>
+#include <geometry/trans.hpp>
 
 namespace PCR
 {
+using namespace geometry;
 
 template<typename PointType>
 LoamRegister<PointType>::LoamRegister(){
@@ -64,18 +66,18 @@ void LoamRegister<PointType>::_removeDegeneratePart(const M6d& JtJ, V6d& x){
 
         V6d ev = JtJ.eigenvalues().real();
         
-        std::stringstream ss;
-        ss << "ev: " << ev.transpose();
-        DEBUG(debug_file, ss.str());
+        // std::stringstream ss;
+        // ss << "ev: " << ev.transpose();
+        // DEBUG(debug_file, ss.str());
 
-        // M6d JtJ_copy = JtJ;
-        // for(int i=0; i<6; i++){
-        //     if(ev(i) < mDegenerateThresh){
-        //         isDegenerate = true;
-        //         JtJ_copy.row(i).setZero();
-        //     }
-        // }
-        // degenerateProj = JtJ.inverse() * JtJ;
+        M6d JtJ_copy = JtJ;
+        for(int i=0; i<6; i++){
+            if(ev(i) < mDegenerateThresh){
+                isDegenerate = true;
+                JtJ_copy.row(i).setZero();
+            }
+        }
+        degenerateProj = JtJ.inverse() * JtJ;
     }
     
     if(isDegenerate)    x = degenerateProj * x;
@@ -158,16 +160,19 @@ bool LoamRegister<PointType>::scan2Map(PC_cPtr& src, PC_cPtr& dst, Pose6d& res)
             break;
         }
         
-        std::stringstream ss;
-        ss << "optimize-" << it << " ==> res: " << x.transpose();
-        DEBUG(debug_file, ss.str());
+        // std::stringstream ss;
+        // ss << "optimize-" << it << " ==> res: " << x.transpose();
+        // DEBUG(debug_file, ss.str());
 
-        _removeDegeneratePart(JtJ, x);
+        // _removeDegeneratePart(JtJ, x);
         M4d Tse3;
         manifolds::exp(x, Tse3);
         
         res.matrix() = Tse3 * res.matrix();
     }
+
+    // make it standard SE3 !!!
+    trans::T2SE3(res.matrix());
 
     return this->isConverge;
 }

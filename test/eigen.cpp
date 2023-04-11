@@ -2,10 +2,12 @@
 #include <types/EigenTypes.hpp>
 #include <geometry/trans.hpp>
 #include <Eigen/Geometry>
+#include <geometry/manifolds.hpp>
 
 using namespace std;
 using namespace EigenTypes;
 using namespace geometry;
+using namespace PCR;
 
 void test_setPose6d()
 {    
@@ -59,12 +61,23 @@ void test_euler()
     cout << trans::ypr2q(ypr).coeffs().transpose() << endl;
 }
 
+void test_manifolds()
+{
+    V6d x;
+    x << -0.00373127 ,  0.00599259 ,  0.00010917, -0.000599459,  0.000276421,  2.11126e-05;
+    M4d SE3;
+    manifolds::exp(x, SE3);
+    cout << SE3 << endl;
+}
+
 int main(int argc, char const *argv[])
 {
-    test_setPose6d();
-    test_diagonal();
-    test_cwise();
-    test_euler();
+    // test_setPose6d();
+    // test_diagonal();
+    // test_cwise();
+    // test_euler();
+    
+    test_manifolds();
     return 0;
 }
 
