@@ -1,56 +1,81 @@
 #pragma once
 #include "nanoflann.hpp"
 
+// for vector which contain eigen vector data
+
 namespace nanoflann
 {
 
-static constexpr int DIM = 3;
-
-template<typename Container, typename Scalar=double, int Dim=DIM, 
-    typename Distance=metric_L2, typename IndexType=size_t>
-struct KeyFramesAdaptor
+template<typename Container, typename Scalar, int Dim=-1,
+    typename Distance=metric_L2_Simple, typename IndexType=size_t>
+class KeyFramesKdtree
 {
-    using self_t = KeyFramesAdaptor<Container, Scalar, Dim>;
-    using metric_t = typename Distance::template traits<Scalar, self_t>::distance_t;
-    using index_t = KDTreeSingleIndexAdaptor<metric_t, self_t, Dim, IndexType>;
 
-    index_t* index = nullptr;
-    const Container& m_data;
-
-    KeyFramesAdaptor(const Container& mat, const int leaf_max_size = 10,
-        const unsigned int n_thread_build = 1) : m_data(mat)
+protected:
+    using elem_t = typename Container::value_type;
+    
+    struct KeyFramesAdaptor
     {
-        index = new index_t(DIM, *this,
-                KDTreeSingleIndexAdaptorParams(
-                    leaf_max_size,
-                    KDTreeSingleIndexAdaptorFlags::None,
-                    n_thread_build
-                )
-            );
+        KeyFramesAdaptor(const Container& c) : _data(c){}
+        inline IndexType kdtree_get_point_count() const { return _data.size(); }
+        inline Scalar kdtree_get_pt(const IndexType idx, int dim) const {
+            return _data[idx].pose.translation()(dim);
+        }
+        template <class BBOX> bool kdtree_get_bbox(BBOX&) const { return false; }
+        const Container& _data;
+    }_adaptor;
+
+    using metric_t = typename Distance::template traits<Scalar, KeyFramesAdaptor>::distance_t;
+    using kdtree_t = KDTreeSingleIndexAdaptor<metric_t, KeyFramesAdaptor, Dim, IndexType>;
+
+    kdtree_t _kdtree;
+
+public:
+
+    KeyFramesKdtree() = delete;
+    KeyFramesKdtree(const Container& c) : _adaptor(c), _kdtree(Dim, _adaptor){}
+
+    void setInput(const Container& mat){
+        _adaptor._data = mat;
+        _kdtree.buildIndex();
     }
 
-    ~KeyFramesAdaptor() { delete index; }
-
-    void query(const Scalar* query_point, const size_t num_closest,
-        IndexType* out_indices, Scalar* out_distances_sq) const
+    template <typename EigenPT>
+    IndexType nearestKSearch(const EigenPT &point, IndexType k, std::vector<IndexType> &k_indices,
+        std::vector<Scalar> &k_sqr_distances) const
     {
-        KNNResultSet<Scalar, IndexType> resultSet(num_closest);
-        resultSet.init(out_indices, out_distances_sq);
-        index->findNeighbors(resultSet, query_point);
+        k_indices.resize(k);
+        k_sqr_distances.resize(k);
+        
+        KNNResultSet<Scalar> resultSet(k);
+        resultSet.init(&k_indices[0], &k_sqr_distances[0]);
+        _kdtree->findNeighbors(resultSet, point.data());
+
+        return resultSet.size();
     }
-
-    const self_t& derived() const { return *this; }
-    self_t&       derived() { return *this; }
-
-    // Must return the number of data points
-    inline size_t kdtree_get_point_count() const { return m_data.size(); }
-
-    // Returns the dim'th component of the idx'th point in the class:
-    inline Scalar kdtree_get_pt(const size_t idx, const size_t dim) const
+    
+    template <typename EigenPT>
+    IndexType radiusSearch (const EigenPT &point, Scalar radius, std::vector<IndexType> &k_indices,
+        std::vector<Scalar> &k_sqr_distances, bool sorted=false) const
     {
-        return m_data[idx].translation(dim);
-    }
+        std::vector<ResultItem<IndexType, Scalar>> indices_dists;
+        RadiusResultSet<Scalar, IndexType> resultSet(radius, indices_dists);
 
+        SearchParameters sp(0, sorted);
+        _kdtree.findNeighbors(resultSet, point.data(), sp);
+
+        auto n = resultSet.size();
+        k_indices.resize(n);
+        k_sqr_distances.resize(n);
+        for (int i = 0; i < n; i++) {
+            k_indices[i] = indices_dists[i].first;
+            k_sqr_distances[i] = indices_dists[i].second;
+        }
+
+        return n;
+    }
 };
 
+
 }
+

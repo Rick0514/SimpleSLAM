@@ -7,14 +7,14 @@ set(CMAKE_CXX_COMPILER clang++-12)
 
 project(benchmark)
 
-set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_BUILD_TYPE Debug)
 
 find_package(catkin REQUIRED COMPONENTS
     roscpp
     sensor_msgs
 )
 
-find_package(PCL REQUIRED COMPONENTS common io filters)
+find_package(PCL REQUIRED COMPONENTS common io kdtree filters)
 
 find_package(benchmark REQUIRED)
 
@@ -31,5 +31,15 @@ target_include_directories(rospub PUBLIC
 )
 target_link_libraries(rospub
     ${catkin_LIBRARIES}
+    ${PCL_LIBRARIES}
+)
+
+add_executable(kdtree kdtree.cpp)
+target_include_directories(kdtree PUBLIC
+    ${PCL_INCLUDE_DIRS}
+    ../../common
+    ../../third_parties/nanoflann/include
+)
+target_link_libraries(kdtree
     ${PCL_LIBRARIES}
 )

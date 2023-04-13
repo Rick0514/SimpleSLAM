@@ -10,7 +10,7 @@ using namespace geometry;
 
 template<typename PointType>
 LoamRegister<PointType>::LoamRegister(){
-    mKdtree.reset(new pcl::KdTreeFLANN<PointType>());
+    // mKdtree.reset(new pcl::KdTreeFLANN<PointType>());
 
 #ifdef DEBUG_DIR
     debug_file = std::ofstream(fmt::format("{}/{}.txt", DEBUG_DIR, "loam"));
@@ -37,11 +37,11 @@ bool LoamRegister<PointType>::_extractPlaneCoeffs(const Eigen::Matrix<double, N,
 }
 
 template<typename PointType>
-bool LoamRegister<PointType>::_extractPlaneMatrix(const PointType& pointInMap, PC_cPtr& dst, Eigen::Matrix<double, mPlanePtsNum, 3>& A)
+bool LoamRegister<PointType>::_extractPlaneMatrix(const PointType& pointInMap, const PC_cPtr& dst, Eigen::Matrix<double, mPlanePtsNum, 3>& A)
 {
-    std::vector<int> pointSearchInd;
+    std::vector<size_t> pointSearchInd;
     std::vector<float> pointSearchSqDis;
-    mKdtree->nearestKSearch(pointInMap, mPlanePtsNum, pointSearchInd, pointSearchSqDis);
+    mKdtree.nearestKSearch(pointInMap, mPlanePtsNum, pointSearchInd, pointSearchSqDis);
 
     // DEBUG(debug_file, fmt::format("nks: {}", pointSearchSqDis[mPlanePtsNum-1]));
     if(pointSearchSqDis[mPlanePtsNum-1] < mKdtreeMaxSearchDist)
@@ -84,7 +84,7 @@ void LoamRegister<PointType>::_removeDegeneratePart(const M6d& JtJ, V6d& x){
 }
 
 template<typename PointType>
-bool LoamRegister<PointType>::scan2Map(PC_cPtr& src, PC_cPtr& dst, Pose6d& res)
+bool LoamRegister<PointType>::scan2Map(const PC_cPtr& src, const PC_cPtr& dst, Pose6d& res)
 {
     isDegenerate = false;
     this->isConverge = false;
@@ -94,7 +94,7 @@ bool LoamRegister<PointType>::scan2Map(PC_cPtr& src, PC_cPtr& dst, Pose6d& res)
     std::vector<Eigen::Matrix<double, 1, 6>> J_vec;
     std::vector<double> E_vec;
     
-    mKdtree->setInputCloud(dst);
+    mKdtree.setInputCloud(dst);
 
     for(int it=0; it<iters; it++){
 

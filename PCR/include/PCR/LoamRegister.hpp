@@ -1,10 +1,10 @@
 #pragma once
 
-#include <pcl/kdtree/kdtree_flann.h>
 #include <PCR/PointCloudRegister.hpp>
-#include <fstream>
+#include <nanoflann/pcl_adaptor.hpp>
 
 #if defined(DEBUG_DIR)
+#include <fstream>
 #define DEBUG(f, msg)   f << msg << std::endl;
 #else
 #define DEBUG(...) (void)0
@@ -40,9 +40,12 @@ private:
     bool isDegenerate;
     bool degenerateProjSet;
     M6d degenerateProj;
-    pcl::shared_ptr<pcl::KdTreeFLANN<PointType>> mKdtree;
 
+    nanoflann::PointCloudKdtree<PointType, float> mKdtree;
+
+#ifdef DEBUG_DIR
     std::ofstream debug_file;
+#endif
 
 private:
 
@@ -61,7 +64,7 @@ private:
     template<unsigned int N>
     bool _extractPlaneCoeffs(const Eigen::Matrix<double, N, 3>& A, V4d& hx);
 
-    bool _extractPlaneMatrix(const PointType& pointInMap, PC_cPtr& dst, Eigen::Matrix<double, mPlanePtsNum, 3>& A);
+    bool _extractPlaneMatrix(const PointType& pointInMap, const PC_cPtr& dst, Eigen::Matrix<double, mPlanePtsNum, 3>& A);
 
     // independent of x
     static inline V3d _J_e_wrt_x(const V4d& coff){
@@ -79,7 +82,7 @@ private:
 public:
     LoamRegister();
 
-    virtual bool scan2Map(PC_cPtr& src, PC_cPtr& dst, Pose6d& res) override;
+    virtual bool scan2Map(const PC_cPtr& src, const PC_cPtr& dst, Pose6d& res) override;
 
 };
 

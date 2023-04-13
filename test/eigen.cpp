@@ -9,6 +9,10 @@ using namespace EigenTypes;
 using namespace geometry;
 using namespace PCR;
 
+struct A{
+    Pose6d p;
+};
+
 void test_setPose6d()
 {    
     Pose6d p;

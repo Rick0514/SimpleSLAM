@@ -11,7 +11,7 @@ namespace PCLTypes
 
     template<typename PointType>
     using PC = pcl::PointCloud<PointType>;
-    
+
     using PCxyz = pcl::PointCloud<Pxyz>;
     using PCxyzi = pcl::PointCloud<Pxyzi>;
 

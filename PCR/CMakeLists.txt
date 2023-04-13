@@ -1,6 +1,6 @@
 project(PCR)
 
-find_package(PCL REQUIRED COMPONENTS common kdtree filters)
+find_package(PCL REQUIRED COMPONENTS common filters)
 
 add_subdirectory(../third_parties/pclomp pclomp)
 
@@ -22,6 +22,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     ${COMMON_HEADER}
     ${EIGEN3_INCLUDE_DIRS}
     ${PCL_INCLUDE_DIRS}
+    ../third_parties/nanoflann/include
 )
 
 

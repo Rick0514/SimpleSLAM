@@ -13,7 +13,7 @@ NdtRegister<PointType>::NdtRegister()
 }
 
 template<typename PointType>
-bool NdtRegister<PointType>::scan2Map(PC_cPtr& src, PC_cPtr& dst, Pose6d& res)
+bool NdtRegister<PointType>::scan2Map(const PC_cPtr& src, const PC_cPtr& dst, Pose6d& res)
 {
     _ndt_omp->setInputTarget(dst);
     _ndt_omp->setInputSource(src);

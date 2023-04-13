@@ -46,9 +46,17 @@ void test_multi_threads()
 
 }
 
+void test_log_vector()
+{
+    auto lg = logger::Logger::getInstance();
+    std::vector<int> a{1,2,3,4,5};
+    lg->info("{}", a);    
+}
+
 int main(int argc, char const *argv[])
 {
-    test_single_thread();
-    test_multi_threads();
+    // test_single_thread();
+    // test_multi_threads();
+    test_log_vector();
     return 0;
 }

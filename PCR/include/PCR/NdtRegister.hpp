@@ -20,7 +20,7 @@ public:
 
     NdtRegister();
 
-    virtual bool scan2Map(PC_cPtr& src, PC_cPtr& dst, Pose6d& res) override;
+    virtual bool scan2Map(const PC_cPtr& src, const PC_cPtr& dst, Pose6d& res) override;
 
 };
     
