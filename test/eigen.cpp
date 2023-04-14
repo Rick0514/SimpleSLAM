@@ -74,6 +74,16 @@ void test_manifolds()
     cout << SE3 << endl;
 }
 
+void test_map()
+{
+    double a[] = {1,2,3,4,5,6,7,8,9};
+    
+    // Eigen::Map<M3d> m(a);
+    Eigen::Map<Eigen::Matrix<double, 3, 3, Eigen::RowMajor>> m(a);
+
+    cout << m << endl;
+}
+
 int main(int argc, char const *argv[])
 {
     // test_setPose6d();
@@ -81,7 +91,9 @@ int main(int argc, char const *argv[])
     // test_cwise();
     // test_euler();
     
-    test_manifolds();
+    // test_manifolds();
+    test_map();
+
     return 0;
 }
 

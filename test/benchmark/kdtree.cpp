@@ -78,49 +78,57 @@ static void nanoKdtree(benchmark::State& s)
 }
 BENCHMARK(nanoKdtree);
 
-// void checkKFS()
-// {
+void checkKFS()
+{
 
-//     auto lg = utils::logger::Logger::getInstance();
+    auto lg = utils::logger::Logger::getInstance();
 
-//     constexpr int nums = 100;
-//     using matrix_t = Eigen::Matrix<float, nums, 3>;
+    constexpr int nums = 100;
+    using matrix_t = Eigen::Matrix<float, nums, 3>;     // row major
 
-//     srand((unsigned int) time(0));
-//     matrix_t mat;
-//     mat.setRandom();
+    srand((unsigned int) time(0));
+    matrix_t mat;
+    mat.setRandom();
 
-//     int k = 5;
-//     float q[3];
-//     bzero(q, 3);
-//     std::vector<size_t> k_indices(k);
-//     std::vector<float> k_sqr_distances(k);
+    int k = 5;
+    std::vector<float> q(3, 0);
+    Eigen::Map<EigenTypes::V3f> eq(&q[0]);
 
-//     using metric_t = nanoflann::metric_L2_Simple::traits<float, matrix_t>;
-//     using kdtree_t = nanoflann::KDTreeEigenMatrixAdaptor<matrix_t, 3, metric_t>;
+    lg->info("q: {}", q);
+    std::cout << eq.transpose() << std::endl;
+
+    std::vector<size_t> k_indices(k);
+    std::vector<float> k_sqr_distances(k);
+
+    using metric_t = nanoflann::metric_L2_Simple;
+    using kdtree_t = nanoflann::KDTreeEigenMatrixAdaptor<matrix_t, 3, metric_t>;
     
-//     kdtree_t kdtree(3, mat);
-//     nanoflann::KNNResultSet<float> resultSet(k);
-//     resultSet.init(k_indices.data(), k_sqr_distances.data());
-//     kdtree.index_->findNeighbors(resultSet, q);
+    kdtree_t kdtree(3, mat);
+    nanoflann::KNNResultSet<float> resultSet(k);
+    resultSet.init(k_indices.data(), k_sqr_distances.data());
+    kdtree.index_->findNeighbors(resultSet, &q[0]);
 
-//     lg->info("before idx: {}", k_indices);
-//     lg->info("before dist: {}", k_sqr_distances);
+    lg->info("before idx: {}", k_indices);
+    lg->info("before dist: {}", k_sqr_distances);
 
-//     // make kfs
-//     using kfs_t = std::deque<KeyFrame<PointType, float>>;
-//     kfs_t kfs(nums);
-//     for(int i=0; i<nums; i++){
-//         KeyFrame<PointType, float> kf;
-//         kf.pose.setIdentity();
-//         kf.pose.translation() = mat.row(i);
-//     }
+    // make kfs
+    using kfs_t = std::deque<KeyFrame<PointType, float>>;
+    kfs_t kfs(nums);
+    for(int i=0; i<nums; i++){
+        KeyFrame<PointType, float> kf;
+        kf.pose.setIdentity();
+        kf.pose.translation() = mat.row(i);
+        kfs[i] = std::move(kf);
+    }
 
-//     // nanoflann::KeyFramesKdtree<kfs_t, float> kf_kdtree(kfs);
-//     // k_indices.clear()
-//     // k_sqr_distances.clear();
+    nanoflann::KeyFramesKdtree<kfs_t, float, 3> kf_kdtree(kfs);
+    k_indices.clear();
+    k_sqr_distances.clear();
+    kf_kdtree.nearestKSearch(q, k, k_indices, k_sqr_distances);
 
-// }
+    lg->info("after idx: {}", k_indices);
+    lg->info("after dist: {}", k_sqr_distances);
+}
 
 
 int main(int argc, char** argv) {              
@@ -140,13 +148,13 @@ int main(int argc, char** argv) {
 
     lg->info("load map size: {}", map->points.size());    
 
-    checkKNN();
-    // checkKFS();
+    // checkKNN();
+    checkKFS();
 
-    ::benchmark::Initialize(&argc, argv);        
-    if (::benchmark::ReportUnrecognizedArguments(argc, argv))   return 1;
-    ::benchmark::RunSpecifiedBenchmarks();       
-    ::benchmark::Shutdown();                     
+    // ::benchmark::Initialize(&argc, argv);        
+    // if (::benchmark::ReportUnrecognizedArguments(argc, argv))   return 1;
+    // ::benchmark::RunSpecifiedBenchmarks();       
+    // ::benchmark::Shutdown();                     
 
     return 0;
 }

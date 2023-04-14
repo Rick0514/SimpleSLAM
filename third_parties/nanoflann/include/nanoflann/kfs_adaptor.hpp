@@ -6,7 +6,7 @@
 namespace nanoflann
 {
 
-template<typename Container, typename Scalar, int Dim=-1,
+template<typename Container, typename Scalar, int Dim,
     typename Distance=metric_L2_Simple, typename IndexType=size_t>
 class KeyFramesKdtree
 {
@@ -48,8 +48,8 @@ public:
         k_sqr_distances.resize(k);
         
         KNNResultSet<Scalar> resultSet(k);
-        resultSet.init(&k_indices[0], &k_sqr_distances[0]);
-        _kdtree->findNeighbors(resultSet, point.data());
+        resultSet.init(k_indices.data(), k_sqr_distances.data());
+        _kdtree.findNeighbors(resultSet, point.data());
 
         return resultSet.size();
     }
