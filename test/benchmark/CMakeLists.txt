@@ -7,7 +7,7 @@ set(CMAKE_CXX_COMPILER clang++-12)
 
 project(benchmark)
 
-set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Release)
 
 find_package(catkin REQUIRED COMPONENTS
     roscpp

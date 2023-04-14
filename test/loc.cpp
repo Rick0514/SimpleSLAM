@@ -24,11 +24,11 @@ int main(int argc, char* argv[])
     // set log first
     auto lg = utils::logger::Logger::getInstance();
 #ifdef LOG_FILE
-    // lg->setLogFile(LOG_FILE, spdlog::level::debug);
-    lg->setLogFile(LOG_FILE);
+    lg->setLogFile(LOG_FILE, spdlog::level::debug);
+    // lg->setLogFile(LOG_FILE);
 #endif
 
-    string pcd_file = "/home/hgy/.robot/data/maps/hqc/hqc.pcd";  
+    string pcd_file = "/home/gy/.robot/data/maps/hqc/hqc.pcd";  
     auto bkd = std::make_shared<backend::Backend<PointType>>(pcd_file);
     auto ftd = std::make_shared<frontend::Frontend>(100, 10);
 

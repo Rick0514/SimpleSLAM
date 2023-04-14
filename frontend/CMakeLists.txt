@@ -1,5 +1,7 @@
 project(frontend)
 
+set(CMAKE_BUILD_TYPE Release)
+
 file(GLOB_RECURSE srcs CONFIGURE_DEPENDS src/*.cpp include/${PROJECT_NAME}/*.hpp)
 add_library(${PROJECT_NAME} STATIC ${srcs})
 

@@ -1,8 +1,9 @@
 #include <PCR/LoamRegister.hpp>
-#include <pcl/kdtree/kdtree_flann.h>
 #include <geometry/manifolds.hpp>
 #include <Eigen/Eigenvalues>
 #include <geometry/trans.hpp>
+
+#include <time/tictoc.hpp>
 
 namespace PCR
 {
@@ -94,20 +95,30 @@ bool LoamRegister<PointType>::scan2Map(const PC_cPtr& src, const PC_cPtr& dst, P
     std::vector<Eigen::Matrix<double, 1, 6>> J_vec;
     std::vector<double> E_vec;
     
+    common::time::tictoc tt;
     mKdtree.setInputCloud(dst);
+    this->lg->debug("kdtree build idx cost: {}", tt);
 
     for(int it=0; it<iters; it++){
 
         J_vec.clear();
         E_vec.clear();
 
+        tt.tic();
+        float ta = 0;
+        float te = 0;
+
         for(int i=0; i<src->points.size(); i++){
             // trans point to map frame
+            tt.tic();
             const PointType& pointOri = src->points[i];
             PointType pointInMap;
             _pointAssociateToMap(&pointOri, &pointInMap, res);
+            ta += tt.elapsed().count();
 
             Eigen::Matrix<double, mPlanePtsNum, 3> A;
+
+            tt.tic();
             if(_extractPlaneMatrix(pointInMap, dst, A))
             {
                 // extract plane
@@ -130,7 +141,11 @@ bool LoamRegister<PointType>::scan2Map(const PC_cPtr& src, const PC_cPtr& dst, P
                     }
                 }
             }
+            te += tt.elapsed().count();
         }
+        // this->lg->debug("build J cost: {}", tt);
+        this->lg->debug("ta cost: {}", ta);
+        this->lg->debug("te cost: {}", te);
 
         // make J and E
         int n = J_vec.size();
@@ -151,8 +166,10 @@ bool LoamRegister<PointType>::scan2Map(const PC_cPtr& src, const PC_cPtr& dst, P
         M6d JtJ = J.transpose() * J;
         V6d JtE = J.transpose() * E;
         
+        tt.tic();
         V6d x = JtJ.ldlt().solve(-JtE);
-        
+        this->lg->debug("solve x cost: {}", tt);
+
         // check converge
         if(x.head<3>().norm() <= mPosConverge && x.tail<3>().norm() <= mRotConverge){
             this->isConverge = true;

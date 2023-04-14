@@ -5,9 +5,13 @@
 #include <types/PCLTypes.hpp>
 #include <pcl/kdtree/kdtree_flann.h>
 
+// add a tmp macro to enable c++11 for tbb, https://github.com/oneapi-src/oneTBB/issues/22
+// clang++-12 -v to see what glibcxx version you got
+// #define TBB_USE_GLIBCXX_VERSION 70500
+
+#include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/Values.h>
 
 #include <nanoflann/kfs_adaptor.hpp>
 

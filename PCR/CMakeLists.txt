@@ -1,10 +1,10 @@
 project(PCR)
 
+set(CMAKE_BUILD_TYPE Release)
+
 find_package(PCL REQUIRED COMPONENTS common filters)
 
 add_subdirectory(../third_parties/pclomp pclomp)
-
-set(CMAKE_BUILD_TYPE Release)
 
 file(GLOB_RECURSE srcs CONFIGURE_DEPENDS src/*.cpp include/${PROJECT_NAME}/*.hpp)
 add_library(${PROJECT_NAME} SHARED ${srcs})

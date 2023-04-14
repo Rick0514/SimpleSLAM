@@ -1,5 +1,7 @@
 project(dataproxy)
 
+set(CMAKE_BUILD_TYPE Release)
+
 find_package(PCL REQUIRED COMPONENTS common filters)
 
 find_package(catkin REQUIRED COMPONENTS

@@ -122,6 +122,7 @@ void LidarOdometry<PointType, UseBag>::generateOdom()
         }
 
         // for now, pure LO, scan2map should be considered always success!!
+        lg->debug("scan pts: {}, submap pts: {}", scan->points.size(), submap->points.size());
         mPcr->scan2Map(scan, submap, init_pose);
         lg->info("scan2map cost: {:.3f}s", tt);
         // if(!mPcr->scan2Map(scan, submap, init_pose)){

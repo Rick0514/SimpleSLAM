@@ -6,15 +6,12 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/visualization/pcl_visualizer.h>
 
-#include <spdlog/spdlog.h>
-#include <spdlog/version.h>
-#include <spdlog/fmt/fmt.h>
+#include <utils/Logger.hpp>
 #include <time/tictoc.hpp>
 
 using namespace PCR;
 using PointType = pcl::PointXYZ;
 static std::string data_dir;
-
 
 template<typename PointType>
 void voxelDownSample(pcl::shared_ptr<pcl::PointCloud<PointType>> cloud, float grid_size){
@@ -27,13 +24,16 @@ void voxelDownSample(pcl::shared_ptr<pcl::PointCloud<PointType>> cloud, float gr
 int main(int argc, char const *argv[])
 {
     if(argc != 3) {
-        std::cout << "usage: align target.pcd source.pcd" << std::endl;
+        std::cerr << "usage: align target.pcd source.pcd" << std::endl;
         return 0;
     }
 
 #ifdef DATA_DIR
     data_dir = DATA_DIR;
 #endif
+
+    auto lg = utils::logger::Logger::getInstance();
+    lg->setLogLevel(spdlog::level::debug);
 
     auto target_pcd = fmt::format("{}/{}.pcd", data_dir, argv[1]);
     auto source_pcd = fmt::format("{}/{}.pcd", data_dir, argv[2]);
@@ -42,12 +42,12 @@ int main(int argc, char const *argv[])
     pcl::PointCloud<pcl::PointXYZ>::Ptr source_cloud(new pcl::PointCloud<pcl::PointXYZ>());
 
     if(pcl::io::loadPCDFile(target_pcd, *target_cloud)) {
-        SPDLOG_ERROR("failed to load: {}", target_pcd);
+        lg->error("failed to load: {}", target_pcd);
         return 0;
     }
 
     if(pcl::io::loadPCDFile(source_pcd, *source_cloud)) {
-        SPDLOG_ERROR("failed to load: {}", source_pcd);
+        lg->error("failed to load: {}", source_pcd);
         return 0;
     }
 
@@ -56,27 +56,27 @@ int main(int argc, char const *argv[])
     
     Pose6d init_pose = Eigen::Isometry3d::Identity();
     
-    SPDLOG_INFO("target cloud size: {}", target_cloud->points.size());
-    SPDLOG_INFO("source cloud size: {}", source_cloud->points.size());
+    lg->info("target cloud size: {}", target_cloud->points.size());
+    lg->info("source cloud size: {}", source_cloud->points.size());
 
     common::time::tictoc tt;
-    SPDLOG_INFO("start to downsample pc!");
+    lg->info("start to downsample pc!");
     voxelDownSample(target_cloud, 0.1f);
     voxelDownSample(source_cloud, 0.1f);
-    SPDLOG_INFO("downsample pc elapsed {:.6f}s", tt);
+    lg->info("downsample pc elapsed {:.6f}s", tt);
 
-    SPDLOG_INFO("--------- after downsample ---------");
-    SPDLOG_INFO("target cloud size: {}", target_cloud->points.size());
-    SPDLOG_INFO("source cloud size: {}", source_cloud->points.size());
+    lg->info("--------- after downsample ---------");
+    lg->info("target cloud size: {}", target_cloud->points.size());
+    lg->info("source cloud size: {}", source_cloud->points.size());
 
-    SPDLOG_INFO("start to scan2map!");
+    lg->info("start to scan2map!");
     tt.tic();
     pcr->scan2Map(source_cloud, target_cloud, init_pose);
-    SPDLOG_INFO("scan to map elapsed {:.3f}s", tt);
+    lg->info("scan to map elapsed {:.3f}s", tt);
 
     std::stringstream ss;
     ss << init_pose.matrix();
-    SPDLOG_INFO("trans: \n{}", ss.str());
+    lg->info("trans: \n{}", ss.str());
 
     // visualize
     pcl::PointCloud<PointType>::Ptr aligned(pcl::make_shared<pcl::PointCloud<PointType>>());

@@ -49,7 +49,7 @@ private:
 
 private:
 
-    void _pointAssociateToMap(PointType const * const pi, PointType * const po, const Pose6d& p)
+    static inline void _pointAssociateToMap(PointType const * const pi, PointType * const po, const Pose6d& p)
     {
         const M3d& rot = p.rotation();
         const V3d& t = p.translation();

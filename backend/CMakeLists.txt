@@ -1,5 +1,7 @@
 project(backend)
 
+set(CMAKE_BUILD_TYPE Release)
+
 find_package(PCL REQUIRED COMPONENTS common kdtree filters io)
 find_package(GTSAM REQUIRED)
 
