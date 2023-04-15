@@ -37,7 +37,6 @@ Backend<PointType>::Backend(std::string pcd_file)
     mLg = logger::Logger::getInstance();
     // load global map mode
     mSubMap = pcl::make_shared<PC<PointType>>();
-    mSubMapKdtree = pcl::make_shared<pcl::KdTreeFLANN<PointType>>();
     
     if(pcl::io::loadPCDFile<PointType>(pcd_file, *mSubMap) == -1)
     {
@@ -51,12 +50,6 @@ Backend<PointType>::Backend(std::string pcd_file)
     // downsample global pc
     pcp::voxelDownSample<PointType>(mSubMap, 0.7f);
     mLg->info("submap size: {}", mSubMap->size());
-}
-
-template<typename PointType>
-const typename pcl::KdTreeFLANN<PointType>::Ptr& Backend<PointType>::getSubMapKdtree() const
-{
-    return mSubMapKdtree;
 }
 
 template<typename PointType>

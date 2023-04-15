@@ -3,7 +3,6 @@
 #include <utils/Atomic.hpp>
 #include <utils/Logger.hpp>
 #include <types/PCLTypes.hpp>
-#include <pcl/kdtree/kdtree_flann.h>
 
 // add a tmp macro to enable c++11 for tbb, https://github.com/oneapi-src/oneTBB/issues/22
 // clang++-12 -v to see what glibcxx version you got
@@ -28,7 +27,7 @@ class Backend
 private:
 
     typename pcl::PointCloud<PointType>::Ptr mSubMap;
-    typename pcl::KdTreeFLANN<PointType>::Ptr mSubMapKdtree;
+    // typename pcl::KdTreeFLANN<PointType>::Ptr mSubMapKdtree;
 
     using KF = KeyFrame<PointType>;
 
@@ -69,7 +68,7 @@ public:
     // pcd mode
     Backend(std::string pcd_file);
 
-    const typename pcl::KdTreeFLANN<PointType>::Ptr& getSubMapKdtree() const;
+    // const typename pcl::KdTreeFLANN<PointType>::Ptr& getSubMapKdtree() const;
     const typename pcl::PointCloud<PointType>::Ptr& getSubMap() const;
     
     void optimHandler();
