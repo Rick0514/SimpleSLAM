@@ -60,12 +60,11 @@ public:
     size_t radiusSearch(const PointType &point, Scalar radius, std::vector<size_t> &k_indices,
         std::vector<Scalar> &k_sqr_distances, bool sorted=false) const
     {
-        std::vector<ResultItem<>> indices_dist;
-        RadiusResultSet<Scalar> resultSet(radius * radius, indices_dist);
+        std::vector<ResultItem<size_t, Scalar>> indices_dist;
         SearchParameters sp(0, sorted);
-        _kdtree.findNeighbors(resultSet, point.data, sp);
+        _kdtree.radiusSearch(point.data, radius, indices_dist, sp);
 
-        auto n = resultSet.size();
+        auto n = indices_dist.size();
   
         k_indices.resize(n);
         k_sqr_distances.resize(n);
