@@ -7,11 +7,9 @@ add_library(${PROJECT_NAME} STATIC ${srcs})
 
 target_include_directories(${PROJECT_NAME} PUBLIC
     include
-    ${ROOT_DIR}/backend/include
 )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
     dataproxy
-    backend
     PCR
 )

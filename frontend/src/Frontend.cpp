@@ -1,4 +1,5 @@
 #include <frontend/Frontend.hpp>
+#include <frontend/LidarOdometry.hpp>
 
 namespace frontend {
 
@@ -6,6 +7,14 @@ Frontend::Frontend(int local_size, int global_size){
     mLocalOdometry = std::make_shared<OdomDeque>(local_size);
     mGlobalOdometry = std::make_shared<OdomDeque>(global_size);
     mOdom2Map.setIdentity();
+}
+
+void Frontend::run(OdometryBase* lo)
+{
+    mLO.reset(lo);
+    mLOthdPtr = std::make_unique<trd::ResidentThread>([&](){
+        mLO->generateOdom();
+    });
 }
 
 Odometry::Ptr Frontend::getClosestLocalOdom(double stamp) const
@@ -29,5 +38,6 @@ Frontend::~Frontend() {
     mLocalOdometry->abort();
     mGlobalOdometry->abort();    
 }
+
 
 }

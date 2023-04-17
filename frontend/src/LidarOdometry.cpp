@@ -1,14 +1,13 @@
 #include <frontend/LidarOdometry.hpp>
 
 #include <frontend/Frontend.hpp>
-#include <backend/Backend.hpp>
 #include <dataproxy/LidarDataProxy.hpp>
+#include <dataproxy/RelocDataProxy.hpp>
 
 #include <PCR/LoamRegister.hpp>
 #include <PCR/NdtRegister.hpp>
 
 #include <pcl/pcl_config.h>
-#include <pcl/kdtree/kdtree_flann.h>
 
 #include <macro/templates.hpp>
 #include <utils/Shared_ptr.hpp>
@@ -17,22 +16,24 @@
 #include <geometry/trans.hpp>
 
 using namespace PCLTypes;
+using namespace EigenTypes;
 
 namespace frontend
 {
 
 template <typename PointType, bool UseBag>
-LidarOdometry<PointType, UseBag>::LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, BackendPtr& bk)
-: mDataProxyPtr(dp), mFrontendPtr(ft), mBackendPtr(bk), reloc(false)
+LidarOdometry<PointType, UseBag>::LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, RelocDataProxyPtr& rdp)
+: mDataProxyPtr(dp), mFrontendPtr(ft), reloc(false)
 {
     mRelocPose.setIdentity();
     // xyz for temp
     mPcr.reset(new PCR::LoamRegister<PointType>());
     // mPcr.reset(new PCR::NdtRegister<PointType>());
+    rdp->registerFunc(std::bind(&LidarOdometry<PointType, UseBag>::setRelocFlag, this, std::placeholders::_1));
 }
 
 template <typename PointType, bool UseBag>
-void LidarOdometry<PointType, UseBag>::setRelocFlag(EigenTypes::Pose6d& p)
+void LidarOdometry<PointType, UseBag>::setRelocFlag(Pose6d& p)
 {
     // atomic bool ensure compiler not to reorder exec!! so when reloc is set, mRelocPose is set already
     // but it is not safe for fast scenarios. if mRelocPose is call faster than generateOdom, generateOdom
@@ -45,13 +46,18 @@ void LidarOdometry<PointType, UseBag>::setRelocFlag(EigenTypes::Pose6d& p)
 }
 
 template <typename PointType, bool UseBag>
+void LidarOdometry<PointType, UseBag>::selectKeyFrame(KF&& kf)
+{
+    std::lock_guard<std::mutex> lk(mKFlock);
+    keyframes.emplace_back(kf);
+    mKFcv.notify_one();
+}
+
+template <typename PointType, bool UseBag>
 void LidarOdometry<PointType, UseBag>::generateOdom()
 {
     // get current scan
     auto scans = mDataProxyPtr->get();
-    
-    // get submap from backend -- may be need mutex !!
-    const auto& submap = mBackendPtr->getSubMap();
 
     // make init pose
     // 1. get latest scan  
@@ -122,8 +128,12 @@ void LidarOdometry<PointType, UseBag>::generateOdom()
         }
 
         // for now, pure LO, scan2map should be considered always success!!
-        lg->debug("scan pts: {}, submap pts: {}", scan->points.size(), submap->points.size());
-        mPcr->scan2Map(scan, submap, init_pose);
+        // lock here
+        {
+            std::lock_guard<std::mutex> lk(mLockMap);
+            lg->debug("scan pts: {}, submap pts: {}", scan->points.size(), mSubmap->points.size());
+            mPcr->scan2Map(scan, mSubmap, init_pose);
+        }
         lg->info("scan2map cost: {:.3f}s", tt);
         // if(!mPcr->scan2Map(scan, submap, init_pose)){
         //     init_pose = tmp_init_pose;
@@ -140,9 +150,9 @@ void LidarOdometry<PointType, UseBag>::generateOdom()
         auto ldp = static_cast<LidarDataProxy<PC<PointType>, UseBag>*>(mDataProxyPtr.get());
         ldp->setVisAligned(scan, init_pose);
 
-        // push the refined odom to dequez
+        // push the refined odom to deque
         auto global_odom = std::make_shared<Odometry>(stamp, init_pose);
-        mFrontendPtr->getGlobal()->push_back<UseBag>(global_odom);
+        mFrontendPtr->getGlobal()->template push_back<UseBag>(global_odom);
 
         // update odom2map
         if(local_odom)  odom2map = init_pose * local_odom->odom.inverse();

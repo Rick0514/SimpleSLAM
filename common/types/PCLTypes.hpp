@@ -18,6 +18,7 @@ namespace PCLTypes
     template<typename PointType, typename Scalar=double>
     struct KeyFrame
     {
+        using Scalar_t = Scalar;
         EigenTypes::Pose6<Scalar> pose;
         typename PC<PointType>::Ptr pc;    
     };

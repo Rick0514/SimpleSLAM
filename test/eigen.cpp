@@ -1,11 +1,12 @@
 #include <iostream>
-#include <types/EigenTypes.hpp>
 #include <geometry/trans.hpp>
+#include <types/PCLTypes.hpp>
 #include <Eigen/Geometry>
 #include <geometry/manifolds.hpp>
 
 using namespace std;
 using namespace EigenTypes;
+using namespace PCLTypes;
 using namespace geometry;
 using namespace PCR;
 
@@ -84,6 +85,23 @@ void test_map()
     cout << m << endl;
 }
 
+void test_map_pcl()
+{
+    Pxyzi p;
+    auto ep = p.getVector3fMap();
+    ep << 1, 2, 3;
+    cout << "x: " << p.x << endl;
+    cout << "y: " << p.y << endl;
+
+    Pose6<float> tr;
+    tr.setIdentity();
+    tr.translate(V3f(1, 1, 1));
+
+    ep = tr * ep;
+
+    cout << "after trans : " << ep.transpose() << endl;
+}
+
 int main(int argc, char const *argv[])
 {
     // test_setPose6d();
@@ -92,7 +110,8 @@ int main(int argc, char const *argv[])
     // test_euler();
     
     // test_manifolds();
-    test_map();
+    // test_map();
+    test_map_pcl();
 
     return 0;
 }

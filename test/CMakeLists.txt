@@ -26,6 +26,7 @@ target_link_libraries(align PUBLIC
 add_executable(eigen eigen.cpp)
 target_include_directories(eigen PUBLIC
     ${EIGEN3_INCLUDE_DIRS}
+    ${PCL_INCLUDE_DIRS}
     ${COMMON_HEADER}
 )
 

@@ -14,6 +14,8 @@
 
 #include <nanoflann/kfs_adaptor.hpp>
 
+namespace frontend { class Frontend; }
+
 namespace backend
 {
 
@@ -25,24 +27,22 @@ template <typename PointType>
 class Backend
 {
 private:
-
-    typename pcl::PointCloud<PointType>::Ptr mSubMap;
-    // typename pcl::KdTreeFLANN<PointType>::Ptr mSubMapKdtree;
-
     using KF = KeyFrame<PointType>;
+    using Scalar = typename KF::Scalar_t;
+    using FrontendPtr = std::shared_ptr<frontend::Frontend>;
+
+    static constexpr float mSurroundingKeyframeSearchRadius{20.0};
 
     std::shared_ptr<logger::Logger> mLg;
+
+    // frontend
+    FrontendPtr mFrontendPtr;
 
     // factor graph
     std::unique_ptr<gtsam::ISAM2> isam2;
     gtsam::NonlinearFactorGraph factorGraph;
     gtsam::Values initialEstimate;
     gtsam::Values optimizedEstimate;
-
-    std::deque<KF> keyframes;
-    int mKFnums;
-    std::mutex mKFlock;
-    std::condition_variable mKFcv;
 
     // optimize thread
     std::atomic_bool mRunning;
@@ -63,17 +63,10 @@ protected:
 
 public:
 
-    Backend();
+    Backend() = delete;
+    explicit Backend(const FrontendPtr&);
 
-    // pcd mode
-    Backend(std::string pcd_file);
-
-    // const typename pcl::KdTreeFLANN<PointType>::Ptr& getSubMapKdtree() const;
-    const typename pcl::PointCloud<PointType>::Ptr& getSubMap() const;
-    
     void optimHandler();
-
-    void putKeyFrame(KF&&);
 
     void setRTPose(const Pose6d& p) { mRTPose.store(p); }
 

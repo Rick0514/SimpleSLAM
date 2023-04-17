@@ -10,15 +10,6 @@ using namespace utils;
 
 namespace dataproxy
 {
-struct Odometry
-{
-    double stamp;
-    Pose6d odom;
-    Odometry(){}
-    Odometry(double t, const Pose6d& p) : stamp(t), odom(p){}
-
-    using Ptr = std::shared_ptr<Odometry>;
-};
 
 template <typename T, bool UseBag=false>
 class DataProxy

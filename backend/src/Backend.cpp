@@ -15,7 +15,7 @@ using namespace gtsam;
 using namespace PCLTypes;
 
 template<typename PointType>
-Backend<PointType>::Backend() : mRunning(true), mKFnums(0)
+Backend<PointType>::Backend(const FrontendPtr& ft) : mRunning(true), mKFnums(0), mFrontendPtr(ft)
 {
     priorNoise << 1e-2, 1e-2, M_PI / 72, 1e-1, 1e-1, 1e-1;
     odomNoise << 1e-4, 1e-4, 1e-4, 1e-1, 1e-1, 1e-1;
@@ -30,9 +30,8 @@ Backend<PointType>::Backend() : mRunning(true), mKFnums(0)
     isam2 = std::make_unique<gtsam::ISAM2>(param);
 }
 
-
 template<typename PointType>
-Backend<PointType>::Backend(std::string pcd_file)
+void Backend<PointType>::initSubmapFromPCD(std::string pcd_file)
 {
     mLg = logger::Logger::getInstance();
     // load global map mode
@@ -50,12 +49,6 @@ Backend<PointType>::Backend(std::string pcd_file)
     // downsample global pc
     pcp::voxelDownSample<PointType>(mSubMap, 0.7f);
     mLg->info("submap size: {}", mSubMap->size());
-}
-
-template<typename PointType>
-const typename pcl::PointCloud<PointType>::Ptr& Backend<PointType>::getSubMap() const
-{
-    return mSubMap;
 }
 
 template<typename PointType>
@@ -78,13 +71,6 @@ void Backend<PointType>::addOdomFactor()
 }
 
 
-template<typename PointType>
-void Backend<PointType>::putKeyFrame(KF&& kf)
-{
-    std::lock_guard<std::mutex> lk(mKFlock);
-    keyframes.emplace_back(kf);
-    mKFcv.notify_one();
-}
 
 template<typename PointType>
 void Backend<PointType>::optimHandler()
@@ -113,9 +99,21 @@ void Backend<PointType>::optimHandler()
             auto p = optimizedEstimate.at<gtsam::Pose3>(i);
             keyframes[i].pose.matrix() = p.matrix();
         }
-        // 2. update submap
         
+        // 2. update submap
+        std::vector<size_t> k_indices;
+        std::vector<Scalar> k_sqr_distances;
+        nanoflann::KeyFramesKdtree<std::deque<KF>, Scalar, 3> kf_kdtree(keyframes);
+        kf_kdtree.radiusSearch(mRTPose.load().translation(), mSurroundingKeyframeSearchRadius, k_indices, k_sqr_distances);
+        mSubMap->clear();
+        for(auto i : k_indices){
+            const auto& src = keyframes[i].pc;
+            PC<PointType> dst;
+            *mSubMap += *pcp::transformPointCloud<PointType, Scalar>(src, keyframes[i].pose);
+        }
+
         // 3. info frontend something update, this step maybe tricky if backend dont own reference of frontend!!        
+
     }    
 }
 

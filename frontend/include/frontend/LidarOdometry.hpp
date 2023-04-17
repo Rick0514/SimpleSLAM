@@ -1,4 +1,5 @@
 #pragma once
+#include <deque>
 #include <atomic>
 #include <frontend/OdometryBase.hpp>
 
@@ -6,9 +7,11 @@
 #include <types/EigenTypes.hpp>
 
 // ------------ forward declaration ------------
-namespace frontend { class Frontend; }
-namespace backend { template<typename PointType> class Backend; }
-namespace dataproxy { template <typename T, bool> class DataProxy; }
+namespace dataproxy { 
+    template <typename T, bool> class DataProxy; 
+    class RelocDataProxy;
+}
+
 namespace PCR { template<typename PointType> class PointCloudRegister; }
 // ------------ forward declaration ------------
 
@@ -16,7 +19,6 @@ namespace frontend
 {
 
 using namespace dataproxy;
-using namespace backend;
 using namespace PCLTypes;
 
 class Frontend;
@@ -26,15 +28,15 @@ class LidarOdometry : public OdometryBase
 {
 
 public:
+    using KF = KeyFrame<PointType>;
     using DataProxyPtr = std::shared_ptr<DataProxy<PC<PointType>, UseBag>>;
     using FrontendPtr = std::shared_ptr<Frontend>;
-    using BackendPtr = std::shared_ptr<Backend<PointType>>;
+    using RelocDataProxyPtr = std::shared_ptr<RelocDataProxy>;
 
 private:
 
     DataProxyPtr mDataProxyPtr;
     FrontendPtr mFrontendPtr;
-    BackendPtr mBackendPtr;
 
     std::unique_ptr<PCR::PointCloudRegister<PointType>> mPcr; 
 
@@ -42,13 +44,26 @@ private:
     std::mutex mRelocLock;
     EigenTypes::Pose6d mRelocPose;
 
+    typename PC<PointType>::Ptr mSubmap;
+    std::mutex mLockMap;
+
+    std::deque<KF> keyframes;
+    int mKFnums;
+    std::mutex mKFlock;
+    std::condition_variable mKFcv;
+
 public:
 
     void setRelocFlag(EigenTypes::Pose6d& p);
 
-    explicit LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, BackendPtr& bk);
+    explicit LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, RelocDataProxyPtr& rdp);
 
     virtual void generateOdom() override;
+
+    auto getSubmap() { return mSubmap; }    // not thread-safe!!
+    std::mutex& getSubmapLock() { return mLockMap; }
+
+    void selectKeyFrame(KF&& kf);
 
     ~LidarOdometry();
 };
