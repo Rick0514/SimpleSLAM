@@ -7,8 +7,6 @@
 #include <utils/Atomic.hpp>
 #include <utils/Logger.hpp>
 
-#include <frontend/OdometryBase.hpp>
-
 namespace frontend
 {
 
@@ -40,7 +38,7 @@ public:
 
     pose_t get() const { return mOdom2Map; }
 
-    void run(OdometryBase* lo);
+    void run(std::unique_ptr<LidarOdometry>&& lo);
 
     Odometry::Ptr getClosestLocalOdom(double stamp) const;
 

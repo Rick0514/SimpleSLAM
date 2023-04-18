@@ -9,9 +9,9 @@ Frontend::Frontend(int local_size, int global_size){
     mOdom2Map.setIdentity();
 }
 
-void Frontend::run(OdometryBase* lo)
+void Frontend::run(std::unique_ptr<LidarOdometry>&& lo)
 {
-    mLO.reset(lo);
+    mLO = std::move(lo);
     mLOthdPtr = std::make_unique<trd::ResidentThread>([&](){
         mLO->generateOdom();
     });

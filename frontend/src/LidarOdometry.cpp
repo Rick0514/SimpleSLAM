@@ -8,6 +8,9 @@
 #include <PCR/NdtRegister.hpp>
 
 #include <pcl/pcl_config.h>
+#include <pcl/io/pcd_io.h>
+#include <pcp/pcp.hpp>
+
 #include <utils/Shared_ptr.hpp>
 #include <time/tictoc.hpp>
 #include <geometry/trans.hpp>
@@ -21,6 +24,7 @@ namespace frontend
 LidarOdometry::LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, RelocDataProxyPtr& rdp)
 : mDataProxyPtr(dp), mFrontendPtr(ft), reloc(false)
 {
+    mSubmap = pcl::make_shared<pc_t>();
     mRelocPose.setIdentity();
     // xyz for temp
     mPcr.reset(new PCR::LoamRegister());
@@ -38,6 +42,23 @@ void LidarOdometry::setRelocFlag(const pose_t& p)
     std::lock_guard<std::mutex> lk(mRelocLock);
     mRelocPose = p;
     reloc.store(true);
+}
+
+void LidarOdometry::initSubmapFromPCD(std::string pcd_file)
+{
+    // load global map mode
+    if(pcl::io::loadPCDFile<pc_t>(pcd_file, *mSubmap) == -1)
+    {
+        auto msg = fmt::format("can't load globalmap from: {}", pcd_file);
+        lg->error(msg);
+        throw std::runtime_error(msg);
+    }
+
+    lg->info("load map success!!");
+
+    // downsample global pc
+    pcp::voxelDownSample<pc_t>(mSubmap, 0.7f);
+    lg->info("submap size: {}", mSubmap->size());
 }
 
 void LidarOdometry::selectKeyFrame(KF&& kf)
