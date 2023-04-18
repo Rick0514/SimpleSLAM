@@ -1,5 +1,7 @@
 #pragma once
 
+#include <types/basic.hpp>
+
 #include <utils/SafeDeque.hpp>
 #include <utils/Thread.hpp>
 #include <utils/Atomic.hpp>
@@ -13,6 +15,8 @@ namespace frontend
 using namespace EigenTypes;
 using namespace utils;
 
+class LidarOdometry;
+
 class Frontend
 {
 protected:
@@ -20,12 +24,12 @@ protected:
     using OdomDeque = concurrency::SafeDeque<Odometry>;
     using OdomDequePtr = std::shared_ptr<OdomDeque>;
 
-    Pose6d mOdom2Map;
+    pose_t mOdom2Map;
 
     OdomDequePtr mLocalOdometry;
     OdomDequePtr mGlobalOdometry;
 
-    std::unique_ptr<OdometryBase> mLO;
+    std::unique_ptr<LidarOdometry> mLO;
     std::unique_ptr<trd::ResidentThread> mLOthdPtr;
 
 public:
@@ -34,7 +38,7 @@ public:
 
     void publish() const;
 
-    Pose6d get() const { return mOdom2Map; }
+    pose_t get() const { return mOdom2Map; }
 
     void run(OdometryBase* lo);
 

@@ -8,11 +8,8 @@
 #include <PCR/NdtRegister.hpp>
 
 #include <pcl/pcl_config.h>
-
-#include <macro/templates.hpp>
 #include <utils/Shared_ptr.hpp>
 #include <time/tictoc.hpp>
-
 #include <geometry/trans.hpp>
 
 using namespace PCLTypes;
@@ -21,19 +18,17 @@ using namespace EigenTypes;
 namespace frontend
 {
 
-template <typename PointType, bool UseBag>
-LidarOdometry<PointType, UseBag>::LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, RelocDataProxyPtr& rdp)
+LidarOdometry::LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, RelocDataProxyPtr& rdp)
 : mDataProxyPtr(dp), mFrontendPtr(ft), reloc(false)
 {
     mRelocPose.setIdentity();
     // xyz for temp
-    mPcr.reset(new PCR::LoamRegister<PointType>());
+    mPcr.reset(new PCR::LoamRegister());
     // mPcr.reset(new PCR::NdtRegister<PointType>());
-    rdp->registerFunc(std::bind(&LidarOdometry<PointType, UseBag>::setRelocFlag, this, std::placeholders::_1));
+    rdp->registerFunc(std::bind(&LidarOdometry::setRelocFlag, this, std::placeholders::_1));
 }
 
-template <typename PointType, bool UseBag>
-void LidarOdometry<PointType, UseBag>::setRelocFlag(Pose6d& p)
+void LidarOdometry::setRelocFlag(const pose_t& p)
 {
     // atomic bool ensure compiler not to reorder exec!! so when reloc is set, mRelocPose is set already
     // but it is not safe for fast scenarios. if mRelocPose is call faster than generateOdom, generateOdom
@@ -45,23 +40,21 @@ void LidarOdometry<PointType, UseBag>::setRelocFlag(Pose6d& p)
     reloc.store(true);
 }
 
-template <typename PointType, bool UseBag>
-void LidarOdometry<PointType, UseBag>::selectKeyFrame(KF&& kf)
+void LidarOdometry::selectKeyFrame(KF&& kf)
 {
-    std::lock_guard<std::mutex> lk(mKFlock);
-    keyframes.emplace_back(kf);
-    mKFcv.notify_one();
+    // std::lock_guard<std::mutex> lk(mKFlock);
+    // keyframes.emplace_back(kf);
+    // mKFcv.notify_one();
 }
 
-template <typename PointType, bool UseBag>
-void LidarOdometry<PointType, UseBag>::generateOdom()
+void LidarOdometry::generateOdom()
 {
     // get current scan
     auto scans = mDataProxyPtr->get();
 
     // make init pose
     // 1. get latest scan  
-    typename PC<PointType>::Ptr scan;
+    pc_t::Ptr scan;
 
 #if PCL_VERSION_COMPARE(<=, 1, 10, 0)
     auto stdscan = scans->consume_front();
@@ -76,7 +69,7 @@ void LidarOdometry<PointType, UseBag>::generateOdom()
         // find closest localodom
         // think how to get the stamp
         double stamp = (double)scan->header.stamp / 1e6;
-        Pose6d init_pose;
+        pose_t init_pose;
 
         {
             std::lock_guard<std::mutex> lk(mRelocLock);
@@ -110,8 +103,8 @@ void LidarOdometry<PointType, UseBag>::generateOdom()
                 if(std::abs(gbq->at(cidx)->stamp - stamp) > 0.15)
                     lg->warn("closest odom is out-dated!!");
                             
-                Pose6d last_1 = gbq->at(cidx)->odom;
-                Pose6d last_2 = gbq->at(cidx-1)->odom;
+                pose_t last_1 = gbq->at(cidx)->odom;
+                pose_t last_2 = gbq->at(cidx-1)->odom;
                 init_pose = last_1 * (last_2.inverse() * last_1);
                 geometry::trans::T2SE3(init_pose.matrix());
             }
@@ -147,12 +140,11 @@ void LidarOdometry<PointType, UseBag>::generateOdom()
         }
 
         // visualize
-        auto ldp = static_cast<LidarDataProxy<PC<PointType>, UseBag>*>(mDataProxyPtr.get());
-        ldp->setVisAligned(scan, init_pose);
+        mDataProxyPtr.get()->setVisAligned(scan, init_pose);
 
         // push the refined odom to deque
         auto global_odom = std::make_shared<Odometry>(stamp, init_pose);
-        mFrontendPtr->getGlobal()->template push_back<UseBag>(global_odom);
+        mFrontendPtr->getGlobal()->template push_back<constant::usebag>(global_odom);
 
         // update odom2map
         if(local_odom)  odom2map = init_pose * local_odom->odom.inverse();
@@ -164,11 +156,7 @@ void LidarOdometry<PointType, UseBag>::generateOdom()
 
 }
 
-template <typename PointType, bool UseBag>
-LidarOdometry<PointType, UseBag>::~LidarOdometry(){}
-
-PCTemplateInstantiateExplicitly(LidarOdometry)
-PCTemplateInstantiateExplicitlyWithFixedType(LidarOdometry, true)
+LidarOdometry::~LidarOdometry(){}
 
 } // namespace frontend
 
