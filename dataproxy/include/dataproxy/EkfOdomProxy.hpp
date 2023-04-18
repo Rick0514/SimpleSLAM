@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ros/ros.h>
+#include <types/basic.hpp>
 #include <nav_msgs/Odometry.h>
 
 #include <dataproxy/DataProxy.hpp>
@@ -8,8 +9,7 @@
 namespace dataproxy
 {
 
-template<bool UseBag=false>
-class EkfOdomProxy : public DataProxy<Odometry, UseBag>
+class EkfOdomProxy : public DataProxy<Odometry>
 {
 public:
     explicit EkfOdomProxy(ros::NodeHandle& nh, int size);

@@ -44,7 +44,7 @@ public:
         _kdtree.buildIndex();
     }
 
-    size_t nearestKSearch(const PointType &point, int k,
+    size_t nearestKSearch(Scalar* point, int k,
             std::vector<size_t> &k_indices,
             std::vector<Scalar> &k_sqr_distances) const
     {
@@ -53,16 +53,16 @@ public:
         
         KNNResultSet<Scalar> resultSet(k);
         resultSet.init(k_indices.data(), k_sqr_distances.data());
-        _kdtree.findNeighbors(resultSet, point.data);
+        _kdtree.findNeighbors(resultSet, point);
         return resultSet.size();
     }
 
-    size_t radiusSearch(const PointType &point, Scalar radius, std::vector<size_t> &k_indices,
+    size_t radiusSearch(Scalar* point, Scalar radius, std::vector<size_t> &k_indices,
         std::vector<Scalar> &k_sqr_distances, bool sorted=false) const
     {
         std::vector<ResultItem<size_t, Scalar>> indices_dist;
         SearchParameters sp(0, sorted);
-        _kdtree.radiusSearch(point.data, radius, indices_dist, sp);
+        _kdtree.radiusSearch(point, radius, indices_dist, sp);
 
         auto n = indices_dist.size();
   

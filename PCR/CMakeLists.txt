@@ -2,6 +2,7 @@ project(PCR)
 
 set(CMAKE_BUILD_TYPE Release)
 
+find_package(OpenMP REQUIRED)
 find_package(PCL REQUIRED COMPONENTS common filters)
 
 add_subdirectory(../third_parties/pclomp pclomp)
@@ -15,6 +16,9 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     ${PCL_LIBRARIES}
     spdlog
     pclomp::registration
+)
+target_link_libraries(${PROJECT_NAME} PRIVATE 
+    OpenMP::OpenMP_CXX
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC

@@ -1,16 +1,15 @@
 #include <PCR/LoamRegister.hpp>
 #include <geometry/manifolds.hpp>
-#include <Eigen/Eigenvalues>
 #include <geometry/trans.hpp>
-
 #include <time/tictoc.hpp>
+
+#include <Eigen/Eigenvalues>
 
 namespace PCR
 {
 using namespace geometry;
 
-template<typename PointType>
-LoamRegister<PointType>::LoamRegister(){
+LoamRegister::LoamRegister(){
     // mKdtree.reset(new pcl::KdTreeFLANN<PointType>());
 
 #ifdef DEBUG_DIR
@@ -18,12 +17,11 @@ LoamRegister<PointType>::LoamRegister(){
 #endif
 }
 
-template<typename PointType>
 template<unsigned int N>
-bool LoamRegister<PointType>::_extractPlaneCoeffs(const Eigen::Matrix<double, N, 3>& A, V4d& hx)
+bool LoamRegister::_extractPlaneCoeffs(const Eigen::Matrix<scalar_t, N, 3>& A, V4& hx)
 {
-    Eigen::Matrix<double, N, 1> b;
-    V3d x;
+    Eigen::Matrix<scalar_t, N, 1> b;
+    V3 x;
     b.fill(-1);
     x = A.colPivHouseholderQr().solve(b);
     hx = x.homogeneous();
@@ -37,12 +35,16 @@ bool LoamRegister<PointType>::_extractPlaneCoeffs(const Eigen::Matrix<double, N,
     return true;        
 }
 
-template<typename PointType>
-bool LoamRegister<PointType>::_extractPlaneMatrix(const PointType& pointInMap, const PC_cPtr& dst, Eigen::Matrix<double, mPlanePtsNum, 3>& A)
+bool LoamRegister::_extractPlaneMatrix(const pt_t& pointInMap, const PC_cPtr& dst, Eigen::Matrix<scalar_t, mPlanePtsNum, 3>& A)
 {
-    std::vector<size_t> pointSearchInd;
-    std::vector<float> pointSearchSqDis;
-    mKdtree.nearestKSearch(pointInMap, mPlanePtsNum, pointSearchInd, pointSearchSqDis);
+    std::vector<index_t> pointSearchInd;
+    std::vector<scalar_t> pointSearchSqDis;
+
+    // for pcl, because pcl point are all float
+    scalar_t p[3];
+    for(int i=0; i<3; i++)  p[i] = pointInMap.data[i];
+
+    mKdtree.nearestKSearch(p, mPlanePtsNum, pointSearchInd, pointSearchSqDis);
 
     // DEBUG(debug_file, fmt::format("nks: {}", pointSearchSqDis[mPlanePtsNum-1]));
     if(pointSearchSqDis[mPlanePtsNum-1] < mKdtreeMaxSearchDist)
@@ -60,18 +62,17 @@ bool LoamRegister<PointType>::_extractPlaneMatrix(const PointType& pointInMap, c
     return false;
 }
 
-template<typename PointType>
-void LoamRegister<PointType>::_removeDegeneratePart(const M6d& JtJ, V6d& x){
+void LoamRegister::_removeDegeneratePart(const M6& JtJ, V6& x){
     if(!degenerateProjSet){
         degenerateProjSet = true;
 
-        V6d ev = JtJ.eigenvalues().real();
+        V6 ev = JtJ.eigenvalues().real();
         
         // std::stringstream ss;
         // ss << "ev: " << ev.transpose();
         // DEBUG(debug_file, ss.str());
 
-        M6d JtJ_copy = JtJ;
+        M6 JtJ_copy = JtJ;
         for(int i=0; i<6; i++){
             if(ev(i) < mDegenerateThresh){
                 isDegenerate = true;
@@ -84,16 +85,15 @@ void LoamRegister<PointType>::_removeDegeneratePart(const M6d& JtJ, V6d& x){
     if(isDegenerate)    x = degenerateProj * x;
 }
 
-template<typename PointType>
-bool LoamRegister<PointType>::scan2Map(const PC_cPtr& src, const PC_cPtr& dst, Pose6d& res)
+bool LoamRegister::scan2Map(const PC_cPtr& src, const PC_cPtr& dst, pose_t& res)
 {
     isDegenerate = false;
     this->isConverge = false;
     degenerateProjSet = false;
 
     // construct J, E ==> J'*J = -J'E
-    std::vector<Eigen::Matrix<double, 1, 6>> J_vec;
-    std::vector<double> E_vec;
+    std::vector<Eigen::Matrix<scalar_t, 1, 6>> J_vec;
+    std::vector<scalar_t> E_vec;
     
     common::time::tictoc tt;
     mKdtree.setInputCloud(dst);
@@ -105,69 +105,82 @@ bool LoamRegister<PointType>::scan2Map(const PC_cPtr& src, const PC_cPtr& dst, P
         E_vec.clear();
 
         tt.tic();
-        float ta = 0;
-        float te = 0;
+        scalar_t ta = 0;
+        scalar_t te = 0;
 
+        #pragma omp parallel for num_threads(4)
         for(int i=0; i<src->points.size(); i++){
             // trans point to map frame
             tt.tic();
-            const PointType& pointOri = src->points[i];
-            PointType pointInMap;
+            const auto& pointOri = src->points[i];
+            pt_t pointInMap;
             _pointAssociateToMap(&pointOri, &pointInMap, res);
             ta += tt.elapsed().count();
 
-            Eigen::Matrix<double, mPlanePtsNum, 3> A;
+            Eigen::Matrix<scalar_t, mPlanePtsNum, 3> A;
 
             tt.tic();
             if(_extractPlaneMatrix(pointInMap, dst, A))
             {
                 // extract plane
-                V4d hx;
+                V4 hx;
                 if(_extractPlaneCoeffs<mPlanePtsNum>(A, hx)){
                     // check good point to optimize
-                    V3d p(pointInMap.x, pointInMap.y, pointInMap.z);
-                    float dist = hx.dot(p.homogeneous());
+                    V3 p(pointInMap.x, pointInMap.y, pointInMap.z);
+                    scalar_t dist = hx.dot(p.homogeneous());
 
-                    float s = 1 - 0.9 * fabs(dist) / sqrt(sqrt(pointOri.x * pointOri.x
+                    scalar_t s = 1 - 0.9 * fabs(dist) / sqrt(sqrt(pointOri.x * pointOri.x
                             + pointOri.y * pointOri.y + pointOri.z * pointOri.z));
                     
                     // DEBUG(debug_file, fmt::format("weight: {}", s));
                     if (s > mPointValidThresh) {
                         // good point is selected!!
-                        E_vec.emplace_back(_error(hx, p));
-                        Eigen::Matrix<double, 3, 6> jse3;
-                        manifolds::J_SE3(p, jse3);
-                        J_vec.emplace_back(_J_e_wrt_x(hx).transpose() * jse3);
+                        #pragma omp critical
+                        {
+                            E_vec.emplace_back(_error(hx, p));                            
+                            Eigen::Matrix<scalar_t, 3, 6> jse3;
+                            manifolds::J_SE3(p, jse3);
+                            J_vec.emplace_back(_J_e_wrt_x(hx).transpose() * jse3);
+                        }
                     }
                 }
             }
             te += tt.elapsed().count();
         }
+
         // this->lg->debug("build J cost: {}", tt);
         this->lg->debug("ta cost: {}", ta);
         this->lg->debug("te cost: {}", te);
 
         // make J and E
-        int n = J_vec.size();
+        auto n = J_vec.size();
         this->lg->debug("optimize size: {}", n);
         if(n < 6){
             this->lg->error("not enough valid point({}) to optimize!", n);
             break;
         }
 
-        Eigen::MatrixXd J(n, 6);
-        Eigen::MatrixXd E(n, 1);
-
+        tt.tic();
+        using MatrixX6 = Eigen::Matrix<scalar_t, Eigen::Dynamic, 6>;
+        using VectorX = Eigen::Matrix<scalar_t, Eigen::Dynamic, 1>;
+        MatrixX6 J(n, 6);
+        VectorX E(n, 1);
         for(int i=0; i<n; i++){
             J.row(i) = J_vec[i];
             E(i) = E_vec[i];
         }
+        M6 JtJ = J.transpose() * J;
+        V6 JtE = J.transpose() * E;
 
-        M6d JtJ = J.transpose() * J;
-        V6d JtE = J.transpose() * E;
-        
-        tt.tic();
-        V6d x = JtJ.ldlt().solve(-JtE);
+        // ColMajor 6xn --> vector<1x6>
+        // using MatrixX6 = Eigen::Matrix<scalar_t, 6, Eigen::Dynamic>;    
+        // using VectorX = Eigen::Matrix<scalar_t, Eigen::Dynamic, 1>;
+        // Eigen::Map<MatrixX6> J(J_vec.data()->data(), 6, n);
+        // Eigen::Map<VectorX> E(E_vec.data(), n, 1);
+        // M6 JtJ = J * J.transpose();
+        // V6 JtE = J * E;
+
+        V6 x = JtJ.ldlt().solve(-JtE);
         this->lg->debug("solve x cost: {}", tt);
 
         // check converge
@@ -182,7 +195,7 @@ bool LoamRegister<PointType>::scan2Map(const PC_cPtr& src, const PC_cPtr& dst, P
         // DEBUG(debug_file, ss.str());
 
         // _removeDegeneratePart(JtJ, x);
-        M4d Tse3;
+        M4 Tse3;
         manifolds::exp(x, Tse3);
         
         res.matrix() = Tse3 * res.matrix();
@@ -193,8 +206,6 @@ bool LoamRegister<PointType>::scan2Map(const PC_cPtr& src, const PC_cPtr& dst, P
 
     return this->isConverge;
 }
-
-PCTemplateInstantiateExplicitly(LoamRegister)
 
 } // namespace PCR
 

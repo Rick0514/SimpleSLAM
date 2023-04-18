@@ -5,22 +5,21 @@
 namespace PCR
 {
 
-template<typename PointType>
-class NdtRegister : public PointCloudRegister<PointType>
+class NdtRegister : public PointCloudRegister
 {
 private:
     
     static constexpr float resol{1.0}; 
-    typename pclomp::NormalDistributionsTransform<PointType, PointType>::Ptr _ndt_omp;
+    typename pclomp::NormalDistributionsTransform<pt_t, pt_t>::Ptr _ndt_omp;
 
 public:
 
-    using typename PointCloudRegister<PointType>::PC_Ptr;
-    using typename PointCloudRegister<PointType>::PC_cPtr;
+    using typename PointCloudRegister::PC_Ptr;
+    using typename PointCloudRegister::PC_cPtr;
 
     NdtRegister();
 
-    virtual bool scan2Map(const PC_cPtr& src, const PC_cPtr& dst, Pose6d& res) override;
+    virtual bool scan2Map(const PC_cPtr& src, const PC_cPtr& dst, pose_t& res) override;
 
 };
     

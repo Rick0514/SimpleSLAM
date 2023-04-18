@@ -3,30 +3,25 @@
 namespace PCR
 {
 
-template<typename PointType>
-NdtRegister<PointType>::NdtRegister()
+NdtRegister::NdtRegister()
 {
-    _ndt_omp.reset(new pclomp::NormalDistributionsTransform<PointType, PointType>());
+    _ndt_omp.reset(new pclomp::NormalDistributionsTransform<pt_t, pt_t>());
     _ndt_omp->setResolution(resol);
     _ndt_omp->setNumThreads(1);
     _ndt_omp->setNeighborhoodSearchMethod(pclomp::DIRECT7);
 }
 
-template<typename PointType>
-bool NdtRegister<PointType>::scan2Map(const PC_cPtr& src, const PC_cPtr& dst, Pose6d& res)
+bool NdtRegister::scan2Map(const PC_cPtr& src, const PC_cPtr& dst, pose_t& res)
 {
     _ndt_omp->setInputTarget(dst);
     _ndt_omp->setInputSource(src);
 
-    typename pcl::PointCloud<PointType>::Ptr aligned(new pcl::PointCloud<PointType>());
+    PC_Ptr aligned(new pc_t());
 
     _ndt_omp->align(*aligned, res.matrix().cast<float>());
-    Eigen::Matrix4f mf = _ndt_omp->getFinalTransformation();
-    res.matrix() = mf.cast<double>();
+    res.matrix() = _ndt_omp->getFinalTransformation().cast<scalar_t>();
 
     return _ndt_omp->hasConverged();
 }
-    
-PCTemplateInstantiateExplicitly(NdtRegister)
 
 } // namespace PCR

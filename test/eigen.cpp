@@ -8,7 +8,6 @@ using namespace std;
 using namespace EigenTypes;
 using namespace PCLTypes;
 using namespace geometry;
-using namespace PCR;
 
 struct A{
     Pose6d p;
@@ -82,7 +81,21 @@ void test_map()
     // Eigen::Map<M3d> m(a);
     Eigen::Map<Eigen::Matrix<double, 3, 3, Eigen::RowMajor>> m(a);
 
-    cout << m << endl;
+    // cout << m << endl;
+
+    int n = 4;
+    vector<V3d> vs;
+    V3d p(1,2,3);
+
+    for(int i=0; i<n; i++)
+    {
+        V3d v = (double)(i+1) * p;
+        vs.emplace_back(v);
+    }
+
+    using mat_t = Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
+    Eigen::Map<mat_t> J(vs.data()->data(), n, 3);
+    cout << J << endl;
 }
 
 void test_map_pcl()
@@ -110,8 +123,8 @@ int main(int argc, char const *argv[])
     // test_euler();
     
     // test_manifolds();
-    // test_map();
-    test_map_pcl();
+    test_map();
+    // test_map_pcl();
 
     return 0;
 }

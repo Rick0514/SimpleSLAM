@@ -2,14 +2,15 @@
 
 #include <types/EigenTypes.hpp>
 
-namespace PCR
+namespace geometry
 {
 namespace matrix
 {
     
 using namespace EigenTypes;
 
-inline void skew(const V3d& t, M3d& t_hat)
+template<typename Scalar>
+inline void skew(const V3<Scalar>& t, M3<Scalar>& t_hat)
 {
     t_hat << 0, -t(2), t(1),
             t(2), 0, -t(0),

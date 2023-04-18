@@ -3,62 +3,68 @@
 #include <types/EigenTypes.hpp>
 #include <geometry/matrix.hpp>
 
-namespace PCR
+namespace geometry
 {
 namespace manifolds
 {
     using namespace EigenTypes;
     
-    inline void exp(const V3d& w, M3d& SO3)
+    template <typename Scalar>
+    using V6 = Eigen::Matrix<Scalar, 6, 1>;
+
+    template <typename Scalar>
+    inline void exp(const V3<Scalar>& w, M3<Scalar>& SO3)
     {
-        double t = w.norm();
+        Scalar t = w.norm();
         if(t < 1e-6){
-            SO3 = M3d::Identity();
+            SO3 = M3<Scalar>::Identity();
             return;
         }
 
-        V3d a = w / t;
-        double ct = cos(t);
+        V3<Scalar> a = w / t;
+        Scalar ct = cos(t);
 
-        M3d a_hat;
+        M3<Scalar> a_hat;
         matrix::skew(a, a_hat);
-        SO3 = ct * M3d::Identity() + (1.0 - ct) * a * a.transpose() + sin(t) * a_hat;        
+        SO3 = ct * M3<Scalar>::Identity() + (1.0 - ct) * a * a.transpose() + sin(t) * a_hat;        
     }
 
-    inline void exp(const V6d& k, M4d& SE3)
+    template <typename Scalar>
+    inline void exp(const V6<Scalar>& k, M4<Scalar>& SE3)
     {
-        V3d p = k.head<3>();
-        V3d w = k.tail<3>();
+        V3<Scalar>p = k.template head<3>();
+        V3<Scalar> w = k.template tail<3>();
 
-        double t = w.norm();
-        SE3 = M4d::Identity();
+        Scalar t = w.norm();
+        SE3 = M4<Scalar>::Identity();
 
         if(t < 1e-6){
-            SE3.block<3, 1>(0, 3) = p;
+            SE3.template block<3, 1>(0, 3) = p;
             return;
         }
 
-        V3d a = w / t;
-        double ct = cos(t);
-        double st = sin(t);
+        V3<Scalar> a = w / t;
+        Scalar ct = cos(t);
+        Scalar st = sin(t);
 
-        M3d a_hat;
+        M3<Scalar> a_hat;
         matrix::skew(a, a_hat);
 
-        M3d aa = a * a.transpose();
+        M3<Scalar> aa = a * a.transpose();
 
-        M3d R = ct * M3d::Identity() + (1.0 - ct) * aa + sin(t) * a_hat;
-        M3d V = st / t * M3d::Identity() + (1.0 - st / t) * aa + ((1 - ct) / t) * a_hat;
+        M3<Scalar> R = ct * M3<Scalar>::Identity() + (1.0 - ct) * aa + sin(t) * a_hat;
+        M3<Scalar> V = st / t * M3<Scalar>::Identity() + (1.0 - st / t) * aa + ((1 - ct) / t) * a_hat;
 
-        SE3.block<3, 3>(0, 0) = R;
-        SE3.block<3, 1>(0, 3) = V * p;
+        SE3.template block<3, 3>(0, 0) = R;
+        SE3.template block<3, 1>(0, 3) = V * p;
     }
 
-    inline void J_SE3(const V3d& p, Eigen::Matrix<double, 3, 6>& J){
-        J.block<3, 3>(0, 0).setIdentity();
-        M3d s;
+    template <typename Scalar>
+    inline void J_SE3(const V3<Scalar>& p, Eigen::Matrix<Scalar, 3, 6>& J){
+        J.template block<3, 3>(0, 0).setIdentity();
+        M3<Scalar> s;
         matrix::skew(p, s);
-        J.block<3, 3>(0, 3) = -s;
+        J.template block<3, 3>(0, 3) = -s;
     }
 
 } // namespace common

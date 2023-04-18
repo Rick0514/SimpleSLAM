@@ -14,14 +14,18 @@ namespace PCR
 { 
 using namespace EigenTypes;
 
-template<typename PointType>
-class LoamRegister : public PointCloudRegister<PointType>
+class LoamRegister : public PointCloudRegister
 {
 
 public:
-    using typename PointCloudRegister<PointType>::PC_Ptr;
-    using typename PointCloudRegister<PointType>::PC_cPtr;
-    using M6d = Eigen::Matrix<double, 6, 6>;
+    using typename PointCloudRegister::PC_Ptr;
+    using typename PointCloudRegister::PC_cPtr;
+    using V3 = V3<scalar_t>;
+    using M3 = M3<scalar_t>;
+    using V4 = Eigen::Matrix<scalar_t, 4, 1>;
+    using V6 = Eigen::Matrix<scalar_t, 6, 1>;
+    using M4 = Eigen::Matrix<scalar_t, 4, 4>;
+    using M6 = Eigen::Matrix<scalar_t, 6, 6>;
 
 private:
     
@@ -39,9 +43,9 @@ private:
 
     bool isDegenerate;
     bool degenerateProjSet;
-    M6d degenerateProj;
+    M6 degenerateProj;
 
-    nanoflann::PointCloudKdtree<PointType, float> mKdtree;
+    nanoflann::PointCloudKdtree<pt_t, scalar_t> mKdtree;
 
 #ifdef DEBUG_DIR
     std::ofstream debug_file;
@@ -49,40 +53,42 @@ private:
 
 private:
 
-    static inline void _pointAssociateToMap(PointType const * const pi, PointType * const po, const Pose6d& p)
+    static inline void _pointAssociateToMap(pt_t const * const pi, pt_t * const po, const pose_t& p)
     {
-        const M3d& rot = p.rotation();
-        const V3d& t = p.translation();
+        const M3& rot = p.rotation();
+        const V3& t = p.translation();
         po->x = rot(0,0) * pi->x + rot(0,1) * pi->y + rot(0,2) * pi->z + t(0);
         po->y = rot(1,0) * pi->x + rot(1,1) * pi->y + rot(1,2) * pi->z + t(1);
         po->z = rot(2,0) * pi->x + rot(2,1) * pi->y + rot(2,2) * pi->z + t(2);
-        if constexpr (std::is_same_v<PointType, pcl::PointXYZI>){
+        // c++17
+        if constexpr (std::is_same_v<pt_t, Pxyzi>){
             po->intensity = pi->intensity;
         }
     }
 
     template<unsigned int N>
-    bool _extractPlaneCoeffs(const Eigen::Matrix<double, N, 3>& A, V4d& hx);
+    bool _extractPlaneCoeffs(const Eigen::Matrix<scalar_t, N, 3>& A, V4& hx);
 
-    bool _extractPlaneMatrix(const PointType& pointInMap, const PC_cPtr& dst, Eigen::Matrix<double, mPlanePtsNum, 3>& A);
+    bool _extractPlaneMatrix(const pt_t& pointInMap, const PC_cPtr& dst, Eigen::Matrix<scalar_t, mPlanePtsNum, 3>& A);
 
     // independent of x
-    static inline V3d _J_e_wrt_x(const V4d& coff){
+    static inline V3 _J_e_wrt_x(const V4& coff){
         // cn is larger than 1 absolutely
-        auto cn = coff.norm();
-        return coff.head<3>(0) / coff.norm();
+        scalar_t cn = coff.norm();
+        V3 v = coff.head<3>();
+        return v / coff.norm();
     }
     
-    static inline double _error(const V4d& coff, const V3d& pInMap){
+    static inline scalar_t _error(const V4& coff, const V3& pInMap){
         return pInMap.homogeneous().dot(coff) / coff.norm();
     }
 
-    void _removeDegeneratePart(const M6d& JtJ, V6d& x);
+    void _removeDegeneratePart(const M6& JtJ, V6& x);
 
 public:
     LoamRegister();
 
-    virtual bool scan2Map(const PC_cPtr& src, const PC_cPtr& dst, Pose6d& res) override;
+    virtual bool scan2Map(const PC_cPtr& src, const PC_cPtr& dst, pose_t& res) override;
 
 };
 

@@ -10,37 +10,34 @@
 namespace dataproxy
 {
 
-template <typename PCType, bool UseBag>
-LidarDataProxy<PCType, UseBag>::LidarDataProxy(ros::NodeHandle& nh, int size) :
-    DataProxy<PCType, UseBag>(size),
+LidarDataProxy::LidarDataProxy(ros::NodeHandle& nh, int size) :
+    DataProxy<pc_t>(size),
     mVisType(VisType::None)
 {
     this->mLg->info("get in LidarDataProxy");
-    mSub = nh.subscribe("/lidar_points", 5, &LidarDataProxy<PCType, UseBag>::subscribe, this);
+    mSub = nh.subscribe("/lidar_points", 5, &LidarDataProxy::subscribe, this);
 
     mPubAligned = nh.advertise<sensor_msgs::PointCloud2>("/aligned", 1);
-    mVisPCThd = std::make_unique<utils::trd::ResidentThread>(&LidarDataProxy<PCType, UseBag>::visPCHandler, this);
+    mVisPCThd = std::make_unique<utils::trd::ResidentThread>(&LidarDataProxy::visPCHandler, this);
 }
 
-template <typename PCType, bool UseBag>
-void LidarDataProxy<PCType, UseBag>::subscribe(const sensor_msgs::PointCloud2ConstPtr& msg)
+void LidarDataProxy::subscribe(const sensor_msgs::PointCloud2ConstPtr& msg)
 {
-    auto cloud = pcl::make_shared<PCType>();
+    auto cloud = pcl::make_shared<pc_t>();
     pcl::fromROSMsg(*msg, *cloud);
     pcl_conversions::toPCL(msg->header.stamp, cloud->header.stamp);
     pcp::removeNaNFromPointCloud(*cloud);
-    pcp::voxelDownSample<typename PCType::PointType>(cloud, 0.7f);
+    pcp::voxelDownSample<pt_t>(cloud, 0.7f);
 #if PCL_VERSION_COMPARE(<=, 1, 10, 0)
     auto stdcloud = utils::make_shared_ptr(cloud);
-    this->mDataPtr->template push_back<UseBag>(std::move(stdcloud));
+    this->mDataPtr->template push_back<constant::usebag>(std::move(stdcloud));
 #else
-    this->mDataPtr->template push_back<UseBag>(std::move(cloud));
+    this->mDataPtr->template push_back<constant::usebag>(std::move(cloud));
 #endif
 
 }
 
-template <typename PCType, bool UseBag>
-void LidarDataProxy<PCType, UseBag>::visPCHandler()
+void LidarDataProxy::visPCHandler()
 {
     std::unique_lock<std::mutex> lk(mVisLock);
     mVisCV.wait(lk, [=](){ return mVisType != VisType::None; });
@@ -48,7 +45,7 @@ void LidarDataProxy<PCType, UseBag>::visPCHandler()
     switch(mVisType){
         case VisType::Aligned: {
             // trans
-            typename PCType::Ptr aligned(pcl::make_shared<PCType>());
+            pc_t::Ptr aligned(new pc_t());
             pcl::transformPointCloud(*mAlignedKF.pc, *aligned, mAlignedKF.pose.matrix());
             
             sensor_msgs::PointCloud2 rospc;
@@ -66,8 +63,7 @@ void LidarDataProxy<PCType, UseBag>::visPCHandler()
     mVisType = VisType::None;
 }
 
-template <typename PCType, bool UseBag>
-void LidarDataProxy<PCType, UseBag>::setVisAligned(const typename PCType::Ptr& pc, const Pose6d& p)
+void LidarDataProxy::setVisAligned(const pc_t::Ptr& pc, const pose_t& p)
 {
     std::lock_guard<std::mutex> lk(mVisLock);
     mVisType = VisType::Aligned;
@@ -75,11 +71,5 @@ void LidarDataProxy<PCType, UseBag>::setVisAligned(const typename PCType::Ptr& p
     mAlignedKF.pc = pc;
     mVisCV.notify_all();
 }
-
-template class LidarDataProxy<PC<Pxyz>>;
-template class LidarDataProxy<PC<Pxyzi>>;
-
-template class LidarDataProxy<PC<Pxyz>, true>;
-template class LidarDataProxy<PC<Pxyzi>, true>;
 
 } // namespace dataproxy

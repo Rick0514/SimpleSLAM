@@ -2,9 +2,9 @@
 #include <functional>
 
 #include <ros/ros.h>
+#include <types/basic.hpp>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <dataproxy/DataProxy.hpp>
-#include <types/EigenTypes.hpp>
 
 namespace dataproxy {
 
@@ -14,15 +14,18 @@ class RelocDataProxy : public DataProxy<void>
 {
 
 private:
+
+    using RelocFuncType = std::function<void(pose_t&)>;
+
     ros::Subscriber mSub;
-    std::function<void(Pose6d&)> mRelocFunc;
+    RelocFuncType mRelocFunc;
 
 public:
 
     RelocDataProxy() = delete;
     RelocDataProxy(ros::NodeHandle& nh);
     
-    void registerFunc(const std::function<void(Pose6d&)>&);
+    void registerFunc(const RelocFuncType&);
     void subscriber(const geometry_msgs::PoseWithCovarianceStampedConstPtr&);
 
 };

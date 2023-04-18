@@ -11,7 +11,7 @@ using namespace utils;
 namespace dataproxy
 {
 
-template <typename T, bool UseBag=false>
+template <typename T>
 class DataProxy
 {
 public:

@@ -2,7 +2,7 @@
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 
-#include <types/PCLTypes.hpp>
+#include <types/basic.hpp>
 #include <dataproxy/DataProxy.hpp>
 
 #include <utils/Thread.hpp>
@@ -19,16 +19,16 @@ enum class VisType : int
     GlobalMap
 };
 
-template <typename PCType, bool UseBag=false>
-class LidarDataProxy : public DataProxy<PCType, UseBag>
+class LidarDataProxy : public DataProxy<pc_t>
 {
 public:
-    using KF = KeyFrame<typename PCType::PointType>;
+    using Base = DataProxy<pc_t>;
+    using KF = KeyFrame;
 private:
     ros::Subscriber mSub;
     ros::Publisher mPubAligned;
 
-    std::unique_ptr<utils::trd::ResidentThread>  mVisPCThd;
+    std::unique_ptr<utils::trd::ResidentThread> mVisPCThd;
 
     KF mAlignedKF;
     
@@ -45,7 +45,7 @@ public:
 
     void visPCHandler();
 
-    void setVisAligned(const typename PCType::Ptr&, const Pose6d&);
+    void setVisAligned(const pc_t::Ptr&, const pose_t&);
 
     ~LidarDataProxy(){};
 };

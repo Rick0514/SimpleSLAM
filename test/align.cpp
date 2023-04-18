@@ -2,15 +2,14 @@
 #include <PCR/LoamRegister.hpp>
 
 #include <pcl/io/pcd_io.h>
-#include <pcl/point_types.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/visualization/pcl_visualizer.h>
 
+#include <types/basic.hpp>
 #include <utils/Logger.hpp>
 #include <time/tictoc.hpp>
 
 using namespace PCR;
-using PointType = pcl::PointXYZ;
 static std::string data_dir;
 
 template<typename PointType>
@@ -38,8 +37,8 @@ int main(int argc, char const *argv[])
     auto target_pcd = fmt::format("{}/{}.pcd", data_dir, argv[1]);
     auto source_pcd = fmt::format("{}/{}.pcd", data_dir, argv[2]);
 
-    pcl::PointCloud<pcl::PointXYZ>::Ptr target_cloud(new pcl::PointCloud<pcl::PointXYZ>());
-    pcl::PointCloud<pcl::PointXYZ>::Ptr source_cloud(new pcl::PointCloud<pcl::PointXYZ>());
+    pc_t::Ptr target_cloud(new pc_t());
+    pc_t::Ptr source_cloud(new pc_t());
 
     if(pcl::io::loadPCDFile(target_pcd, *target_cloud)) {
         lg->error("failed to load: {}", target_pcd);
@@ -51,10 +50,11 @@ int main(int argc, char const *argv[])
         return 0;
     }
 
-    // PointCloudRegister<PointType>::Ptr pcr = std::make_shared<NdtRegister<PointType>>();
-    PointCloudRegister<PointType>::Ptr pcr = std::make_shared<LoamRegister<PointType>>();
+    // PointCloudRegister::Ptr pcr = std::make_shared<NdtRegister>();
+    PointCloudRegister::Ptr pcr = std::make_shared<LoamRegister>();
     
-    Pose6d init_pose = Eigen::Isometry3d::Identity();
+    pose_t init_pose;
+    init_pose.setIdentity();
     
     lg->info("target cloud size: {}", target_cloud->points.size());
     lg->info("source cloud size: {}", source_cloud->points.size());
@@ -79,12 +79,12 @@ int main(int argc, char const *argv[])
     lg->info("trans: \n{}", ss.str());
 
     // visualize
-    pcl::PointCloud<PointType>::Ptr aligned(pcl::make_shared<pcl::PointCloud<PointType>>());
-    pcl::transformPointCloud(*source_cloud, *aligned, init_pose.matrix().cast<float>());
+    pc_t::Ptr aligned(new pc_t());
+    pcl::transformPointCloud(*source_cloud, *aligned, init_pose.matrix().cast<scalar_t>());
     pcl::visualization::PCLVisualizer vis("vis");
-    pcl::visualization::PointCloudColorHandlerCustom<PointType> target_handler(target_cloud, 255.0, 0.0, 0.0);  // r
-    pcl::visualization::PointCloudColorHandlerCustom<PointType> source_handler(source_cloud, 0.0, 255.0, 0.0);  // g
-    pcl::visualization::PointCloudColorHandlerCustom<PointType> aligned_handler(aligned, 0.0, 0.0, 255.0);      // b
+    pcl::visualization::PointCloudColorHandlerCustom<pt_t> target_handler(target_cloud, 255.0, 0.0, 0.0);  // r
+    pcl::visualization::PointCloudColorHandlerCustom<pt_t> source_handler(source_cloud, 0.0, 255.0, 0.0);  // g
+    pcl::visualization::PointCloudColorHandlerCustom<pt_t> aligned_handler(aligned, 0.0, 0.0, 255.0);      // b
     vis.addPointCloud(target_cloud, target_handler, "target");
     vis.addPointCloud(source_cloud, source_handler, "source");
     vis.addPointCloud(aligned, aligned_handler, "aligned");
