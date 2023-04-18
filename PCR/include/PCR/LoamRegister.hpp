@@ -52,17 +52,13 @@ private:
 
 private:
 
-    static inline void _pointAssociateToMap(pt_t const * const pi, pt_t * const po, const pose_t& p)
+    static void _pointAssociateToMap(pt_t const * const pi, pt_t * const po, const pose_t& p)
     {
         const M3& rot = p.rotation();
         const V3& t = p.translation();
         po->x = rot(0,0) * pi->x + rot(0,1) * pi->y + rot(0,2) * pi->z + t(0);
         po->y = rot(1,0) * pi->x + rot(1,1) * pi->y + rot(1,2) * pi->z + t(1);
         po->z = rot(2,0) * pi->x + rot(2,1) * pi->y + rot(2,2) * pi->z + t(2);
-        // c++17
-        if constexpr (std::is_same_v<pt_t, Pxyzi>){
-            po->intensity = pi->intensity;
-        }
     }
 
     template<unsigned int N>
@@ -71,11 +67,10 @@ private:
     bool _extractPlaneMatrix(const pt_t& pointInMap, const PC_cPtr& dst, Eigen::Matrix<scalar_t, mPlanePtsNum, 3>& A);
 
     // independent of x
-    static inline V3 _J_e_wrt_x(const V4& coff){
+    static V3 _J_e_wrt_x(const V4& coff){
         // cn is larger than 1 absolutely
         scalar_t cn = coff.norm();
-        V3 v = coff.head<3>();
-        return v / coff.norm();
+        return coff.head<3>() / coff.norm();
     }
     
     static inline scalar_t _error(const V4& coff, const V3& pInMap){

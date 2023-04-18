@@ -5,7 +5,7 @@
 
 using index_t = size_t;
 using stamp_t = double;
-using scalar_t = float;
+using scalar_t = double;
 using pt_t = PCLTypes::Pxyzi;
 using pc_t = PCLTypes::PC<pt_t>;
 using pose_t = EigenTypes::Pose6<scalar_t>;

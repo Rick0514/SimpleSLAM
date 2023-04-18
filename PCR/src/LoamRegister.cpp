@@ -108,7 +108,7 @@ bool LoamRegister::scan2Map(const PC_cPtr& src, const PC_cPtr& dst, pose_t& res)
         scalar_t ta = 0;
         scalar_t te = 0;
 
-        // #pragma omp parallel for num_threads(numCores)
+        #pragma omp parallel for num_threads(numCores)
         for(int i=0; i<src->points.size(); i++){
             // trans point to map frame
             tt.tic();
@@ -135,13 +135,13 @@ bool LoamRegister::scan2Map(const PC_cPtr& src, const PC_cPtr& dst, pose_t& res)
                     // DEBUG(debug_file, fmt::format("weight: {}", s));
                     if (s > mPointValidThresh) {
                         // good point is selected!!
-                        // #pragma omp critical
-                        // {
+                        #pragma omp critical
+                        {
                             E_vec.emplace_back(_error(hx, p));                            
                             Eigen::Matrix<scalar_t, 3, 6> jse3;
                             manifolds::J_SE3(p, jse3);
                             J_vec.emplace_back(_J_e_wrt_x(hx).transpose() * jse3);
-                        // }
+                        }
                     }
                 }
             }
