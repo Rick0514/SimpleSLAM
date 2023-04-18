@@ -34,7 +34,7 @@ public:
         auto lg = logger::Logger::getInstance();
         lg->info("test blocking pc dataproxy!!");
 
-        string bag_fn = "/home/rick/jtcx/hgy_gitee/minimal_ws/bag/huaqiaocheng-1.bag";
+        string bag_fn = "/home/hgy/sda2/rosbag/huaqiaocheng-1.bag";
         rosbag::Bag bag;
         bag.open(bag_fn, rosbag::bagmode::Read);
         for(const rosbag::MessageInstance& m : rosbag::View(bag, rosbag::TopicQuery("/lidar_points")))
@@ -53,8 +53,10 @@ public:
     }
 
     ~Test(){
+        cout << "prepare Test is destroy!!" << endl;
         running.store(false);
         if(thd.joinable())  thd.join();
+        cout << "Test is destroy!!" << endl;
     }
 };
 
@@ -85,6 +87,7 @@ public:
     {
         running.store(false);
         if(thd->joinable()) thd->join();
+        cout << "Consumer is destroy!!" << endl;
     }
 };
 
@@ -95,11 +98,12 @@ int main(int argc, char *argv[])
 
     if(nh.ok()){
         int q_size = 10;
-        // EkfOdomProxy eop(nh, q_size);
         LidarDataProxy ldp(nh, q_size);
         Test t(ldp);
         Consumer c(ldp.get());
         ros::spin();
+        // object who carry dataproxy should abort it explicitly in destructor in usebag mode, 
+        // or it wont exit because of cv
         ldp.get()->abort();
     }
 

@@ -59,8 +59,8 @@ void LidarDataProxy::visPCHandler()
         }
         default: {}
     }
-    
-    mVisType = VisType::None;
+
+    if(mVisType != VisType::Exit)   mVisType = VisType::None;
 }
 
 void LidarDataProxy::setVisAligned(const pc_t::Ptr& pc, const pose_t& p)
@@ -70,6 +70,17 @@ void LidarDataProxy::setVisAligned(const pc_t::Ptr& pc, const pose_t& p)
     mAlignedKF.pose = p;
     mAlignedKF.pc = pc;
     mVisCV.notify_all();
+}
+
+LidarDataProxy::~LidarDataProxy()
+{
+    mLg->info("prepare exit lidar proxy!!");
+    {
+        std::lock_guard<std::mutex> lk(mVisLock);
+        mVisType = VisType::Exit;
+        mVisCV.notify_all();
+    }
+    mLg->info("exit lidar proxy!!");
 }
 
 } // namespace dataproxy

@@ -16,7 +16,8 @@ enum class VisType : int
 {
     None,
     Aligned,
-    GlobalMap
+    GlobalMap,
+    Exit
 };
 
 class LidarDataProxy : public DataProxy<pc_t>
@@ -47,7 +48,7 @@ public:
 
     void setVisAligned(const pc_t::Ptr&, const pose_t&);
 
-    ~LidarDataProxy(){};
+    ~LidarDataProxy();
 };
 
 } // namespace dataproxy
