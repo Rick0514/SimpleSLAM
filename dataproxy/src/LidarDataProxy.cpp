@@ -46,7 +46,7 @@ void LidarDataProxy::visPCHandler()
         case VisType::Aligned: {
             // trans
             pc_t::Ptr aligned(new pc_t());
-            pcl::transformPointCloud(*mAlignedKF.pc, *aligned, mAlignedKF.pose.matrix());
+            pcl::transformPointCloud(*mAlignedKF.pc, *aligned, mAlignedKF.pose.matrix().cast<float>());
             
             sensor_msgs::PointCloud2 rospc;
             pcl::toROSMsg(*aligned, rospc);

@@ -7,7 +7,7 @@ NdtRegister::NdtRegister()
 {
     _ndt_omp.reset(new pclomp::NormalDistributionsTransform<pt_t, pt_t>());
     _ndt_omp->setResolution(resol);
-    _ndt_omp->setNumThreads(1);
+    _ndt_omp->setNumThreads(numCores);
     _ndt_omp->setNeighborhoodSearchMethod(pclomp::DIRECT7);
 }
 

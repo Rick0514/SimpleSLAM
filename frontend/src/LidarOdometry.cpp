@@ -27,8 +27,8 @@ LidarOdometry::LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, RelocDataProxyPt
     mSubmap = pcl::make_shared<pc_t>();
     mRelocPose.setIdentity();
     // xyz for temp
-    mPcr.reset(new PCR::LoamRegister());
-    // mPcr.reset(new PCR::NdtRegister<PointType>());
+    mPcr.reset(new PCR::LoamRegister);
+    // mPcr.reset(new PCR::NdtRegister);
     rdp->registerFunc(std::bind(&LidarOdometry::setRelocFlag, this, std::placeholders::_1));
 }
 
@@ -47,7 +47,7 @@ void LidarOdometry::setRelocFlag(const pose_t& p)
 void LidarOdometry::initSubmapFromPCD(std::string pcd_file)
 {
     // load global map mode
-    if(pcl::io::loadPCDFile<pc_t>(pcd_file, *mSubmap) == -1)
+    if(pcl::io::loadPCDFile<pt_t>(pcd_file, *mSubmap) == -1)
     {
         auto msg = fmt::format("can't load globalmap from: {}", pcd_file);
         lg->error(msg);
@@ -57,7 +57,7 @@ void LidarOdometry::initSubmapFromPCD(std::string pcd_file)
     lg->info("load map success!!");
 
     // downsample global pc
-    pcp::voxelDownSample<pc_t>(mSubmap, 0.7f);
+    pcp::voxelDownSample<pt_t>(mSubmap, 0.7f);
     lg->info("submap size: {}", mSubmap->size());
 }
 

@@ -50,8 +50,8 @@ int main(int argc, char const *argv[])
         return 0;
     }
 
-    // PointCloudRegister::Ptr pcr = std::make_shared<NdtRegister>();
-    PointCloudRegister::Ptr pcr = std::make_shared<LoamRegister>();
+    PointCloudRegister::Ptr pcr = std::make_shared<NdtRegister>();
+    // PointCloudRegister::Ptr pcr = std::make_shared<LoamRegister>();
     
     pose_t init_pose;
     init_pose.setIdentity();

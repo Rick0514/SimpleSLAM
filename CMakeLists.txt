@@ -2,8 +2,11 @@ cmake_minimum_required(VERSION 3.4.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_C_COMPILER clang-12)
-set(CMAKE_CXX_COMPILER clang++-12)
+
+if($ENV{ROS_DISTRO} STREQUAL "noetic")
+    set(CMAKE_C_COMPILER clang-12)
+    set(CMAKE_CXX_COMPILER clang++-12)   
+endif()
 
 project(NaiveSLAM)
 

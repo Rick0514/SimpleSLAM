@@ -12,7 +12,6 @@
 
 namespace PCR
 { 
-using namespace EigenTypes;
 
 class LoamRegister : public PointCloudRegister
 {
@@ -20,8 +19,8 @@ class LoamRegister : public PointCloudRegister
 public:
     using typename PointCloudRegister::PC_Ptr;
     using typename PointCloudRegister::PC_cPtr;
-    using V3 = V3<scalar_t>;
-    using M3 = M3<scalar_t>;
+    using V3 = EigenTypes::V3<scalar_t>;
+    using M3 = EigenTypes::M3<scalar_t>;
     using V4 = Eigen::Matrix<scalar_t, 4, 1>;
     using V6 = Eigen::Matrix<scalar_t, 6, 1>;
     using M4 = Eigen::Matrix<scalar_t, 4, 4>;

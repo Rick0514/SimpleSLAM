@@ -58,6 +58,7 @@ public:
     virtual void generateOdom() override;
 
     void initSubmapFromPCD(std::string pcd_file);
+    
     auto getSubmap() { return mSubmap; }    // not thread-safe!!
     std::mutex& getSubmapLock() { return mLockMap; }
 
