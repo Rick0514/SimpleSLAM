@@ -1,7 +1,7 @@
 #include <frontend/Frontend.hpp>
-#include <backend/Backend.hpp>
 #include <frontend/MapManager.hpp>
 #include <frontend/LidarOdometry.hpp>
+#include <backend/Backend.hpp>
 
 #include <dataproxy/LidarDataProxy.hpp>
 #include <dataproxy/RelocDataProxy.hpp>

@@ -19,6 +19,8 @@ struct KeyFrame
 {
     pose_t pose;
     pc_t::Ptr pc;    
+    KeyFrame() = default;
+    KeyFrame(const pc_t::Ptr& _pc, const pose_t& _p) : pc(_pc), pose(_p){}      
 };
 
 struct Odometry

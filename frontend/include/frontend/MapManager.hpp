@@ -20,7 +20,7 @@ struct KeyFramesObj
     int mKFNums;
     std::mutex mLockKF;
     std::condition_variable mKFcv;
-    std::set<index_t> mKFidx;
+    std::set<index_t> mSubmapIdx;
     KeyFramesObj() : mKFNums(0) {}
 };
 
@@ -30,8 +30,9 @@ private:
 
     using KeyFramesObjPtr = std::shared_ptr<KeyFramesObj>;
 
-    std::shared_ptr<logger::Logger> lg;    
+    std::shared_ptr<logger::Logger> lg;
 
+    static constexpr float minKFGap{1.0}; 
     static constexpr float mSurroundingKeyframeSearchRadius{20.0f};
 
     KeyFramesObjPtr mKFObjPtr;
@@ -63,8 +64,8 @@ public:
 
     void initSubmapFromPCD(std::string pcd_file);
 
-    void setReadyUpdateMap() { mReadyUpdateMap.store(true); }
-
+    void setReadyUpdateMap();
+    
     ~MapManager();
 };
 

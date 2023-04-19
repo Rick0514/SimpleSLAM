@@ -39,14 +39,15 @@ MapManager::MapManager(std::string pcd_file) : MapManager()
 void MapManager::putKeyFrame(const KeyFrame& kf)
 {
     auto& keyframes = mKFObjPtr->keyframes;
+
     std::vector<index_t> k_indices;
     std::vector<scalar_t> k_sqr_distances;
     nanoflann::KeyFramesKdtree<kfs_t, scalar_t, 3> kf_kdtree(keyframes);
-    if(kf_kdtree.radiusSearch(kf.pose.translation(), mSurroundingKeyframeSearchRadius, k_indices, k_sqr_distances))
+    if(kf_kdtree.radiusSearch(kf.pose.translation(), minKFGap, k_indices, k_sqr_distances))
         return;     // kf is not distant from other
 
     std::lock_guard<std::mutex> lk(mKFObjPtr->mLockKF);
-    mKFObjPtr->keyframes.emplace_back(std::move(kf));
+    keyframes.emplace_back(std::move(kf));
     // if keyframes size greater than some gap than notify
     mKFObjPtr->mKFcv.notify_one();
 }
@@ -72,10 +73,19 @@ void MapManager::updateMap()
 
     mLockMap.lock();
     std::lock_guard<std::mutex> kf_lk(mKFObjPtr->mLockKF);
+    mKFObjPtr->mSubmapIdx.clear();
     for(auto i : k_indices){
         const auto& src = keyframes[i].pc;
         *mSubmap += *pcp::transformPointCloud<pt_t, scalar_t>(src, keyframes[i].pose);
+        mKFObjPtr->mSubmapIdx.insert(i);
     }
+    pcp::voxelDownSample<pt_t>(mSubmap, 0.7f);
+}
+
+void MapManager::setReadyUpdateMap()
+{
+    mReadyUpdateMap.store(true); 
+    mMapCv.notify_one();
 }
 
 MapManager::~MapManager()

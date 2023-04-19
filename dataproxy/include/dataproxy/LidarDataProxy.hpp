@@ -46,7 +46,7 @@ public:
 
     void visPCHandler();
 
-    void setVisAligned(const pc_t::Ptr&, const pose_t&);
+    void setVisAligned(const KF&);
 
     ~LidarDataProxy();
 };

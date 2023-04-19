@@ -14,7 +14,6 @@ using namespace EigenTypes;
 using namespace utils;
 
 class LidarOdometry;
-class MapManager;
 
 class Frontend
 {

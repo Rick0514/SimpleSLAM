@@ -20,10 +20,10 @@ using namespace EigenTypes;
 
 namespace frontend
 {
-
 LidarOdometry::LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, RelocDataProxyPtr& rdp, MapManagerPtr& mmp)
 : mDataProxyPtr(dp), mFrontendPtr(ft), mMapManagerPtr(mmp), reloc(false)
 {
+    mLastPos.setZero();
     mRelocPose.setIdentity();
     // xyz for temp
     mPcr.reset(new PCR::LoamRegister);
@@ -44,9 +44,13 @@ void LidarOdometry::setRelocFlag(const pose_t& p)
 }
 
 // just check the distant from last one to cur
-void selectKeyFrame()
+void LidarOdometry::selectKeyFrame(const KeyFrame& kf)
 {
-
+    V3<scalar_t> mCurPos = kf.pose.translation();
+    if((mCurPos - mLastPos).norm() > minKFGap){
+        mMapManagerPtr->putKeyFrame(kf);
+        mLastPos = mCurPos;
+    }
 }
 
 void LidarOdometry::generateOdom()
@@ -65,7 +69,7 @@ void LidarOdometry::generateOdom()
     scan = scans->consume_front();
 #endif
     
-    if(scan){
+    if(scan){        
         // 2. localodom * odom2map
         auto odom2map = mFrontendPtr->get();
         // find closest localodom
@@ -111,44 +115,37 @@ void LidarOdometry::generateOdom()
                 geometry::trans::T2SE3(init_pose.matrix());
             }
         }
-
+        
         // use pcr to get refined pose
         common::time::tictoc tt;
-        // Pose6d tmp_init_pose = init_pose;
-        
-        {
-            std::stringstream ss;
-            ss << "before pose: \n" << init_pose.matrix();
-            lg->debug("{}", ss.str());
-        }
 
         // for now, pure LO, scan2map should be considered always success!!
         // lock here
         {
-            std::lock_guard<std::mutex> lk(mMapManagerPtr->getSubmapLock());
-            const auto& submap = mMapManagerPtr->getSubmap();
-            lg->debug("scan pts: {}, submap pts: {}", scan->points.size(), submap->points.size());
-            mPcr->scan2Map(scan, submap, init_pose);
-        }
-        lg->info("scan2map cost: {:.3f}s", tt);
-        // if(!mPcr->scan2Map(scan, submap, init_pose)){
-        //     init_pose = tmp_init_pose;
-        //     lg->warn("scan2map not converge!!");   
-        // }
-
-        {
-            std::stringstream ss;
-            ss << "after pose: \n" << init_pose.matrix();
-            lg->debug("{}", ss.str());
+            std::lock_guard<std::mutex> lk(mMapManagerPtr->getSubmapLock());    
+            if(!mMapManagerPtr->getKeyFrameObjPtr()->mSubmapIdx.empty())
+            {
+                const auto& submap = mMapManagerPtr->getSubmap();
+                lg->debug("scan pts: {}, submap pts: {}", scan->points.size(), submap->points.size());
+                mPcr->scan2Map(scan, submap, init_pose);    
+                lg->info("scan2map cost: {:.3f}s", tt);
+            }else{
+                lg->warn("at first, no submap here for now, build the map!!");
+            }
         }
 
+        KeyFrame kf(scan, init_pose);   
+        selectKeyFrame(kf);
         // visualize
-        mDataProxyPtr.get()->setVisAligned(scan, init_pose);
+        mDataProxyPtr.get()->setVisAligned(kf);
 
         // push the refined odom to deque
         auto global_odom = std::make_shared<Odometry>(stamp, init_pose);
         mFrontendPtr->getGlobal()->template push_back<constant::usebag>(global_odom);
 
+        // use scan2map refined pose for current pose for now!! 
+        mMapManagerPtr->setCurPose(init_pose);
+        
         // update odom2map
         if(local_odom)  odom2map = init_pose * local_odom->odom.inverse();
 

@@ -41,6 +41,8 @@ private:
     std::atomic_bool reloc;
     std::mutex mRelocLock;
     pose_t mRelocPose;
+    V3<scalar_t> mLastPos;
+    static constexpr float minKFGap{1.0}; 
 
     MapManagerPtr mMapManagerPtr;
 
@@ -51,7 +53,7 @@ public:
 
     explicit LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, RelocDataProxyPtr& rdp, MapManagerPtr& mmp);
 
-    void selectKeyFrame();
+    void selectKeyFrame(const KeyFrame&);
 
     virtual void generateOdom() override;
 

@@ -63,12 +63,11 @@ void LidarDataProxy::visPCHandler()
     if(mVisType != VisType::Exit)   mVisType = VisType::None;
 }
 
-void LidarDataProxy::setVisAligned(const pc_t::Ptr& pc, const pose_t& p)
+void LidarDataProxy::setVisAligned(const KF& kf)
 {
     std::lock_guard<std::mutex> lk(mVisLock);
     mVisType = VisType::Aligned;
-    mAlignedKF.pose = p;
-    mAlignedKF.pc = pc;
+    mAlignedKF = kf;
     mVisCV.notify_all();
 }
 
