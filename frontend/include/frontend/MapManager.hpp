@@ -39,12 +39,8 @@ private:
     
     pc_t::Ptr mSubmap;
     std::mutex mLockMap;
-    std::atomic_bool mReadyUpdateMap;
-    std::condition_variable mMapCv;
 
     trd::AtomicVar<pose_t> mCurPose;
-
-    std::unique_ptr<utils::trd::ResidentThread> mapHandlerThd;
 
 public:
 
@@ -64,8 +60,6 @@ public:
 
     void initSubmapFromPCD(std::string pcd_file);
 
-    void setReadyUpdateMap();
-    
     ~MapManager();
 };
 

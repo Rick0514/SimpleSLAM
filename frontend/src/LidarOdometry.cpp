@@ -71,7 +71,7 @@ void LidarOdometry::generateOdom()
     
     if(scan){        
         // 2. localodom * odom2map
-        auto odom2map = mFrontendPtr->get();
+        auto& odom2map = mFrontendPtr->get();
         // find closest localodom
         // think how to get the stamp
         double stamp = (double)scan->header.stamp / 1e6;
@@ -93,7 +93,7 @@ void LidarOdometry::generateOdom()
             // clear global odom
             mFrontendPtr->getGlobal()->clear();  
         }else if(local_odom){
-            init_pose.matrix() = local_odom->odom.matrix() * odom2map.matrix();
+            init_pose.matrix() = odom2map.load().matrix() * local_odom->odom.matrix();
         }else{
             // if not get, use average velocity model
             const auto& gb = mFrontendPtr->getGlobal();
@@ -134,6 +134,9 @@ void LidarOdometry::generateOdom()
             }
         }
 
+        // use scan2map refined pose for current pose for now!! 
+        mMapManagerPtr->setCurPose(init_pose);
+
         KeyFrame kf(scan, init_pose);   
         selectKeyFrame(kf);
         // visualize
@@ -141,13 +144,10 @@ void LidarOdometry::generateOdom()
 
         // push the refined odom to deque
         auto global_odom = std::make_shared<Odometry>(stamp, init_pose);
-        mFrontendPtr->getGlobal()->template push_back<constant::usebag>(global_odom);
-
-        // use scan2map refined pose for current pose for now!! 
-        mMapManagerPtr->setCurPose(init_pose);
+        mFrontendPtr->getGlobal()->template push_back<false>(global_odom);  // false for now!!
         
         // update odom2map
-        if(local_odom)  odom2map = init_pose * local_odom->odom.inverse();
+        if(local_odom)  odom2map.store(init_pose * local_odom->odom.inverse());
 
     }else{
         lg->debug("scan deque is empty for now, please check!!");

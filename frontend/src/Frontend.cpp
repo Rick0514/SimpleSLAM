@@ -8,7 +8,7 @@ Frontend::Frontend(int local_size, int global_size){
 
     mLocalOdometry = std::make_shared<OdomDeque>(local_size);
     mGlobalOdometry = std::make_shared<OdomDeque>(global_size);
-    mOdom2Map.setIdentity();
+    mOdom2Map.store(pose_t::Identity());
 }
 
 void Frontend::run(std::unique_ptr<LidarOdometry>&& lo)

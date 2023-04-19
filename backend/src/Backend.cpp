@@ -79,14 +79,30 @@ void Backend::optimHandler()
     lk.lock();     // ------------------------------------  
     
     auto n = mKFObjPtr->mKFNums;
-    auto& keyframes = mKFObjPtr->keyframes; 
+    auto& keyframes = mKFObjPtr->keyframes;
+    // save newest kf
+    pose_t latest_pose = keyframes.back().pose; 
     // update kfs
     for(int i=0; i<n; i++){
-        auto p = optimizedEstimate.at<gtsam::Pose3>(i);
+        const auto& p = optimizedEstimate.at<gtsam::Pose3>(i);
         keyframes[i].pose.matrix() = p.matrix();
     }
 
-    mMapManagerPtr->setReadyUpdateMap();
+    // update frontend
+    pose_t delta = keyframes.back().pose * latest_pose.inverse();
+    const auto& gb = mFrontendPtr->getGlobal();
+
+    {
+        std::lock_guard<std::mutex> _lk(*gb->getLock());
+        auto gbq = gb->getDequeInThreadUnsafeWay();
+        for(auto& e : *gbq) e->odom = delta * e->odom;
+    }
+
+    pose_t p = mFrontendPtr->get().load();
+    mFrontendPtr->get().store(p);
+    
+    // now update map immediately
+    mMapManagerPtr->updateMap();
 }
 
 Backend::~Backend()

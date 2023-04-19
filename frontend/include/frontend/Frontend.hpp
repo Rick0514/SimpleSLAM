@@ -22,7 +22,7 @@ protected:
     using OdomDeque = concurrency::SafeDeque<Odometry>;
     using OdomDequePtr = std::shared_ptr<OdomDeque>;
 
-    pose_t mOdom2Map;
+    trd::AtomicVar<pose_t> mOdom2Map;
 
     OdomDequePtr mLocalOdometry;
     OdomDequePtr mGlobalOdometry;
@@ -38,7 +38,7 @@ public:
 
     void publish() const;
 
-    pose_t get() const { return mOdom2Map; }
+    auto& get() { return mOdom2Map; }
 
     void run(std::unique_ptr<LidarOdometry>&& lo);
 

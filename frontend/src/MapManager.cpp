@@ -16,7 +16,6 @@ MapManager::MapManager() : mKFObjPtr(std::make_shared<KeyFramesObj>()),
     mCurPose.store(p);
 
     lg->info("construct MapManager!!");
-    mapHandlerThd = std::make_unique<trd::ResidentThread>(&MapManager::updateMap, this);
 }
 
 MapManager::MapManager(std::string pcd_file) : MapManager()
@@ -52,18 +51,9 @@ void MapManager::putKeyFrame(const KeyFrame& kf)
     mKFObjPtr->mKFcv.notify_one();
 }
 
+// keyframe should be locked before invoke
 void MapManager::updateMap()
 {
-    std::unique_lock<std::mutex> lk(mLockMap);
-    mMapCv.wait(lk, [=](){ return (mReadyUpdateMap.load() || lg->isProgramExit()); });
-    mReadyUpdateMap.store(false);
-
-    if(lg->isProgramExit()){
-        lg->info("program is exiting, give up this update map!");
-        return;
-    }
-
-    mLockMap.unlock();
     // it is said that nano-kdtree is thread-safe
     auto& keyframes = mKFObjPtr->keyframes;
     std::vector<index_t> k_indices;
@@ -71,8 +61,7 @@ void MapManager::updateMap()
     nanoflann::KeyFramesKdtree<kfs_t, scalar_t, 3> kf_kdtree(keyframes);
     kf_kdtree.radiusSearch(mCurPose.load().translation(), mSurroundingKeyframeSearchRadius, k_indices, k_sqr_distances);
 
-    mLockMap.lock();
-    std::lock_guard<std::mutex> kf_lk(mKFObjPtr->mLockKF);
+    std::lock_guard<std::mutex> mlk(mLockMap);
     mKFObjPtr->mSubmapIdx.clear();
     for(auto i : k_indices){
         const auto& src = keyframes[i].pc;
@@ -82,16 +71,9 @@ void MapManager::updateMap()
     pcp::voxelDownSample<pt_t>(mSubmap, 0.7f);
 }
 
-void MapManager::setReadyUpdateMap()
-{
-    mReadyUpdateMap.store(true); 
-    mMapCv.notify_one();
-}
-
 MapManager::~MapManager()
 {
     lg->info("exit MapManager!");
-    mMapCv.notify_all();
 }
 
 }
