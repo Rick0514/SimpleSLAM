@@ -14,6 +14,7 @@ using namespace EigenTypes;
 using namespace utils;
 
 class LidarOdometry;
+class MapManager;
 
 class Frontend
 {
@@ -29,6 +30,8 @@ protected:
 
     std::unique_ptr<LidarOdometry> mLO;
     std::unique_ptr<trd::ResidentThread> mLOthdPtr;
+
+    std::shared_ptr<logger::Logger> lg;
 
 public:
     Frontend() = delete;

@@ -2,7 +2,8 @@
 
 #include <utils/Atomic.hpp>
 #include <utils/Logger.hpp>
-#include <types/PCLTypes.hpp>
+#include <utils/Thread.hpp>
+#include <types/basic.hpp>
 
 // add a tmp macro to enable c++11 for tbb, https://github.com/oneapi-src/oneTBB/issues/22
 // clang++-12 -v to see what glibcxx version you got
@@ -12,31 +13,32 @@
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
-#include <nanoflann/kfs_adaptor.hpp>
-
-namespace frontend { class Frontend; }
+namespace frontend { 
+    class Frontend;
+    class MapManager;
+    class KeyFramesObj;
+}
 
 namespace backend
 {
 
 using namespace utils;
-using namespace PCLTypes;
-using namespace EigenTypes;
 
-template <typename PointType>
 class Backend
 {
 private:
-    using KF = KeyFrame<PointType>;
-    using Scalar = typename KF::Scalar_t;
+    using kf_t = KeyFrame;
+    using kfs_t = std::deque<kf_t>;
+    using KFObjPtr = std::shared_ptr<frontend::KeyFramesObj>;
+    using MapManagerPtr = std::shared_ptr<frontend::MapManager>;
     using FrontendPtr = std::shared_ptr<frontend::Frontend>;
 
-    static constexpr float mSurroundingKeyframeSearchRadius{20.0};
-
-    std::shared_ptr<logger::Logger> mLg;
+    std::shared_ptr<logger::Logger> lg;
 
     // frontend
     FrontendPtr mFrontendPtr;
+    MapManagerPtr mMapManagerPtr;
+    KFObjPtr mKFObjPtr;
 
     // factor graph
     std::unique_ptr<gtsam::ISAM2> isam2;
@@ -46,13 +48,10 @@ private:
 
     // optimize thread
     std::atomic_bool mRunning;
-    std::unique_ptr<std::thread> mOptimThread;
+    std::unique_ptr<trd::ResidentThread> mOptimThread;
 
     // noise
-    V6d priorNoise, odomNoise;
-
-    // current pose
-    trd::AtomicVar<Pose6d> mRTPose;
+    Eigen::Matrix<scalar_t, 6, 1> priorNoise, odomNoise;
 
 protected:
 
@@ -64,11 +63,9 @@ protected:
 public:
 
     Backend() = delete;
-    explicit Backend(const FrontendPtr&);
+    explicit Backend(const FrontendPtr&, const MapManagerPtr&);
 
     void optimHandler();
-
-    void setRTPose(const Pose6d& p) { mRTPose.store(p); }
 
     ~Backend();
 };

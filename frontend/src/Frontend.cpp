@@ -4,6 +4,8 @@
 namespace frontend {
 
 Frontend::Frontend(int local_size, int global_size){
+    lg = logger::Logger::getInstance();
+
     mLocalOdometry = std::make_shared<OdomDeque>(local_size);
     mGlobalOdometry = std::make_shared<OdomDeque>(global_size);
     mOdom2Map.setIdentity();
@@ -36,7 +38,8 @@ Odometry::Ptr Frontend::getClosestLocalOdom(double stamp) const
 
 Frontend::~Frontend() {
     mLocalOdometry->abort();
-    mGlobalOdometry->abort();    
+    mGlobalOdometry->abort();   
+    lg->info("exit frontend!"); 
 }
 
 

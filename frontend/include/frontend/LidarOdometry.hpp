@@ -20,14 +20,15 @@ using namespace dataproxy;
 using namespace PCLTypes;
 
 class Frontend;
+class MapManager;
 
 class LidarOdometry : public OdometryBase
 {
 
 public:
-    using KF = KeyFrame;
     using DataProxyPtr = std::shared_ptr<LidarDataProxy>;
     using FrontendPtr = std::shared_ptr<Frontend>;
+    using MapManagerPtr = std::shared_ptr<MapManager>;
     using RelocDataProxyPtr = std::shared_ptr<RelocDataProxy>;
 
 private:
@@ -41,28 +42,18 @@ private:
     std::mutex mRelocLock;
     pose_t mRelocPose;
 
-    pc_t::Ptr mSubmap;
-    std::mutex mLockMap;
-
-    // std::deque<KF> keyframes;
-    // int mKFnums;
-    // std::mutex mKFlock;
-    // std::condition_variable mKFcv;
+    MapManagerPtr mMapManagerPtr;
 
 public:
 
     void setRelocFlag(const pose_t& p);
+    auto getMapManger() { return mMapManagerPtr; }
 
-    explicit LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, RelocDataProxyPtr& rdp);
+    explicit LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, RelocDataProxyPtr& rdp, MapManagerPtr& mmp);
+
+    void selectKeyFrame();
 
     virtual void generateOdom() override;
-
-    void initSubmapFromPCD(std::string pcd_file);
-    
-    auto getSubmap() { return mSubmap; }    // not thread-safe!!
-    std::mutex& getSubmapLock() { return mLockMap; }
-
-    void selectKeyFrame(KF&& kf);
 
     ~LidarOdometry();
 };

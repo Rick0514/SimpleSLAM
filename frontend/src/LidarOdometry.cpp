@@ -1,6 +1,8 @@
 #include <frontend/LidarOdometry.hpp>
 
 #include <frontend/Frontend.hpp>
+#include <frontend/MapManager.hpp>
+
 #include <dataproxy/LidarDataProxy.hpp>
 #include <dataproxy/RelocDataProxy.hpp>
 
@@ -8,8 +10,6 @@
 #include <PCR/NdtRegister.hpp>
 
 #include <pcl/pcl_config.h>
-#include <pcl/io/pcd_io.h>
-#include <pcp/pcp.hpp>
 
 #include <utils/Shared_ptr.hpp>
 #include <time/tictoc.hpp>
@@ -21,10 +21,9 @@ using namespace EigenTypes;
 namespace frontend
 {
 
-LidarOdometry::LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, RelocDataProxyPtr& rdp)
-: mDataProxyPtr(dp), mFrontendPtr(ft), reloc(false)
+LidarOdometry::LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, RelocDataProxyPtr& rdp, MapManagerPtr& mmp)
+: mDataProxyPtr(dp), mFrontendPtr(ft), mMapManagerPtr(mmp), reloc(false)
 {
-    mSubmap = pcl::make_shared<pc_t>();
     mRelocPose.setIdentity();
     // xyz for temp
     mPcr.reset(new PCR::LoamRegister);
@@ -44,28 +43,10 @@ void LidarOdometry::setRelocFlag(const pose_t& p)
     reloc.store(true);
 }
 
-void LidarOdometry::initSubmapFromPCD(std::string pcd_file)
+// just check the distant from last one to cur
+void selectKeyFrame()
 {
-    // load global map mode
-    if(pcl::io::loadPCDFile<pt_t>(pcd_file, *mSubmap) == -1)
-    {
-        auto msg = fmt::format("can't load globalmap from: {}", pcd_file);
-        lg->error(msg);
-        throw std::runtime_error(msg);
-    }
 
-    lg->info("load map success!!");
-
-    // downsample global pc
-    pcp::voxelDownSample<pt_t>(mSubmap, 0.7f);
-    lg->info("submap size: {}", mSubmap->size());
-}
-
-void LidarOdometry::selectKeyFrame(KF&& kf)
-{
-    // std::lock_guard<std::mutex> lk(mKFlock);
-    // keyframes.emplace_back(kf);
-    // mKFcv.notify_one();
 }
 
 void LidarOdometry::generateOdom()
@@ -144,9 +125,10 @@ void LidarOdometry::generateOdom()
         // for now, pure LO, scan2map should be considered always success!!
         // lock here
         {
-            std::lock_guard<std::mutex> lk(mLockMap);
-            lg->debug("scan pts: {}, submap pts: {}", scan->points.size(), mSubmap->points.size());
-            mPcr->scan2Map(scan, mSubmap, init_pose);
+            std::lock_guard<std::mutex> lk(mMapManagerPtr->getSubmapLock());
+            const auto& submap = mMapManagerPtr->getSubmap();
+            lg->debug("scan pts: {}, submap pts: {}", scan->points.size(), submap->points.size());
+            mPcr->scan2Map(scan, submap, init_pose);
         }
         lg->info("scan2map cost: {:.3f}s", tt);
         // if(!mPcr->scan2Map(scan, submap, init_pose)){
@@ -171,13 +153,16 @@ void LidarOdometry::generateOdom()
         if(local_odom)  odom2map = init_pose * local_odom->odom.inverse();
 
     }else{
-        lg->warn("scan deque is empty for now, please check!!");
+        lg->debug("scan deque is empty for now, please check!!");
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
 }
 
-LidarOdometry::~LidarOdometry(){}
+LidarOdometry::~LidarOdometry()
+{
+    mDataProxyPtr->get()->abort();
+}
 
 } // namespace frontend
 

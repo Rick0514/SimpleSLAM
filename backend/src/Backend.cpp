@@ -1,8 +1,6 @@
 #include <backend/Backend.hpp>
-
-#include <macro/templates.hpp>
-#include <pcl/io/pcd_io.h>
-#include <pcp/pcp.hpp>
+#include <frontend/Frontend.hpp>
+#include <frontend/MapManager.hpp>
 
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/slam/PriorFactor.h>
@@ -12,49 +10,33 @@ namespace backend
 {
 
 using namespace gtsam;
+using namespace EigenTypes;
 using namespace PCLTypes;
 
-template<typename PointType>
-Backend<PointType>::Backend(const FrontendPtr& ft) : mRunning(true), mKFnums(0), mFrontendPtr(ft)
+Backend::Backend(const FrontendPtr& ft, const MapManagerPtr& mp) : mRunning(true), mFrontendPtr(ft), mMapManagerPtr(mp)
 {
+    lg = logger::Logger::getInstance();
+
     priorNoise << 1e-2, 1e-2, M_PI / 72, 1e-1, 1e-1, 1e-1;
     odomNoise << 1e-4, 1e-4, 1e-4, 1e-1, 1e-1, 1e-1;
 
-    Pose6d p;
-    p.setIdentity();
-    mRTPose.store(p);
+    // get keyframe obj to optimize
+    mKFObjPtr = mMapManagerPtr->getKeyFrameObjPtr();
 
     gtsam::ISAM2Params param;
     param.relinearizeThreshold = 0.1;
     param.relinearizeSkip = 1;
     isam2 = std::make_unique<gtsam::ISAM2>(param);
+
+    mOptimThread = std::make_unique<trd::ResidentThread>(&Backend::optimHandler, this);
 }
 
-template<typename PointType>
-void Backend<PointType>::initSubmapFromPCD(std::string pcd_file)
+void Backend::addOdomFactor()
 {
-    mLg = logger::Logger::getInstance();
-    // load global map mode
-    mSubMap = pcl::make_shared<PC<PointType>>();
-    
-    if(pcl::io::loadPCDFile<PointType>(pcd_file, *mSubMap) == -1)
-    {
-        auto msg = fmt::format("can't load globalmap from: {}", pcd_file);
-        mLg->error(msg);
-        throw std::runtime_error(msg);
-    }
+    auto n = mKFObjPtr->mKFNums;
+    auto& keyframes = mKFObjPtr->keyframes;
 
-    mLg->info("load map success!!");
-
-    // downsample global pc
-    pcp::voxelDownSample<PointType>(mSubMap, 0.7f);
-    mLg->info("submap size: {}", mSubMap->size());
-}
-
-template<typename PointType>
-void Backend<PointType>::addOdomFactor()
-{
-    if(mKFnums == 0){
+    if(n == 0){
         noiseModel::Diagonal::shared_ptr gtPriorNoise = noiseModel::Diagonal::Variances(priorNoise);
         auto pose = gtsam::Pose3(keyframes.front().pose.matrix());
         factorGraph.add(PriorFactor<gtsam::Pose3>(0, pose, gtPriorNoise));
@@ -62,7 +44,7 @@ void Backend<PointType>::addOdomFactor()
     }
 
     noiseModel::Diagonal::shared_ptr gtOdomNoise = noiseModel::Diagonal::Variances(odomNoise);
-    for(int i=mKFnums+1; i<keyframes.size(); i++){
+    for(int i=n+1; i<keyframes.size(); i++){
         auto from = gtsam::Pose3(keyframes[i-1].pose.matrix());
         auto to = gtsam::Pose3(keyframes[i].pose.matrix());
         factorGraph.add(BetweenFactor<gtsam::Pose3>(i-1, i, from.between(to), gtOdomNoise));
@@ -70,60 +52,46 @@ void Backend<PointType>::addOdomFactor()
     }
 }
 
-
-
-template<typename PointType>
-void Backend<PointType>::optimHandler()
+void Backend::optimHandler()
 {
-    while(mRunning){
+    std::unique_lock<std::mutex> lk(mKFObjPtr->mLockKF);
+    mKFObjPtr->mKFcv.wait(lk, [&](){ return (mKFObjPtr->keyframes.size() > mKFObjPtr->mKFNums || lg->isProgramExit()); });
+    
+    if(lg->isProgramExit()){
+        lg->info("program is about exit, give up this optim!");
+        return;
+    }
 
-        std::unique_lock<std::mutex> lk(mKFlock);
-        mKFcv.wait(lk, [&](){ return keyframes.size() > mKFnums; });
-        // new kf is put
-        addOdomFactor();
-        mKFnums = keyframes.size();
+    // new kf is put
+    addOdomFactor();
+    mKFObjPtr->mKFNums = mKFObjPtr->keyframes.size();
 
-        lk.unlock();    // ------------------------------------
+    lk.unlock();    // ------------------------------------
 
-        //  maybe time comsuming
-        isam2->update(factorGraph, initialEstimate);
-        isam2->update();
+    //  maybe time comsuming
+    isam2->update(factorGraph, initialEstimate);
+    isam2->update();
 
-        factorGraph.resize(0);
-        initialEstimate.clear();
-        optimizedEstimate = isam2->calculateEstimate();
+    factorGraph.resize(0);
+    initialEstimate.clear();
+    optimizedEstimate = isam2->calculateEstimate();
 
-        lk.lock();     // ------------------------------------   
-        // 1. update kfs
-        for(int i=0; i<mKFnums; i++){
-            auto p = optimizedEstimate.at<gtsam::Pose3>(i);
-            keyframes[i].pose.matrix() = p.matrix();
-        }
-        
-        // 2. update submap
-        std::vector<size_t> k_indices;
-        std::vector<Scalar> k_sqr_distances;
-        nanoflann::KeyFramesKdtree<std::deque<KF>, Scalar, 3> kf_kdtree(keyframes);
-        kf_kdtree.radiusSearch(mRTPose.load().translation(), mSurroundingKeyframeSearchRadius, k_indices, k_sqr_distances);
-        mSubMap->clear();
-        for(auto i : k_indices){
-            const auto& src = keyframes[i].pc;
-            PC<PointType> dst;
-            *mSubMap += *pcp::transformPointCloud<PointType, Scalar>(src, keyframes[i].pose);
-        }
+    lk.lock();     // ------------------------------------  
+    
+    auto n = mKFObjPtr->mKFNums;
+    auto& keyframes = mKFObjPtr->keyframes; 
+    // update kfs
+    for(int i=0; i<n; i++){
+        auto p = optimizedEstimate.at<gtsam::Pose3>(i);
+        keyframes[i].pose.matrix() = p.matrix();
+    }
 
-        // 3. info frontend something update, this step maybe tricky if backend dont own reference of frontend!!        
-
-    }    
+    mMapManagerPtr->setReadyUpdateMap();
 }
 
-template<typename PointType>
-Backend<PointType>::~Backend()
+Backend::~Backend()
 {
-    mRunning.store(false);
-    if(mOptimThread->joinable())    mOptimThread->join();    
+    mKFObjPtr->mKFcv.notify_all();
 }
 
-
-PCTemplateInstantiateExplicitly(Backend);
 }
