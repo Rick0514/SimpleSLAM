@@ -66,12 +66,9 @@ add_executable(loc loc.cpp)
 target_include_directories(loc PUBLIC
     ${ROOT_DIR}/dataproxy/include
     ${ROOT_DIR}/frontend/include
-    # ${ROOT_DIR}/backend/include
 )
 target_link_libraries(loc
-    dataproxy
     frontend
-    # backend
 )
 # target_compile_definitions(loc PRIVATE LOG_FILE="${CMAKE_CURRENT_SOURCE_DIR}/data/loc.log")
 

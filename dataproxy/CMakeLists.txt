@@ -11,7 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 file(GLOB_RECURSE srcs CONFIGURE_DEPENDS src/*.cpp include/${PROJECT_NAME}/*.hpp)
-add_library(dataproxy STATIC ${srcs})
+add_library(dataproxy SHARED ${srcs})
 
 target_include_directories(dataproxy PUBLIC
     ${COMMON_HEADER}

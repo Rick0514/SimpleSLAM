@@ -16,8 +16,8 @@ using kfs_t = std::deque<kf_t>;
 
 struct KeyFramesObj
 {
-    kfs_t keyframes;
     int mKFNums;
+    kfs_t keyframes;
     std::mutex mLockKF;
     std::condition_variable mKFcv;
     std::set<index_t> mSubmapIdx;
