@@ -18,6 +18,7 @@ LidarDataProxy::LidarDataProxy(ros::NodeHandle& nh, int size) :
     mSub = nh.subscribe("/lidar_points", 5, &LidarDataProxy::subscribe, this);
 
     mPubAligned = nh.advertise<sensor_msgs::PointCloud2>("/aligned", 1);
+    mPubGlobal = nh.advertise<sensor_msgs::PointCloud2>("/globalmap", 1);
     mVisPCThd = std::make_unique<utils::trd::ResidentThread>(&LidarDataProxy::visPCHandler, this);
 }
 
@@ -45,16 +46,22 @@ void LidarDataProxy::visPCHandler()
     switch(mVisType){
         case VisType::Aligned: {
             // trans
-            pc_t::Ptr aligned(new pc_t());
-            pcl::transformPointCloud(*mAlignedKF.pc, *aligned, mAlignedKF.pose.matrix().cast<float>());
-            
-            sensor_msgs::PointCloud2 rospc;
-            pcl::toROSMsg(*aligned, rospc);
-            rospc.header.frame_id = "map";
-            mPubAligned.publish(rospc);
+            if(mPubAligned.getNumSubscribers() > 0)
+            {
+                pc_t::Ptr aligned(new pc_t());
+                pcl::transformPointCloud(*mAlignedKF.pc, *aligned, mAlignedKF.pose.matrix().cast<float>());
+                sensor_msgs::PointCloud2 rospc;
+                pcl::toROSMsg(*aligned, rospc);
+                rospc.header.frame_id = "map";
+                mPubAligned.publish(rospc);
+            }
             break;
         }
         case VisType::GlobalMap: {
+            if(mPubGlobal.getNumSubscribers() > 0){
+                mGlobalMap.header.frame_id = "map";
+                mPubGlobal.publish(mGlobalMap);
+            }
             break;
         }
         default: {}
@@ -68,7 +75,15 @@ void LidarDataProxy::setVisAligned(const KF& kf)
     std::lock_guard<std::mutex> lk(mVisLock);
     mVisType = VisType::Aligned;
     mAlignedKF = kf;
-    mVisCV.notify_all();
+    mVisCV.notify_one();
+}
+
+void LidarDataProxy::setVisGlobalMap(const pc_t::ConstPtr& g)
+{
+    std::lock_guard<std::mutex> lk(mVisLock);
+    mVisType = VisType::GlobalMap;
+    pcl::toROSMsg(*g, mGlobalMap);
+    mVisCV.notify_one();    
 }
 
 LidarDataProxy::~LidarDataProxy()

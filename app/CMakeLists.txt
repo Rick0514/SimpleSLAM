@@ -20,3 +20,5 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     backend
     ${catkin_LIBRARIES}
 )
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE LOG_FILE="${ROOT_DIR}/test/data/slam.log")

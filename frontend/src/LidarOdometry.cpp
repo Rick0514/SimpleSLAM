@@ -28,7 +28,8 @@ LidarOdometry::LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, RelocDataProxyPt
     // xyz for temp
     mPcr.reset(new PCR::LoamRegister);
     // mPcr.reset(new PCR::NdtRegister);
-    rdp->registerFunc(std::bind(&LidarOdometry::setRelocFlag, this, std::placeholders::_1));
+
+    if(rdp) rdp->registerFunc(std::bind(&LidarOdometry::setRelocFlag, this, std::placeholders::_1));
 }
 
 void LidarOdometry::setRelocFlag(const pose_t& p)
@@ -46,10 +47,11 @@ void LidarOdometry::setRelocFlag(const pose_t& p)
 // just check the distant from last one to cur
 void LidarOdometry::selectKeyFrame(const KeyFrame& kf)
 {
-    V3<scalar_t> mCurPos = kf.pose.translation();
+    const V3<scalar_t>& mCurPos = kf.pose.translation();
     if((mCurPos - mLastPos).norm() > minKFGap){
         mMapManagerPtr->putKeyFrame(kf);
         mLastPos = mCurPos;
+        lg->info("first select pass, try push kf!!");
     }
 }
 
@@ -101,6 +103,8 @@ void LidarOdometry::generateOdom()
             auto gbq = gb->getDequeInThreadUnsafeWay();
 
             auto cidx = Frontend::getClosestItem(gbq, stamp);
+            lg->info("cidx: {}", cidx);
+            
             // here maybe some bug when dt is larger than 0.1
             if(cidx <= 0){
                 lg->warn("global odom deque has not enough items to infer average velocity model!!");
@@ -119,26 +123,43 @@ void LidarOdometry::generateOdom()
         // use pcr to get refined pose
         common::time::tictoc tt;
 
+        {
+            std::stringstream ss;
+            ss << init_pose.translation().transpose();
+            lg->info("before pose: {}", ss.str());
+        }
+
         // for now, pure LO, scan2map should be considered always success!!
         // lock here
         {
-            std::lock_guard<std::mutex> lk(mMapManagerPtr->getSubmapLock());    
-            if(!mMapManagerPtr->getKeyFrameObjPtr()->mSubmapIdx.empty())
+            std::lock_guard<std::mutex> lk(mMapManagerPtr->getSubmapLock());
+            if(!mMapManagerPtr->getKeyFrameObjPtr()->isSubmapEmpty())
             {
                 const auto& submap = mMapManagerPtr->getSubmap();
-                lg->debug("scan pts: {}, submap pts: {}", scan->points.size(), submap->points.size());
+                lg->info("scan pts: {}, submap pts: {}", scan->points.size(), submap->points.size());
                 mPcr->scan2Map(scan, submap, init_pose);    
                 lg->info("scan2map cost: {:.3f}s", tt);
-            }else{
-                lg->warn("at first, no submap here for now, build the map!!");
             }
+        }
+
+        {
+            std::stringstream ss;
+            ss << init_pose.translation().transpose();
+            lg->info("pose: {}", ss.str());
         }
 
         // use scan2map refined pose for current pose for now!! 
         mMapManagerPtr->setCurPose(init_pose);
 
-        KeyFrame kf(scan, init_pose);   
-        selectKeyFrame(kf);
+        KeyFrame kf(scan, init_pose);
+        if(mMapManagerPtr->getKeyFrameObjPtr()->isSubmapEmpty())
+        {
+            lg->warn("at first, no submap here for now, build the map!!");
+            mMapManagerPtr->putKeyFrame(kf);
+        }else{
+            selectKeyFrame(kf);
+        }
+
         // visualize
         mDataProxyPtr.get()->setVisAligned(kf);
 

@@ -1,3 +1,4 @@
+#include <dataproxy/LidarDataProxy.hpp>
 #include <frontend/MapManager.hpp>
 #include <nanoflann/kfs_adaptor.hpp>
 
@@ -20,6 +21,10 @@ MapManager::MapManager() : mKFObjPtr(std::make_shared<KeyFramesObj>()),
 
 MapManager::MapManager(std::string pcd_file) : MapManager()
 {
+    isMapping = false;
+
+    mKFObjPtr->mSubmapIdx.insert(0);
+
     // load global map mode
     if(pcl::io::loadPCDFile<pt_t>(pcd_file, *mSubmap) == -1)
     {
@@ -32,11 +37,14 @@ MapManager::MapManager(std::string pcd_file) : MapManager()
 
     pcp::voxelDownSample<pt_t>(mSubmap, 0.7f);
     lg->info("submap size: {}", mSubmap->size());
+
 }
 
 // carefully check kf
 void MapManager::putKeyFrame(const KeyFrame& kf)
 {
+    if(!isMapping)  return;
+
     auto& keyframes = mKFObjPtr->keyframes;
 
     std::vector<index_t> k_indices;
@@ -54,6 +62,7 @@ void MapManager::putKeyFrame(const KeyFrame& kf)
 // keyframe should be locked before invoke
 void MapManager::updateMap()
 {
+    lg->info("update map...");
     // it is said that nano-kdtree is thread-safe
     auto& keyframes = mKFObjPtr->keyframes;
     std::vector<index_t> k_indices;
@@ -69,6 +78,9 @@ void MapManager::updateMap()
         mKFObjPtr->mSubmapIdx.insert(i);
     }
     pcp::voxelDownSample<pt_t>(mSubmap, 0.7f);
+
+    // vis
+    if(mLidarDataProxyPtr)    mLidarDataProxyPtr->setVisGlobalMap(mSubmap);
 }
 
 MapManager::~MapManager()

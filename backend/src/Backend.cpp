@@ -1,3 +1,5 @@
+#include <geometry/trans.hpp>
+
 #include <backend/Backend.hpp>
 #include <frontend/Frontend.hpp>
 #include <frontend/MapManager.hpp>
@@ -16,6 +18,8 @@ using namespace PCLTypes;
 Backend::Backend(const FrontendPtr& ft, const MapManagerPtr& mp) : mRunning(true), mFrontendPtr(ft), mMapManagerPtr(mp)
 {
     lg = logger::Logger::getInstance();
+
+    lg->info("backend is constructing!!");
 
     priorNoise << 1e-2, 1e-2, M_PI / 72, 1e-1, 1e-1, 1e-1;
     odomNoise << 1e-4, 1e-4, 1e-4, 1e-1, 1e-1, 1e-1;
@@ -41,10 +45,11 @@ void Backend::addOdomFactor()
         auto pose = gtsam::Pose3(keyframes.front().pose.matrix());
         factorGraph.add(PriorFactor<gtsam::Pose3>(0, pose, gtPriorNoise));
         initialEstimate.insert(0, pose);
+        n++;
     }
 
     noiseModel::Diagonal::shared_ptr gtOdomNoise = noiseModel::Diagonal::Variances(odomNoise);
-    for(int i=n+1; i<keyframes.size(); i++){
+    for(int i=n; i<keyframes.size(); i++){
         auto from = gtsam::Pose3(keyframes[i-1].pose.matrix());
         auto to = gtsam::Pose3(keyframes[i].pose.matrix());
         factorGraph.add(BetweenFactor<gtsam::Pose3>(i-1, i, from.between(to), gtOdomNoise));
@@ -56,7 +61,8 @@ void Backend::optimHandler()
 {
     std::unique_lock<std::mutex> lk(mKFObjPtr->mLockKF);
     mKFObjPtr->mKFcv.wait(lk, [&](){ return (mKFObjPtr->keyframes.size() > mKFObjPtr->mKFNums || lg->isProgramExit()); });
-    
+    lg->info("backend start to optimize!!");
+
     if(lg->isProgramExit()){
         lg->info("program is about exit, give up this optim!");
         return;
@@ -88,13 +94,16 @@ void Backend::optimHandler()
         keyframes[i].pose.matrix() = p.matrix();
     }
 
-    // update frontend
+    // update frontend, make it se3
     pose_t delta = keyframes.back().pose * latest_pose.inverse();
+    geometry::trans::T2SE3(delta.matrix());
+
     const auto& gb = mFrontendPtr->getGlobal();
 
     {
         std::lock_guard<std::mutex> _lk(*gb->getLock());
         auto gbq = gb->getDequeInThreadUnsafeWay();
+        // will pose become non-se3??
         for(auto& e : *gbq) e->odom = delta * e->odom;
     }
 

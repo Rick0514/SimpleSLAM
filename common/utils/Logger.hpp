@@ -38,7 +38,7 @@ public:
 
     void setLogFile(std::string fn, level::level_enum lvl=level::info)
     {
-        _lg = spdlog::basic_logger_mt("logger", fn);
+        _lg = spdlog::basic_logger_mt("logger", fn, true);
         _lg->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [td %t] %^[%l] %v%$");
         _lg->set_level(lvl);
         _lg->flush_on(lvl);

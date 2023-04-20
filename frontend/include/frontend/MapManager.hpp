@@ -8,6 +8,8 @@
 #include <utils/Logger.hpp>
 #include <types/basic.hpp>
 
+namespace dataproxy { class LidarDataProxy; }
+
 namespace frontend {
 
 using namespace utils;
@@ -22,6 +24,11 @@ struct KeyFramesObj
     std::condition_variable mKFcv;
     std::set<index_t> mSubmapIdx;
     KeyFramesObj() : mKFNums(0) {}
+
+    bool isSubmapEmpty() {
+        std::lock_guard<std::mutex> lk(mLockKF);
+        return mSubmapIdx.empty();
+    }
 };
 
 class MapManager
@@ -29,6 +36,7 @@ class MapManager
 private:
 
     using KeyFramesObjPtr = std::shared_ptr<KeyFramesObj>;
+    using LidarDataProxyPtr = std::shared_ptr<dataproxy::LidarDataProxy>;
 
     std::shared_ptr<logger::Logger> lg;
 
@@ -42,10 +50,15 @@ private:
 
     trd::AtomicVar<pose_t> mCurPose;
 
+    LidarDataProxyPtr mLidarDataProxyPtr;
+
+    bool isMapping{true};
+
 public:
 
     MapManager();
     MapManager(std::string pcd_file);
+    void registerVis(const LidarDataProxyPtr& ldp) { mLidarDataProxyPtr = ldp; }
 
     void setCurPose(const pose_t& p) { mCurPose.store(p); }
 

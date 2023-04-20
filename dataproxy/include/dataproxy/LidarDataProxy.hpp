@@ -28,10 +28,12 @@ public:
 private:
     ros::Subscriber mSub;
     ros::Publisher mPubAligned;
+    ros::Publisher mPubGlobal;
 
     std::unique_ptr<utils::trd::ResidentThread> mVisPCThd;
 
     KF mAlignedKF;
+    sensor_msgs::PointCloud2 mGlobalMap;
     
     VisType mVisType;
     std::mutex mVisLock;
@@ -47,7 +49,8 @@ public:
     void visPCHandler();
 
     void setVisAligned(const KF&);
-
+    void setVisGlobalMap(const pc_t::ConstPtr&);
+    
     ~LidarDataProxy();
 };
 
