@@ -38,7 +38,7 @@ private:
     const float mPosConverge{5e-3};
     const float mRotConverge{1e-2};
 
-    int iters{5};
+    int iters{8};
 
     bool isDegenerate;
     bool degenerateProjSet;

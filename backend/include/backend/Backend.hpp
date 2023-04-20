@@ -50,8 +50,8 @@ private:
     std::atomic_bool mRunning;
     std::unique_ptr<trd::ResidentThread> mOptimThread;
 
-    // noise
-    Eigen::Matrix<scalar_t, 6, 1> priorNoise, odomNoise;
+    // noise --> gtsam use double
+    Eigen::Matrix<double, 6, 1> priorNoise, odomNoise;
 
 protected:
 

@@ -114,7 +114,11 @@ bool LoamRegister::scan2Map(const PC_cPtr& src, const PC_cPtr& dst, pose_t& res)
             tt.tic();
             const auto& pointOri = src->points[i];
             pt_t pointInMap;
-            _pointAssociateToMap(&pointOri, &pointInMap, res);
+            V4 ori = pointOri.getVector4fMap().cast<scalar_t>();
+            ori = res * ori;
+            pointInMap.getVector4fMap() = ori.cast<float>();            
+            // _pointAssociateToMap(&pointOri, &pointInMap, res);
+
             ta += tt.elapsed().count();
 
             Eigen::Matrix<scalar_t, mPlanePtsNum, 3> A;

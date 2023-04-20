@@ -17,12 +17,13 @@ int main(int argc, char* argv[])
 {
     // set log first
     auto lg = utils::logger::Logger::getInstance();
+    lg->setLogLevel(spdlog::level::debug);
 #ifdef LOG_FILE
     lg->setLogFile(LOG_FILE, spdlog::level::debug);
     // lg->setLogFile(LOG_FILE);
 #endif
 
-    string pcd_file = "/home/hgy/.robot/data/maps/hqc/hqc.pcd";  
+    string pcd_file = "/home/gy/.robot/data/maps/hqc/hqc.pcd";  
     ros::init(argc, argv, "loc");
     ros::NodeHandle nh;
 

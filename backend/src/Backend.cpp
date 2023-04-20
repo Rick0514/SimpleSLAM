@@ -42,7 +42,7 @@ void Backend::addOdomFactor()
 
     if(n == 0){
         noiseModel::Diagonal::shared_ptr gtPriorNoise = noiseModel::Diagonal::Variances(priorNoise);
-        auto pose = gtsam::Pose3(keyframes.front().pose.matrix());
+        auto pose = gtsam::Pose3(keyframes.front().pose.matrix().cast<double>());
         factorGraph.add(PriorFactor<gtsam::Pose3>(0, pose, gtPriorNoise));
         initialEstimate.insert(0, pose);
         n++;
@@ -50,8 +50,8 @@ void Backend::addOdomFactor()
 
     noiseModel::Diagonal::shared_ptr gtOdomNoise = noiseModel::Diagonal::Variances(odomNoise);
     for(int i=n; i<keyframes.size(); i++){
-        auto from = gtsam::Pose3(keyframes[i-1].pose.matrix());
-        auto to = gtsam::Pose3(keyframes[i].pose.matrix());
+        auto from = gtsam::Pose3(keyframes[i-1].pose.matrix().cast<double>());
+        auto to = gtsam::Pose3(keyframes[i].pose.matrix().cast<double>());
         factorGraph.add(BetweenFactor<gtsam::Pose3>(i-1, i, from.between(to), gtOdomNoise));
         initialEstimate.insert(i, to);
     }
@@ -91,11 +91,17 @@ void Backend::optimHandler()
     // update kfs
     for(int i=0; i<n; i++){
         const auto& p = optimizedEstimate.at<gtsam::Pose3>(i);
-        keyframes[i].pose.matrix() = p.matrix();
+        keyframes[i].pose.matrix() = p.matrix().cast<scalar_t>();
     }
 
     // update frontend, make it se3
     pose_t delta = keyframes.back().pose * latest_pose.inverse();
+    {
+        std::stringstream ss;
+        ss << delta.translation().transpose();
+        lg->info("backend delta: {}", ss.str());
+    }
+
     geometry::trans::T2SE3(delta.matrix());
 
     const auto& gb = mFrontendPtr->getGlobal();
@@ -106,8 +112,9 @@ void Backend::optimHandler()
         // will pose become non-se3??
         for(auto& e : *gbq) e->odom = delta * e->odom;
     }
+    lg->info("update globalodom queue!!");
 
-    pose_t p = mFrontendPtr->get().load();
+    pose_t p = delta * mFrontendPtr->get().load();
     mFrontendPtr->get().store(p);
     
     // now update map immediately

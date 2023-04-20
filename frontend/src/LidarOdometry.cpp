@@ -114,9 +114,10 @@ void LidarOdometry::generateOdom()
                     lg->warn("closest odom is out-dated!!");
                             
                 pose_t last_1 = gbq->at(cidx)->odom;
-                pose_t last_2 = gbq->at(cidx-1)->odom;
-                init_pose = last_1 * (last_2.inverse() * last_1);
-                geometry::trans::T2SE3(init_pose.matrix());
+                // pose_t last_2 = gbq->at(cidx-1)->odom;
+                // init_pose = last_1 * (last_2.inverse() * last_1);
+                // geometry::trans::T2SE3(init_pose.matrix());
+                init_pose = last_1;
             }
         }
         
@@ -137,7 +138,7 @@ void LidarOdometry::generateOdom()
             {
                 const auto& submap = mMapManagerPtr->getSubmap();
                 lg->info("scan pts: {}, submap pts: {}", scan->points.size(), submap->points.size());
-                mPcr->scan2Map(scan, submap, init_pose);    
+                if(!mPcr->scan2Map(scan, submap, init_pose))    lg->warn("pcr not converge!!");
                 lg->info("scan2map cost: {:.3f}s", tt);
             }
         }
