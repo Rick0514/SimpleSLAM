@@ -115,6 +115,33 @@ void test_map_pcl()
     cout << "after trans : " << ep.transpose() << endl;
 }
 
+void test_type_same()
+{
+    V3f f;
+    f << 1,2,3;
+    if constexpr (std::is_same_v<decltype(f), V3d>){
+        cout << f.transpose() << endl;
+    }else{
+        cerr << "false type!" << endl;
+    }
+}
+
+void test_io_format()
+{
+    Pose6d p;
+    p.matrix().setRandom();
+    Eigen::IOFormat iof(8);
+    std::stringstream ss;
+    ss << p.matrix().format(iof);
+    cout << ss.str() << endl;
+
+    p.setIdentity();
+    ss.str("");
+    ss.clear();
+    ss << p.matrix().format(iof);
+    cout << ss.str() << endl;
+}
+
 int main(int argc, char const *argv[])
 {
     // test_setPose6d();
@@ -123,8 +150,11 @@ int main(int argc, char const *argv[])
     // test_euler();
     
     // test_manifolds();
-    test_map();
+    // test_map();
     // test_map_pcl();
+
+    test_type_same();
+    test_io_format();
 
     return 0;
 }

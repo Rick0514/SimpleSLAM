@@ -36,7 +36,7 @@ private:
     const float mDegenerateThresh{100};
 
     const float mPosConverge{5e-3};
-    const float mRotConverge{1e-2};
+    const float mRotConverge{5e-3};
 
     int iters{8};
 

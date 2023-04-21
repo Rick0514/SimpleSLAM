@@ -17,3 +17,5 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     PCR
     ${PCL_LIBRARIES}
 )
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG_PC="${ROOT_DIR}/test/data")

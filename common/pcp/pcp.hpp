@@ -42,9 +42,9 @@ typename PC<PointType>::Ptr transformPointCloud(typename PC<PointType>::Ptr clou
 #pragma omp parallel for num_threads(4)
     for (int i = 0; i < cloudSize; ++i)
     {
-        const auto pfrom = cloudIn->points[i].getVector3fMap();
-        auto pto = cloudOut->points[i].getVector3fMap();
-        pto = tr * pfrom;
+        Eigen::Map<Eigen::Vector4f, Eigen::Aligned> pfrom = cloudIn->points[i].getVector4fMap();
+        Eigen::Map<Eigen::Vector4f, Eigen::Aligned> pto = cloudOut->points[i].getVector4fMap();
+        pto.noalias() = tr * pfrom;
         if constexpr (std::is_same_v<PointType, Pxyzi>){
             cloudOut->points[i].intensity = cloudIn->points[i].intensity;
         }

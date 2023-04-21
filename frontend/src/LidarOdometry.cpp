@@ -10,6 +10,7 @@
 #include <PCR/NdtRegister.hpp>
 
 #include <pcl/pcl_config.h>
+#include <pcl/io/pcd_io.h>
 
 #include <utils/Shared_ptr.hpp>
 #include <time/tictoc.hpp>
@@ -138,7 +139,22 @@ void LidarOdometry::generateOdom()
             {
                 const auto& submap = mMapManagerPtr->getSubmap();
                 lg->info("scan pts: {}, submap pts: {}", scan->points.size(), submap->points.size());
-                if(!mPcr->scan2Map(scan, submap, init_pose))    lg->warn("pcr not converge!!");
+                pose_t beform_optim_pose = init_pose;
+                if(!mPcr->scan2Map(scan, submap, init_pose)){
+                    lg->warn("pcr not converge!!");
+                #ifdef DEBUG_PC
+                    pcl::io::savePCDFileBinary(fmt::format("{}/submap.pcd", DEBUG_PC), *submap);
+                    pcl::io::savePCDFileBinary(fmt::format("{}/scan.pcd", DEBUG_PC), *scan);
+                    Eigen::IOFormat iof(8);
+                    std::stringstream ss;
+                    ss << beform_optim_pose.matrix().format(iof);
+                    lg->warn("before optim: \n{}", ss.str());
+                    ss.str("");
+                    ss.clear();
+                    ss << init_pose.matrix().format(iof);
+                    lg->warn("after optim: \n{}", ss.str());
+                #endif
+                }   
                 lg->info("scan2map cost: {:.3f}s", tt);
             }
         }
