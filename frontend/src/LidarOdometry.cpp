@@ -153,6 +153,7 @@ void LidarOdometry::generateOdom()
                     ss.clear();
                     ss << init_pose.matrix().format(iof);
                     lg->warn("after optim: \n{}", ss.str());
+                    throw std::runtime_error("pcr not converge abort!!");
                 #endif
                 }   
                 lg->info("scan2map cost: {:.3f}s", tt);

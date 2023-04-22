@@ -62,19 +62,18 @@ private:
     }
 
     template<unsigned int N>
-    bool _extractPlaneCoeffs(const Eigen::Matrix<scalar_t, N, 3>& A, V4& hx);
+    bool _extractPlaneCoeffs(const Eigen::Matrix<scalar_t, N, 3>& A, V3& hx);
 
     bool _extractPlaneMatrix(const pt_t& pointInMap, const PC_cPtr& dst, Eigen::Matrix<scalar_t, mPlanePtsNum, 3>& A);
 
     // independent of x
-    static V3 _J_e_wrt_x(const V4& coff){
+    static V3 _J_e_wrt_x(const V3& coff){
         // cn is larger than 1 absolutely
-        scalar_t cn = coff.norm();
-        return coff.head<3>() / coff.norm();
+        return coff / coff.norm();
     }
-    
-    static inline scalar_t _error(const V4& coff, const V3& pInMap){
-        return pInMap.homogeneous().dot(coff) / coff.norm();
+
+    static inline scalar_t _dist(const V3& coff, const V3& pInMap){
+        return (pInMap.dot(coff) + 1.0) / coff.norm();
     }
 
     void _removeDegeneratePart(const M6& JtJ, V6& x);

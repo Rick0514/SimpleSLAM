@@ -55,8 +55,8 @@ public:
         string pc_fn;
         string initpose_fn;
     #ifdef DATA_DIR
-        sm_fn = DATA_DIR "submap.pcd";
-        pc_fn = DATA_DIR "scan.pcd";
+        sm_fn = DATA_DIR "submap1.pcd";
+        pc_fn = DATA_DIR "scan1.pcd";
         initpose_fn = DATA_DIR "init_pose.txt";
     #endif
 
@@ -205,6 +205,7 @@ public:
                 coeffSel->push_back(coeffSelSurfVec[i]);
             }
         }
+        cout << "optim size: " << laserCloudOri->size() << endl;
         // reset flag for next iteration
         std::fill(laserCloudOriSurfFlag.begin(), laserCloudOriSurfFlag.end(), false);
     }
@@ -319,9 +320,9 @@ public:
 
         if (isDegenerate)
         {
-            cv::Mat matX2(6, 1, CV_32F, cv::Scalar::all(0));
-            matX.copyTo(matX2);
-            matX = matP * matX2;
+            // cv::Mat matX2(6, 1, CV_32F, cv::Scalar::all(0));
+            // matX.copyTo(matX2);
+            // matX = matP * matX2;
         }
 
         transformTobeMapped[0] += matX.at<float>(0, 0);

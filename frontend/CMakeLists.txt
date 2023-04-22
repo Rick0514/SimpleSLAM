@@ -18,4 +18,4 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     ${PCL_LIBRARIES}
 )
 
-target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG_PC="${ROOT_DIR}/test/data")
+# target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG_PC="${ROOT_DIR}/test/data")

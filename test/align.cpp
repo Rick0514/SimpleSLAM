@@ -92,7 +92,10 @@ int main(int argc, char const *argv[])
 
     lg->info("start to scan2map!");
     tt.tic();
-    for(int i=0; i<5; i++)  pcr->scan2Map(source_cloud, target_cloud, init_pose);
+    for(int i=0; i<5; i++){
+        if(!pcr->scan2Map(source_cloud, target_cloud, init_pose))
+            lg->warn("not converge!!");
+    }
     lg->info("scan to map elapsed {:.3f}s", tt);
 
     std::stringstream ss;

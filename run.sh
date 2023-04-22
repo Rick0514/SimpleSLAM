@@ -21,6 +21,7 @@ sleep 1
 
 echo "play rosbag..."
 
-rosbag play --clock /home/hgy/sda2/rosbag/huaqiaocheng-1.bag
+# rosbag play --clock /home/hgy/sda2/rosbag/huaqiaocheng-1.bag
+rosbag play --clock /home/rick/jtcx/hgy_gitee/minimal_ws/bag/huaqiaocheng-1.bag
 
 

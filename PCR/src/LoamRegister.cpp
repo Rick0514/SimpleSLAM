@@ -18,16 +18,16 @@ LoamRegister::LoamRegister(){
 }
 
 template<unsigned int N>
-bool LoamRegister::_extractPlaneCoeffs(const Eigen::Matrix<scalar_t, N, 3>& A, V4& hx)
+bool LoamRegister::_extractPlaneCoeffs(const Eigen::Matrix<scalar_t, N, 3>& A, V3& x)
 {
     Eigen::Matrix<scalar_t, N, 1> b;
-    V3 x;
     b.fill(-1);
     x = A.colPivHouseholderQr().solve(b);
-    hx = x.homogeneous();
     
+    scalar_t x_norm = x.norm();
+
     for(int i=0; i<N; i++){
-        if(std::abs(hx.dot(A.row(i).homogeneous())) > mPlaneValidThresh){
+        if(std::abs(x.dot(A.row(i)) + 1.0) > mPlaneValidThresh * x_norm){
             DEBUG(debug_file, fmt::format("dist large: {}", hx.dot(A.row(i).homogeneous())));
             return false;
         }
@@ -104,9 +104,9 @@ bool LoamRegister::scan2Map(const PC_cPtr& src, const PC_cPtr& dst, pose_t& res)
         J_vec.clear();
         E_vec.clear();
 
-        tt.tic();
-        scalar_t ta = 0;
-        scalar_t te = 0;
+        // tt.tic();
+        // scalar_t ta = 0;
+        // scalar_t te = 0;
 
         #pragma omp parallel for num_threads(numCores)
         for(int i=0; i<src->points.size(); i++){
@@ -119,19 +119,19 @@ bool LoamRegister::scan2Map(const PC_cPtr& src, const PC_cPtr& dst, pose_t& res)
             pointInMap.getVector4fMap() = ori.cast<float>();            
             // _pointAssociateToMap(&pointOri, &pointInMap, res);
 
-            ta += tt.elapsed().count();
+            // ta += tt.elapsed().count();
 
             Eigen::Matrix<scalar_t, mPlanePtsNum, 3> A;
 
-            tt.tic();
+            // tt.tic();
             if(_extractPlaneMatrix(pointInMap, dst, A))
             {
                 // extract plane
-                V4 hx;
-                if(_extractPlaneCoeffs<mPlanePtsNum>(A, hx)){
+                V3 x;
+                if(_extractPlaneCoeffs<mPlanePtsNum>(A, x)){
                     // check good point to optimize
-                    V3 p(pointInMap.x, pointInMap.y, pointInMap.z);
-                    scalar_t dist = hx.dot(p.homogeneous());
+                    V3 p = pointInMap.getVector3fMap().cast<scalar_t>();
+                    scalar_t dist = _dist(x, p);
 
                     scalar_t s = 1 - 0.9 * fabs(dist) / sqrt(sqrt(pointOri.x * pointOri.x
                             + pointOri.y * pointOri.y + pointOri.z * pointOri.z));
@@ -141,20 +141,20 @@ bool LoamRegister::scan2Map(const PC_cPtr& src, const PC_cPtr& dst, pose_t& res)
                         // good point is selected!!
                         #pragma omp critical
                         {
-                            E_vec.emplace_back(_error(hx, p));                            
+                            E_vec.emplace_back(s * _dist(x, p));                            
                             Eigen::Matrix<scalar_t, 3, 6> jse3;
                             manifolds::J_SE3(p, jse3);
-                            J_vec.emplace_back(_J_e_wrt_x(hx).transpose() * jse3);
+                            J_vec.emplace_back(s * _J_e_wrt_x(x).transpose() * jse3);
                         }
                     }
                 }
             }
-            te += tt.elapsed().count();
+            // te += tt.elapsed().count();
         }
 
         // this->lg->debug("build J cost: {}", tt);
-        this->lg->debug("ta cost: {}", ta);
-        this->lg->debug("te cost: {}", te);
+        // this->lg->debug("ta cost: {}", ta);
+        // this->lg->debug("te cost: {}", te);
 
         // make J and E
         auto n = J_vec.size();
@@ -190,7 +190,7 @@ bool LoamRegister::scan2Map(const PC_cPtr& src, const PC_cPtr& dst, pose_t& res)
         // check converge
         if(x.head<3>().norm() <= mPosConverge && x.tail<3>().norm() <= mRotConverge){
             this->isConverge = true;
-            this->lg->debug("converge at iter {}!", it);
+            this->lg->info("converge at iter {}!", it);
             break;
         }
         
