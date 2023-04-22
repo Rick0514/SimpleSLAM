@@ -17,6 +17,41 @@
 
 using namespace std;
 using PointType = pcl::PointXYZI;
+using pc_t = pcl::PointCloud<PointType>;
+
+double getFitnessScore(const pc_t::ConstPtr& src, const pc_t::ConstPtr& dst, const Eigen::Affine3f& p)
+{
+    double fitness_score = 0.0;
+    // Transform the input dataset using the final transformation
+    pc_t input_transformed;
+    pcl::transformPointCloud(*src, input_transformed, p);
+
+    std::vector<int> nn_indices(1);
+    std::vector<float> nn_dists(1);
+
+    pcl::KdTreeFLANN<PointType> kdtree;
+    kdtree.setInputCloud(dst);
+
+    // nkdtree.nearestKSearch(p, k, sk_indices, k_sqr_distances);
+    // For each point in the source dataset
+    int nr = 0;
+    for (const auto& point : input_transformed) {
+        // Find its nearest neighbor in the target
+        kdtree.nearestKSearch(point, 1, nn_indices, nn_dists);
+
+        // Deal with occlusions (incomplete targets)
+        if (nn_dists[0] <= 1.0f) {
+            // Add to the fitness score
+            fitness_score += nn_dists[0];
+            nr++;
+        }
+    }
+
+    if (nr > 0)
+        return (fitness_score / nr);
+
+    return -1;
+}
 
 class LioScan2map
 {
@@ -373,6 +408,7 @@ public:
 
         Eigen::Affine3f res = trans2Affine3f(transformTobeMapped);
         cout << res.matrix() << endl;
+        cout << "fitness score : " << getFitnessScore(laserCloudSurfLastDS, laserCloudSurfFromMapDS, res) << endl; 
 
     }
 
@@ -383,7 +419,7 @@ int main()
 {
 
     LioScan2map ls;
-    for(int i=0; i<5; i++)  ls.scan2MapOptimization();
+    ls.scan2MapOptimization();
 
     return 0;
 }

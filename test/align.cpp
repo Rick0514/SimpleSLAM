@@ -5,6 +5,8 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/visualization/pcl_visualizer.h>
 
+#include <nanoflann/pcl_adaptor.hpp>
+
 #include <types/basic.hpp>
 #include <utils/Logger.hpp>
 #include <time/tictoc.hpp>
@@ -19,6 +21,41 @@ void voxelDownSample(pcl::shared_ptr<pcl::PointCloud<PointType>> cloud, float gr
     voxelgrid.setInputCloud(cloud);
     voxelgrid.filter(*cloud);
 }
+
+double getFitnessScore(const pc_t::ConstPtr& src, const pc_t::ConstPtr& dst, const pose_t& p)
+{
+    double fitness_score = 0.0;
+    // Transform the input dataset using the final transformation
+    pc_t input_transformed;
+    pcl::transformPointCloud(*src, input_transformed, p.matrix().cast<float>());
+
+    std::vector<size_t> nn_indices(1);
+    std::vector<float> nn_dists(1);
+
+    nanoflann::PointCloudKdtree<pt_t, float> nkdtree;
+    nkdtree.setInputCloud(dst);
+
+    // nkdtree.nearestKSearch(p, k, sk_indices, k_sqr_distances);
+    // For each point in the source dataset
+    int nr = 0;
+    for (auto& point : input_transformed) {
+        // Find its nearest neighbor in the target
+        nkdtree.nearestKSearch(point.data, 1, nn_indices, nn_dists);
+
+        // Deal with occlusions (incomplete targets)
+        if (nn_dists[0] <= 1.0f) {
+            // Add to the fitness score
+            fitness_score += nn_dists[0];
+            nr++;
+        }
+    }
+
+    if (nr > 0)
+        return (fitness_score / nr);
+
+    return -1;
+}
+
 
 int main(int argc, char const *argv[])
 {
@@ -92,11 +129,11 @@ int main(int argc, char const *argv[])
 
     lg->info("start to scan2map!");
     tt.tic();
-    for(int i=0; i<5; i++){
-        if(!pcr->scan2Map(source_cloud, target_cloud, init_pose))
-            lg->warn("not converge!!");
-    }
+    if(!pcr->scan2Map(source_cloud, target_cloud, init_pose))
+        lg->warn("not converge!!");
     lg->info("scan to map elapsed {:.3f}s", tt);
+
+    lg->warn("get fitness score: {}", getFitnessScore(source_cloud, target_cloud, init_pose));
 
     std::stringstream ss;
     ss << init_pose.matrix();

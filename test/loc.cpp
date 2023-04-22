@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
     // lg->setLogFile(LOG_FILE);
 #endif
 
-    string pcd_file = "/home/hgy/.robot/data/maps/hqc/hqc.pcd";  
+    string pcd_file = "/home/gy/.robot/data/maps/hqc/hqc.pcd";  
     ros::init(argc, argv, "loc");
     ros::NodeHandle nh;
 
