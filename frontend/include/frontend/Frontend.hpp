@@ -22,6 +22,7 @@ protected:
     using OdomDeque = concurrency::SafeDeque<Odometry>;
     using OdomDequePtr = std::shared_ptr<OdomDeque>;
 
+    bool mOdom2MapInitFlag;
     trd::AtomicVar<pose_t> mOdom2Map;
 
     OdomDequePtr mLocalOdometry;
@@ -34,7 +35,12 @@ protected:
 
 public:
     Frontend() = delete;
+    void init() noexcept;
+    Frontend(const OdomDequePtr& local_dq, int global_size);    // if local dq is already get!!
     Frontend(int local_size, int global_size);
+
+    void setOdom2MapFlag() noexcept { mOdom2MapInitFlag = true; }
+    bool getOdom2MapFlag() noexcept { return mOdom2MapInitFlag; }
 
     void publish() const;
 

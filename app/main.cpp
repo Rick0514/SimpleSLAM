@@ -4,6 +4,7 @@
 #include <backend/Backend.hpp>
 
 #include <dataproxy/LidarDataProxy.hpp>
+#include <dataproxy/EkfOdomProxy.hpp>
 #include <dataproxy/RelocDataProxy.hpp>
 
 using namespace std;
@@ -18,15 +19,33 @@ int main(int argc, char* argv[])
     // lg->setLogFile(LOG_FILE, spdlog::level::debug);
     lg->setLogFile(LOG_FILE);
 #endif
+
+    if(argc != 2){
+        lg->error("please input: app [mode], mode : lo, lio");
+        return -1;
+    }
+    auto mode = std::string(argv[1]);
+    lg->info("slam mode: {}", mode);
+    if(mode != "lo" && mode != "lio"){
+        lg->error("no such mode: {}", mode);
+        return -1;
+    }
+
     ros::init(argc, argv, "loc");
     ros::NodeHandle nh;
 
     // lidar data proxy
     auto ldp = std::make_shared<LidarDataProxy>(nh, 10);   
+    // ekf data proxy
+    auto edp = std::make_shared<EkfOdomProxy>(nh, 100);
+
     // when slam mode, no reloc data proxy
     std::shared_ptr<RelocDataProxy> rdp;
     // frontend
-    auto ftd = std::make_shared<Frontend>(100, 10);
+    std::shared_ptr<Frontend> ftd;
+    if(mode == "lo")    ftd = std::make_shared<Frontend>(100, 10);
+    if(mode == "lio")   ftd = std::make_shared<Frontend>(edp->get(), 10);
+
     // mapmanager
     auto mmp = std::make_shared<MapManager>();
     mmp->registerVis(ldp);

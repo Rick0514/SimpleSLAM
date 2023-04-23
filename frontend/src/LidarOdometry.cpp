@@ -95,7 +95,8 @@ void LidarOdometry::generateOdom()
             lg->info("reloc-ing...");
             // clear global odom
             mFrontendPtr->getGlobal()->clear();  
-        }else if(local_odom){
+        }else if(local_odom && mFrontendPtr->getOdom2MapFlag()){
+            // only if local_odom is available and already init can be used
             init_pose.matrix() = odom2map.load().matrix() * local_odom->odom.matrix();
         }else{
             // if not get, use average velocity model
@@ -186,7 +187,10 @@ void LidarOdometry::generateOdom()
         mFrontendPtr->getGlobal()->template push_back<false>(global_odom);  // false for now!!
         
         // update odom2map
-        if(local_odom)  odom2map.store(init_pose * local_odom->odom.inverse());
+        if(local_odom){
+            odom2map.store(init_pose * local_odom->odom.inverse());
+            mFrontendPtr->setOdom2MapFlag();
+        }
 
     }else{
         lg->debug("scan deque is empty for now, please check!!");

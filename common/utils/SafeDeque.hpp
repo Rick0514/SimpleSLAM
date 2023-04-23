@@ -58,7 +58,8 @@ public:
 
     // provide a more fine-grain and thread-safe api to operate deque
     std::mutex& getLock() noexcept;
-    std::deque<Tsptr>& getDequeInThreadUnsafeWay();
+    std::condition_variable& getCv() noexcept;
+    std::deque<Tsptr>& getDequeInThreadUnsafeWay() noexcept;
 
     ~SafeDeque() = default;
 };
@@ -196,8 +197,14 @@ std::mutex& SafeDeque<T>::getLock() noexcept
     return mLock;
 }
 
+template <typename T>
+std::condition_variable& SafeDeque<T>::getCv() noexcept
+{
+    return mCv;
+}
+
 template<typename T>
-std::deque<std::shared_ptr<T>>& SafeDeque<T>::getDequeInThreadUnsafeWay()
+std::deque<std::shared_ptr<T>>& SafeDeque<T>::getDequeInThreadUnsafeWay() noexcept
 {
     return mDq;
 }
