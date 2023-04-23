@@ -49,21 +49,25 @@ public:
 
     ~Frontend();
 
-    // q should be pointer to iterable container of shared ptr to Odometry
+    // q should be iterable container of shared ptr to Odometry with
+    // accending time stamp
     template<typename T>
-    static int getClosestItem(const T& q, double stamp)
+    static int getClosestItem(const T& q, stamp_t stamp)
     {
-        if(q->empty())  return -1;
-        int idx = 0;
-        double m = std::abs(stamp - q->front()->stamp);
+        if(q.empty())  return -1;
+        
+        int n = q.size();
+        int idx = n-1;
+        stamp_t m = std::abs(stamp - q.back()->stamp);
 
-        for(int i=1; i<q->size(); i++){
-            double tmp = std::abs(q->at(i)->stamp - stamp);
+        for(int i=n-2; i>=0; i--){
+            stamp_t tmp = std::abs(q.at(i)->stamp - stamp);
             if(tmp < m){
                 m = tmp;
                 idx = i; 
-            }
+            }else   break;
         }
+
         return idx;
     }
 

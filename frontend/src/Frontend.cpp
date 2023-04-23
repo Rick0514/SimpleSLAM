@@ -23,17 +23,26 @@ Odometry::Ptr Frontend::getClosestLocalOdom(double stamp) const
 {
     // 1.  stamp > back()
     // 1.1 scope block ?? wait for closest local odom
-    // 1.2 
+    std::unique_lock<std::mutex> lk(mLocalOdometry->getLock());
+    auto& dq = mLocalOdometry->getDequeInThreadUnsafeWay();
+    
+    // try multiple time!!
+    const std::chrono::milliseconds timeout{5};
+    const int try_time{5};
+    for(int i=0; i<try_time; i++){
+        auto it = std::lower_bound(dq.begin(), dq.end(), stamp, [](const Odometry::Ptr& it, stamp_t v){
+            return it->stamp < v;
+        });
 
-    // maybe 0.02 should be subtituded to local freq
-    // if(stamp - mLocalOdometry->back()->stamp >= 0.02)
-    // {
-
-    // } 
+        if(it != dq.end()){
+            return *it;
+        }
+        lk.unlock();
+        std::this_thread::sleep_for(timeout);
+        lk.lock();
+    }
 
     return Odometry::Ptr();
-
-    // 2. stamp <= back()
 }
 
 Frontend::~Frontend() {

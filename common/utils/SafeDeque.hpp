@@ -57,8 +57,8 @@ public:
     void abort() noexcept;
 
     // provide a more fine-grain and thread-safe api to operate deque
-    std::mutex* getLock() noexcept;
-    const std::deque<Tsptr>* getDequeInThreadUnsafeWay();
+    std::mutex& getLock() noexcept;
+    std::deque<Tsptr>& getDequeInThreadUnsafeWay();
 
     ~SafeDeque() = default;
 };
@@ -191,15 +191,15 @@ void SafeDeque<T>::clear() noexcept
 
 
 template <typename T>
-std::mutex* SafeDeque<T>::getLock() noexcept
+std::mutex& SafeDeque<T>::getLock() noexcept
 {
-    return &mLock;
+    return mLock;
 }
 
 template<typename T>
-const std::deque<std::shared_ptr<T>>* SafeDeque<T>::getDequeInThreadUnsafeWay()
+std::deque<std::shared_ptr<T>>& SafeDeque<T>::getDequeInThreadUnsafeWay()
 {
-    return &mDq;
+    return mDq;
 }
 
 

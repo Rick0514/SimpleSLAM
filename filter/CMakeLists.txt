@@ -1,6 +1,13 @@
 project(filter)
 
-set(KalmanFilterHeaders ../third_parties/KalmanFilter/include)
+set(KalmanFilterHeaders ${ROOT_DIR}/third_parties/KalmanFilter/include)
+
+# for this header-only library
+set(filter_INCLUDE_DIRS
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${KalmanFilterHeaders}
+    PARENT_SCOPE
+)
 
 # target_compile_definitions(pcr PRIVATE LOG_LEVEL=1)
 set(CMAKE_BUILD_TYPE Release)
@@ -28,4 +35,5 @@ target_link_libraries(ekf PUBLIC
     spdlog
     ${catkin_LIBRARIES}
 )
+
 

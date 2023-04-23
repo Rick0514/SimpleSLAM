@@ -100,8 +100,8 @@ void LidarOdometry::generateOdom()
         }else{
             // if not get, use average velocity model
             const auto& gb = mFrontendPtr->getGlobal();
-            std::lock_guard<std::mutex> _lk(*gb->getLock());
-            auto gbq = gb->getDequeInThreadUnsafeWay();
+            std::lock_guard<std::mutex> _lk(gb->getLock());
+            auto& gbq = gb->getDequeInThreadUnsafeWay();
 
             auto cidx = Frontend::getClosestItem(gbq, stamp);
             lg->info("cidx: {}", cidx);
@@ -111,10 +111,10 @@ void LidarOdometry::generateOdom()
                 lg->warn("global odom deque has not enough items to infer average velocity model!!");
             }else{
 
-                if(std::abs(gbq->at(cidx)->stamp - stamp) > 0.15)
+                if(std::abs(gbq.at(cidx)->stamp - stamp) > 0.15)
                     lg->warn("closest odom is out-dated!!");
                             
-                pose_t last_1 = gbq->at(cidx)->odom;
+                pose_t last_1 = gbq.at(cidx)->odom;
                 // pose_t last_2 = gbq->at(cidx-1)->odom;
                 // init_pose = last_1 * (last_2.inverse() * last_1);
                 // geometry::trans::T2SE3(init_pose.matrix());

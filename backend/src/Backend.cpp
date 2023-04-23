@@ -107,10 +107,10 @@ void Backend::optimHandler()
     const auto& gb = mFrontendPtr->getGlobal();
 
     {
-        std::lock_guard<std::mutex> _lk(*gb->getLock());
+        std::lock_guard<std::mutex> _lk(gb->getLock());
         auto gbq = gb->getDequeInThreadUnsafeWay();
         // will pose become non-se3??
-        for(auto& e : *gbq) e->odom = delta * e->odom;
+        for(auto& e : gbq) e->odom = delta * e->odom;
     }
     lg->info("update globalodom queue!!");
 
