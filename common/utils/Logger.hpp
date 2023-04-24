@@ -16,7 +16,7 @@ using namespace spdlog;
 class Logger : public noncopyable::NonCopyable
 {
 private:
-    
+
     std::shared_ptr<spdlog::logger> _lg;
     std::atomic_bool _exit;
 
@@ -27,6 +27,7 @@ private:
     }
 
 public:
+    using Ptr = std::shared_ptr<Logger>;
 
     ~Logger() = default;
 
@@ -51,8 +52,8 @@ public:
 
     bool isProgramExit() { return _exit.load(); }
 
-    static std::shared_ptr<Logger> getInstance(){
-        static auto lg = std::shared_ptr<Logger>(new Logger());
+    static Ptr getInstance(){
+        static auto lg = std::make_shared<Logger>();
         return lg;
     }
 

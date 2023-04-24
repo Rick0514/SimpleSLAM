@@ -78,7 +78,7 @@ static void pclRS(benchmark::State& s)
     pcl::KdTreeFLANN<pt_t> kdtree;
     kdtree.setInputCloud(map);
 
-    float r = 4.0;
+    float r = 2.0;
     pt_t p;
     bzero(p.data, 4);
 
@@ -113,8 +113,7 @@ static void nanoRS(benchmark::State& s)
     nanoflann::PointCloudKdtree<pt_t, float> nkdtree;
     nkdtree.setInputCloud(map);
 
-    float r = 4.0;
-    r *= r;
+    float r = 2.0;
     pt_t p;
     bzero(p.data, 4);
 
@@ -217,13 +216,13 @@ int main(int argc, char** argv) {
 
     lg->info("load map size: {}", map->points.size());    
 
-    checkKNN();
+    // checkKNN();
     // checkKFS();
 
-    // ::benchmark::Initialize(&argc, argv);        
-    // if (::benchmark::ReportUnrecognizedArguments(argc, argv))   return 1;
-    // ::benchmark::RunSpecifiedBenchmarks();       
-    // ::benchmark::Shutdown();                     
+    ::benchmark::Initialize(&argc, argv);        
+    if (::benchmark::ReportUnrecognizedArguments(argc, argv))   return 1;
+    ::benchmark::RunSpecifiedBenchmarks();       
+    ::benchmark::Shutdown();                     
 
     return 0;
 }

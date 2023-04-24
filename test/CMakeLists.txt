@@ -93,3 +93,10 @@ target_link_libraries(edp
     dataproxy
     ${catkin_LIBRARIES}
 )
+
+add_executable(config config.cpp)
+target_include_directories(config PRIVATE
+    ${config_INCLUDE_DIRS}
+)
+target_link_libraries(config spdlog)
+
