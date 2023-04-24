@@ -42,7 +42,12 @@ void Backend::addOdomFactor()
 
     if(n == 0){
         noiseModel::Diagonal::shared_ptr gtPriorNoise = noiseModel::Diagonal::Variances(priorNoise);
-        auto pose = gtsam::Pose3(keyframes.front().pose.matrix().cast<double>());
+        
+        // turn to 2d
+        pose_t kfp = keyframes.front().pose;
+        // kfp = geometry::trans::SixDof2Mobile(kfp);
+        
+        auto pose = gtsam::Pose3(kfp.matrix().cast<double>());
         factorGraph.add(PriorFactor<gtsam::Pose3>(0, pose, gtPriorNoise));
         initialEstimate.insert(0, pose);
         n++;
@@ -53,6 +58,12 @@ void Backend::addOdomFactor()
         auto from = gtsam::Pose3(keyframes[i-1].pose.matrix().cast<double>());
         auto to = gtsam::Pose3(keyframes[i].pose.matrix().cast<double>());
         factorGraph.add(BetweenFactor<gtsam::Pose3>(i-1, i, from.between(to), gtOdomNoise));
+        
+        // insert pose that project to 2d
+        // pose_t kf_to = keyframes[i].pose;
+        // kf_to = geometry::trans::SixDof2Mobile(kf_to);
+        // to = gtsam::Pose3(kf_to.matrix().cast<double>());
+
         initialEstimate.insert(i, to);
     }
 }

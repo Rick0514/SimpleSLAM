@@ -52,7 +52,7 @@ void LidarOdometry::selectKeyFrame(const KeyFrame& kf)
     if((mCurPos - mLastPos).norm() > minKFGap){
         mMapManagerPtr->putKeyFrame(kf);
         mLastPos = mCurPos;
-        lg->info("first select pass, try push kf!!");
+        // lg->info("first select pass, try push kf!!");
     }
 }
 
@@ -85,7 +85,6 @@ void LidarOdometry::generateOdom()
             init_pose = mRelocPose;
         }
 
-        lg->info("get one scan, regist pc!");
         auto local_odom = mFrontendPtr->getClosestLocalOdom(stamp);
 
         // add if reloc
@@ -105,7 +104,7 @@ void LidarOdometry::generateOdom()
             auto& gbq = gb->getDequeInThreadUnsafeWay();
 
             auto cidx = Frontend::getClosestItem(gbq, stamp);
-            lg->info("cidx: {}", cidx);
+            // lg->info("cidx: {}", cidx);
             
             // here maybe some bug when dt is larger than 0.1
             if(cidx <= 0){
@@ -126,11 +125,11 @@ void LidarOdometry::generateOdom()
         // use pcr to get refined pose
         common::time::tictoc tt;
 
-        {
-            std::stringstream ss;
-            ss << init_pose.translation().transpose();
-            lg->info("before pose: {}", ss.str());
-        }
+        // {
+        //     std::stringstream ss;
+        //     ss << init_pose.translation().transpose();
+        //     lg->info("before pose: {}", ss.str());
+        // }
 
         // for now, pure LO, scan2map should be considered always success!!
         // lock here
@@ -139,7 +138,7 @@ void LidarOdometry::generateOdom()
             if(!mMapManagerPtr->getKeyFrameObjPtr()->isSubmapEmpty())
             {
                 const auto& submap = mMapManagerPtr->getSubmap();
-                lg->info("scan pts: {}, submap pts: {}", scan->points.size(), submap->points.size());
+                // lg->info("scan pts: {}, submap pts: {}", scan->points.size(), submap->points.size());
                 pose_t beform_optim_pose = init_pose;
                 if(!mPcr->scan2Map(scan, submap, init_pose)){
                     lg->warn("pcr not converge!!");
@@ -157,16 +156,18 @@ void LidarOdometry::generateOdom()
                     throw std::runtime_error("pcr not converge abort!!");
                 #endif
                 }   
-                lg->info("scan2map cost: {:.3f}s", tt);
+                // lg->info("scan2map cost: {:.3f}s", tt);
             }
         }
 
-        {
-            std::stringstream ss;
-            ss << init_pose.translation().transpose();
-            lg->info("pose: {}", ss.str());
-        }
+        // {
+        //     std::stringstream ss;
+        //     ss << init_pose.translation().transpose();
+        //     lg->info("pose: {}", ss.str());
+        // }
 
+        // constrain to 2d case
+        init_pose = geometry::trans::SixDof2Mobile(init_pose);
         // use scan2map refined pose for current pose for now!! 
         mMapManagerPtr->setCurPose(init_pose);
 
@@ -188,8 +189,11 @@ void LidarOdometry::generateOdom()
         
         // update odom2map
         if(local_odom){
+            if(!mFrontendPtr->getOdom2MapFlag()){
+                mFrontendPtr->setOdom2MapFlag();
+                lg->info("init odom2map!!");
+            }
             odom2map.store(init_pose * local_odom->odom.inverse());
-            mFrontendPtr->setOdom2MapFlag();
         }
 
     }else{

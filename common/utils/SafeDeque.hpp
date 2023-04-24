@@ -116,7 +116,7 @@ void SafeDeque<T>::push_back(std::shared_ptr<T>&& item)
         }        
     }
 
-    if(running.load())  mDq.emplace_back(item);
+    if(running.load())  mDq.emplace_back(std::move(item));
 }
 
 template <typename T>

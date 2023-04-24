@@ -52,6 +52,27 @@ inline void T2SE3(M4<Scalar>& T)
     T.template topLeftCorner<3, 3>() = rot2q<Scalar>(SO3).toRotationMatrix();
 }
 
+template<typename Scalar>
+inline Pose6<Scalar> SixDof2Mobile(const Pose6<Scalar>& p)
+{
+    // simply get yaw and x, y, recal the pose
+    Eigen::AngleAxis<Scalar> r(p.rotation());
+    V3<Scalar> t = p.translation();
+
+    Pose6<Scalar> res;
+    res.setIdentity();
+    t(2) = 0.0;
+    res.translate(t);
+    
+    Scalar tmp = r.axis().dot(V3<Scalar>::UnitZ()); 
+    if(std::abs(tmp) > 0.95){
+        Eigen::AngleAxis<Scalar> axis(r.angle(), std::copysign(1.0, tmp) * V3<Scalar>::UnitZ());
+        res.rotate(axis.matrix());
+    }
+
+    return res;
+}
+
 }
 }
 

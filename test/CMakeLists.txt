@@ -77,6 +77,19 @@ target_include_directories(thread PUBLIC
     ${COMMON_HEADER}
 )
 target_link_libraries(thread
-    pthread
     spdlog
+    pthread
+)
+    
+add_executable(edp edp.cpp)
+target_include_directories(edp PRIVATE
+    ${COMMON_HEADER}
+    ${ROOT_DIR}/dataproxy/include
+    ${catkin_INCLUDE_DIRS}
+)
+
+target_link_libraries(edp
+    spdlog
+    dataproxy
+    ${catkin_LIBRARIES}
 )

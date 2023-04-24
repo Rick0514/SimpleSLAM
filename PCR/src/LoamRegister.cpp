@@ -190,7 +190,7 @@ bool LoamRegister::scan2Map(const PC_cPtr& src, const PC_cPtr& dst, pose_t& res)
         // check converge
         if(x.head<3>().norm() <= mPosConverge && x.tail<3>().norm() <= mRotConverge){
             this->isConverge = true;
-            this->lg->info("converge at iter {}!", it);
+            // this->lg->info("converge at iter {}!", it);
             break;
         }
         

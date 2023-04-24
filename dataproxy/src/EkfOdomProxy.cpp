@@ -23,6 +23,8 @@ EkfOdomProxy::EkfOdomProxy(ros::NodeHandle& nh, int size)
 
 void EkfOdomProxy::initFilter()
 {
+    x.setZero();
+
     // prior noise
     NoiseVector<filter::State<float>> priorNoise;
     priorNoise << 1e-4, 1e-4, 1e-4;     // assume prior noise is very small
@@ -74,6 +76,7 @@ void EkfOdomProxy::imuHandler(const sensor_msgs::ImuConstPtr &msg)
         V3<scalar_t> ypr = trans::q2ypr(eq);
         x.yaw() = ypr(0);
         ekf.init(x);
+        mLg->info("imu init x done: ({}, {}, {})", x.x(), x.y(), x.yaw());
         return;
     }
 
@@ -117,6 +120,7 @@ void EkfOdomProxy::wheelHandler(const nav_msgs::OdometryConstPtr &msg)
         x.x() = p.x;
         x.y() = p.y;
         ekf.init(x);
+        mLg->info("wheel init x done: ({}, {}, {})", x.x(), x.y(), x.yaw());
         return;
     }
 
@@ -144,12 +148,19 @@ void EkfOdomProxy::wheelHandler(const nav_msgs::OdometryConstPtr &msg)
 
     // push to local odom
     Pose6<scalar_t> pd;
+    pd.setIdentity();
     pd.translate(V3<scalar_t>(x.x(), x.y(), 0.0));
     pd.rotate(trans::ypr2q(V3<scalar_t>(x.yaw(), 0.0, 0.0)));
     auto odom = std::make_shared<Odometry>();
     odom->stamp = now;
     odom->odom = pd;
+
+    std::stringstream ss;
+    ss << pd.translation().transpose();
+    // mLg->debug("push trans: {}", ss.str());
+
     this->mDataPtr->template push_back<constant::usebag>(std::move(odom));
+    // mLg->debug("ekf size: {}", mDataPtr->size());
 }
 
 }

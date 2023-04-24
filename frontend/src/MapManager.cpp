@@ -72,12 +72,17 @@ void MapManager::updateMap()
 
     std::lock_guard<std::mutex> mlk(mLockMap);
     mKFObjPtr->mSubmapIdx.clear();
+    mSubmap->points.clear();
     for(auto i : k_indices){
         const auto& src = keyframes[i].pc;
         *mSubmap += *pcp::transformPointCloud<pt_t, scalar_t>(src, keyframes[i].pose);
         mKFObjPtr->mSubmapIdx.insert(i);
     }
     pcp::voxelDownSample<pt_t>(mSubmap, 0.7f);
+
+    lg->info("kf size: {}", keyframes.size());
+    lg->info("submap idx: {}", k_indices);
+    lg->info("submap pts: {}", mSubmap->points.size());
 
     // vis
     if(mLidarDataProxyPtr)    mLidarDataProxyPtr->setVisGlobalMap(mSubmap);
