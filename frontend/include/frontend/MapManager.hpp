@@ -41,7 +41,7 @@ private:
     std::shared_ptr<logger::Logger> lg;
 
     static constexpr float minKFGap{1.0}; 
-    static constexpr float mSurroundingKeyframeSearchRadius{20.0f};
+    static constexpr float mSurroundingKeyframeSearchRadius{8.0f};
 
     KeyFramesObjPtr mKFObjPtr;
     

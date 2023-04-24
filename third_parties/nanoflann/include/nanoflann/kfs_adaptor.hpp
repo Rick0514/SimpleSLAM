@@ -60,7 +60,7 @@ public:
     {
         std::vector<ResultItem<size_t, Scalar>> indices_dists;
         SearchParameters sp(0, sorted);
-        _kdtree.radiusSearch(point.data(), radius, indices_dists, sp);
+        _kdtree.radiusSearch(point.data(), radius * radius, indices_dists, sp);
 
         auto n = indices_dists.size();
         k_indices.resize(n);

@@ -1,6 +1,6 @@
 #include <benchmark/benchmark.h>
 
-#include <types/PCLTypes.hpp>
+#include <types/basic.hpp>
 
 #include <pcl/io/pcd_io.h>
 #include <pcl/kdtree/kdtree_flann.h>
@@ -10,21 +10,18 @@
 
 #include <deque>
 
-using namespace PCLTypes;
-using PointType = Pxyzi;
-
-static typename PC<PointType>::Ptr map;
+static pc_t::Ptr map;
 
 void checkKNN()
 {
     auto lg = utils::logger::Logger::getInstance();
 
-    pcl::KdTreeFLANN<PointType> kdtree;
+    pcl::KdTreeFLANN<pt_t> kdtree;
     kdtree.setInputCloud(map);
     
     int k = 10;
-    float r = 1.2;
-    PointType p;
+    float r = 0.6;
+    pt_t p;
     bzero(p.data, 4);
     std::vector<int> k_indices;
     std::vector<float> k_sqr_distances;
@@ -35,7 +32,7 @@ void checkKNN()
 
     k_indices.clear();
     k_sqr_distances.clear();
-    kdtree.radiusSearch(p, std::sqrt(r),  k_indices, k_sqr_distances);
+    kdtree.radiusSearch(p, r, k_indices, k_sqr_distances);
 
     lg->info("pcl kdtree get rnn idx: {}", k_indices);
     lg->info("pcl kdtree get rnn dist: {}", k_sqr_distances);
@@ -43,16 +40,16 @@ void checkKNN()
     k_sqr_distances.clear();
     std::vector<size_t> sk_indices;
 
-    nanoflann::PointCloudKdtree<PointType, float> nkdtree;
+    nanoflann::PointCloudKdtree<pt_t, float> nkdtree;
     nkdtree.setInputCloud(map);
-    nkdtree.nearestKSearch(p, k, sk_indices, k_sqr_distances);
+    nkdtree.nearestKSearch(p.data, k, sk_indices, k_sqr_distances);
 
     lg->info("nano kdtree get knn idx: {}", sk_indices);
     lg->info("nano kdtree get knn dist: {}", k_sqr_distances);
     
     sk_indices.clear();
     k_sqr_distances.clear();
-    nkdtree.radiusSearch(p, r, sk_indices, k_sqr_distances, true);
+    nkdtree.radiusSearch(p.data, r, sk_indices, k_sqr_distances, true);
 
     lg->info("nano kdtree get rnn idx: {}", sk_indices);
     lg->info("nano kdtree get rnn dist: {}", k_sqr_distances);
@@ -60,11 +57,11 @@ void checkKNN()
 
 static void pclKdtree(benchmark::State& s)
 {
-    pcl::KdTreeFLANN<PointType> kdtree;
+    pcl::KdTreeFLANN<pt_t> kdtree;
     kdtree.setInputCloud(map);
 
     int k = 5;
-    PointType p;
+    pt_t p;
     bzero(p.data, 4);
 
     for(auto _ : s)
@@ -78,11 +75,11 @@ BENCHMARK(pclKdtree);
 
 static void pclRS(benchmark::State& s)
 {
-    pcl::KdTreeFLANN<PointType> kdtree;
+    pcl::KdTreeFLANN<pt_t> kdtree;
     kdtree.setInputCloud(map);
 
     float r = 4.0;
-    PointType p;
+    pt_t p;
     bzero(p.data, 4);
 
     for(auto _ : s)
@@ -96,36 +93,36 @@ BENCHMARK(pclRS);
 
 static void nanoKdtree(benchmark::State& s)
 {
-    nanoflann::PointCloudKdtree<PointType, float> nkdtree;
+    nanoflann::PointCloudKdtree<pt_t, float> nkdtree;
     nkdtree.setInputCloud(map);
 
     int k = 5;
-    PointType p;
+    pt_t p;
     bzero(p.data, 4);
 
     for(auto _ : s){
         std::vector<size_t> k_indices;
         std::vector<float> k_sqr_distances;
-        nkdtree.nearestKSearch(p, k, k_indices, k_sqr_distances);
+        nkdtree.nearestKSearch(p.data, k, k_indices, k_sqr_distances);
     }
 }
 BENCHMARK(nanoKdtree);
 
 static void nanoRS(benchmark::State& s)
 {
-    nanoflann::PointCloudKdtree<PointType, float> nkdtree;
+    nanoflann::PointCloudKdtree<pt_t, float> nkdtree;
     nkdtree.setInputCloud(map);
 
     float r = 4.0;
     r *= r;
-    PointType p;
+    pt_t p;
     bzero(p.data, 4);
 
     for(auto _ : s)
     {
         std::vector<size_t> k_indices;
         std::vector<float> k_sqr_distances;
-        nkdtree.radiusSearch(p, r, k_indices, k_sqr_distances, true);
+        nkdtree.radiusSearch(p.data, r, k_indices, k_sqr_distances, true);
     }
 }
 BENCHMARK(nanoRS);
@@ -143,7 +140,6 @@ void checkKFS()
     mat.setRandom();
 
     int k = 5;
-    float r = 0.3;
     std::vector<float> q(3, 0);
     Eigen::Map<EigenTypes::V3f> eq(&q[0]);
 
@@ -167,6 +163,7 @@ void checkKFS()
     k_indices.clear();
     k_sqr_distances.clear();
     
+    float r = 0.3;
     std::vector<nanoflann::ResultItem<matrix_t::Index, float>> indicesDists;
     kdtree.index_->radiusSearch(q.data(), r, indicesDists);
 
@@ -179,12 +176,12 @@ void checkKFS()
     lg->info("before rs dist: {}", k_sqr_distances);
 
     // make kfs
-    using kfs_t = std::deque<KeyFrame<PointType, float>>;
+    using kfs_t = std::deque<KeyFrame>;
     kfs_t kfs(nums);
     for(int i=0; i<nums; i++){
-        KeyFrame<PointType, float> kf;
+        KeyFrame kf;
         kf.pose.setIdentity();
-        kf.pose.translation() = mat.row(i);
+        kf.pose.translation() = mat.row(i).cast<scalar_t>();
         kfs[i] = std::move(kf);
     }
 
@@ -214,14 +211,14 @@ int main(int argc, char** argv) {
     auto lg = utils::logger::Logger::getInstance();
 
     // load a pc
-    const std::string pcf = "/home/gy/.robot/data/maps/hqc/hqc.pcd";
-    map = pcl::make_shared<PC<PointType>>();
-    pcl::io::loadPCDFile<PointType>(pcf, *map);
+    const std::string pcf = "/home/hgy/.robot/data/maps/hqc/hqc.pcd";
+    map = pcl::make_shared<pc_t>();
+    pcl::io::loadPCDFile<pt_t>(pcf, *map);
 
     lg->info("load map size: {}", map->points.size());    
 
-    // checkKNN();
-    checkKFS();
+    checkKNN();
+    // checkKFS();
 
     // ::benchmark::Initialize(&argc, argv);        
     // if (::benchmark::ReportUnrecognizedArguments(argc, argv))   return 1;

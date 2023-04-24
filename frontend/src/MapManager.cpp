@@ -81,6 +81,7 @@ void MapManager::updateMap()
     pcp::voxelDownSample<pt_t>(mSubmap, 0.7f);
 
     lg->info("kf size: {}", keyframes.size());
+    lg->info("kf dist: {}", k_sqr_distances);
     lg->info("submap idx: {}", k_indices);
     lg->info("submap pts: {}", mSubmap->points.size());
 
