@@ -22,6 +22,7 @@ target_include_directories(dataproxy PUBLIC
     ${catkin_INCLUDE_DIRS}
     ${EIGEN3_INCLUDE_DIRS}
     ${PCL_INCLUDE_DIRS}
+    ${config_INCLUDE_DIRS}
 )
 
 target_link_libraries(dataproxy

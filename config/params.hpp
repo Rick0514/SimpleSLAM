@@ -1,9 +1,10 @@
 #include <utils/NonCopyable.hpp>
-#include <utils/Logger.hpp>
+#include <fstream>
 
 #include <memory>
+#include <mutex>
 
-#include <nlomann/json.hpp>
+#include <nlohmann/json.hpp>
 
 namespace config
 {
@@ -19,26 +20,29 @@ private:
     using Ptr = std::shared_ptr<Params>;
 
     json _jps;
-    logger::Logger::Ptr lg;
+    mutable std::mutex _lk;
     
     Params(){
-    #ifdef CONFIG
-        std::ifstream inf(CONFIG);
+#ifdef CONFIG_FILE
+        std::ifstream inf(CONFIG_FILE);
         inf >> _jps;
         inf.close();
-    #endif
-
-        lg->info("get config: {}", _jps.dump());
+#endif
     }
 
 public:
 
-    static Ptr getInstance(){
-        static auto p = std::make_shared<Params>();
-        return p;
+    static json getInstance(){
+        static auto p = std::shared_ptr<Params>(new Params());
+        return p->get();
     }
 
-}
+    json get() const { 
+        std::lock_guard<std::mutex> lock(_lk);
+        return _jps; 
+    }
+
+};
 
 }
 

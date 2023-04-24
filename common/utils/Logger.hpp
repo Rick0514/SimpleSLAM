@@ -53,7 +53,7 @@ public:
     bool isProgramExit() { return _exit.load(); }
 
     static Ptr getInstance(){
-        static auto lg = std::make_shared<Logger>();
+        static auto lg = std::shared_ptr<Logger>(new Logger());
         return lg;
     }
 

@@ -1,11 +1,23 @@
 {
+    "downSampleVoxelGridSize": 0.7, 
+
+    "dataproxy": {
+        "lidar": "/lidar_points",
+        "imu": "/imu/data",
+        "wheel": "/odom/raw"
+    },
+
+    "vis": {
+        "align": "/aligned",
+        "submap": "/global"
+    },
+
     "backend" : {
 
     },
 
     "frontend" : {
 
-    },
+    }
 
-    ""
 }

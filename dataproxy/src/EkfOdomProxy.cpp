@@ -5,6 +5,8 @@
 
 #include <tf2_eigen/tf2_eigen.h>
 
+#include <config/params.hpp>
+
 namespace dataproxy
 {
 
@@ -16,9 +18,14 @@ EkfOdomProxy::EkfOdomProxy(ros::NodeHandle& nh, int size)
 {
     initFilter();
 
-    mEkfSub = nh.subscribe("/ekf_odom", 50, &EkfOdomProxy::ekfHandler, this);
-    mImuSub = nh.subscribe("/imu/data", 100, &EkfOdomProxy::imuHandler, this);
-    mWheelSub = nh.subscribe("/odom/raw", 50, &EkfOdomProxy::wheelHandler, this);
+    auto params = config::Params::getInstance()["dataproxy"];
+
+    std::string imu_topic = params["imu"];
+    std::string wheel_topic = params["wheel"];
+
+    // mEkfSub = nh.subscribe("/ekf_odom", 50, &EkfOdomProxy::ekfHandler, this);
+    mImuSub = nh.subscribe(imu_topic, 100, &EkfOdomProxy::imuHandler, this);
+    mWheelSub = nh.subscribe(wheel_topic, 50, &EkfOdomProxy::wheelHandler, this);
 }
 
 void EkfOdomProxy::initFilter()

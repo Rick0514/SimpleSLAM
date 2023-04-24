@@ -19,6 +19,8 @@ set(COMMON_HEADER ${ROOT_DIR}/common)
 find_package(Eigen3 REQUIRED)
 find_package(spdlog REQUIRED)
 
+add_definitions(-DCONFIG_FILE="${ROOT_DIR}/config/params.json")
+
 add_subdirectory(config)
 add_subdirectory(PCR)
 add_subdirectory(filter)
