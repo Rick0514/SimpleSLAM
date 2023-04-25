@@ -1,6 +1,6 @@
 #pragma once
 #include <types/PCLTypes.hpp>
-#include <pcl/make_shared.h>
+#include <pcl/memory.h>
 
 // provide basic types for the whole project !!
 

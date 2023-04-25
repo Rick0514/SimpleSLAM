@@ -109,6 +109,7 @@ target_include_directories(file PRIVATE
     ${Boost_INCLUDE_DIRS}
     ${COMMON_HEADER}
     ${config_INCLUDE_DIRS}
+    ${PCL_INCLUDE_DIRS}
 )
 target_link_libraries(file
     Boost::filesystem

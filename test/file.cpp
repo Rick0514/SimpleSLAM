@@ -1,4 +1,6 @@
 #include <utils/File.hpp>
+#include <types/basic.hpp>
+
 #include <config/params.hpp>
 #include <chrono>
 #include <iostream>
@@ -50,10 +52,37 @@ void test_load_tum()
     }
 }
 
+void test_write_deque()
+{
+    using kf_t = KeyFrame;
+    using kfs_t = std::deque<kf_t>;
+
+    // make deque
+    kfs_t dq;
+    srand((unsigned int) time(0));
+
+    for(int i=0; i<5; i++){
+        kf_t kf;
+        kf.pc->header.stamp = (size_t)(toSec(system_clock::now()) * 1e6);
+        pose_t& p = kf.pose;
+        p.setIdentity();
+        p.translate(EigenTypes::V3<scalar_t>::Random());
+        p.rotate(Eigen::AngleAxis<scalar_t>(0.1, EigenTypes::V3<scalar_t>::Random()));
+        dq.emplace_back(std::move(kf));
+        cout << p.translation().transpose() << endl;
+        sleep(1);
+    }
+
+    auto cfg = config::Params::getInstance();
+    std::string dir = cfg["saveMapDir"];
+    utils::file::writeAsTum(dir, dq);
+}
+
 int main()
 {
     // test_save_tum();
-    test_load_tum();
+    // test_load_tum();
+    test_write_deque();
 
     return 0;
 }
