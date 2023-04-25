@@ -4,6 +4,8 @@
 #include <types/basic.hpp>
 #include <frontend/OdometryBase.hpp>
 
+#include <pcl/filters/voxel_grid.h>
+
 // ------------ forward declaration ------------
 namespace dataproxy { 
     class LidarDataProxy; 
@@ -45,6 +47,8 @@ private:
     static constexpr float minKFGap{1.0}; 
 
     MapManagerPtr mMapManagerPtr;
+
+    pcl::VoxelGrid<pt_t> mVoxelGrid;
 
 public:
 

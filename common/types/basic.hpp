@@ -1,5 +1,6 @@
 #pragma once
 #include <types/PCLTypes.hpp>
+#include <pcl/make_shared.h>
 
 // provide basic types for the whole project !!
 
@@ -17,9 +18,10 @@ struct constant
 
 struct KeyFrame
 {
+    using Scalar = scalar_t;
     pose_t pose;
     pc_t::Ptr pc;    
-    KeyFrame() = default;
+    KeyFrame() : pc(pcl::make_shared<pc_t>()){};
     KeyFrame(const pc_t::Ptr& _pc, const pose_t& _p) : pc(_pc), pose(_p){}      
 };
 

@@ -5,6 +5,9 @@
 #include <pcl/io/pcd_io.h>
 #include <pcp/pcp.hpp>
 
+#include <config/params.hpp>
+#include <utils/File.hpp>
+
 namespace frontend {
 
 MapManager::MapManager() : mKFObjPtr(std::make_shared<KeyFramesObj>()),
@@ -12,19 +15,38 @@ MapManager::MapManager() : mKFObjPtr(std::make_shared<KeyFramesObj>()),
 {
     lg = logger::Logger::getInstance();
 
+    auto cfg = config::Params::getInstance();
+    mSaveMapDir = cfg["saveMapDir"];
+    mGridSize = cfg["downSampleVoxelGridSize"].get<float>();
+
+    // important!! init pose decide what submap is like!!
     pose_t p;
     p.setIdentity();
     mCurPose.store(p);
 
-    lg->info("construct MapManager!!");
+    // load from tum
+    auto t2p = utils::file::loadFromTum<scalar_t>(mSaveMapDir);
+    if(t2p.empty()){
+        lg->warn("tum file maybe empty or not even exist!!");
+        return;
+    }
+
+    for(int i=0; i<t2p.size(); i++){
+        kf_t kf;
+        kf.pose = t2p[i].second;
+        auto fn = fmt::format("{}/{}.pcd", mSaveMapDir, i);
+        pcp::loadPCDFile<pt_t>(fn, kf.pc);
+        mKFObjPtr->keyframes.emplace_back(kf);
+    }
+    updateMap();    // init submap and submapIdx
 }
 
+// deprecated
 MapManager::MapManager(std::string pcd_file) : MapManager()
 {
     isMapping = false;
 
     mKFObjPtr->mSubmapIdx.insert(0);
-
     // load global map mode
     if(pcl::io::loadPCDFile<pt_t>(pcd_file, *mSubmap) == -1)
     {
@@ -35,9 +57,8 @@ MapManager::MapManager(std::string pcd_file) : MapManager()
 
     lg->info("load map success!!");
 
-    pcp::voxelDownSample<pt_t>(mSubmap, 0.7f);
+    pcp::voxelDownSample<pt_t>(mSubmap, mGridSize);
     lg->info("submap size: {}", mSubmap->size());
-
 }
 
 // carefully check kf
@@ -78,7 +99,7 @@ void MapManager::updateMap()
         *mSubmap += *pcp::transformPointCloud<pt_t, scalar_t>(src, keyframes[i].pose);
         mKFObjPtr->mSubmapIdx.insert(i);
     }
-    pcp::voxelDownSample<pt_t>(mSubmap, 0.7f);
+    pcp::voxelDownSample<pt_t>(mSubmap, mGridSize);
 
     lg->info("kf size: {}", keyframes.size());
     lg->info("kf dist: {}", k_sqr_distances);
@@ -89,9 +110,24 @@ void MapManager::updateMap()
     if(mLidarDataProxyPtr)    mLidarDataProxyPtr->setVisGlobalMap(mSubmap);
 }
 
+void MapManager::saveKfs()
+{
+    int n = mKFObjPtr->mKFNums; // last nums
+    auto& kfs = mKFObjPtr->keyframes;
+    for(int i=n; i<kfs.size(); i++){
+        auto fn = fmt::format("{}/{}.pcd", mSaveMapDir, i);
+        pcp::savePCDFile<pt_t>(fn, kfs[i].pc);
+        // now you can downsample the pc
+        pcp::voxelDownSample<pt_t>(kfs[i].pc, mGridSize);
+    }
+}
+
 MapManager::~MapManager()
 {
     lg->info("exit MapManager!");
+    // save tum
+    std::lock_guard<std::mutex> lk(mKFObjPtr->mLockKF);
+    utils::file::writeAsTum(mSaveMapDir, mKFObjPtr->keyframes);
 }
 
 }

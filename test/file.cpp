@@ -1,4 +1,5 @@
 #include <utils/File.hpp>
+#include <config/params.hpp>
 #include <chrono>
 #include <iostream>
 
@@ -37,9 +38,22 @@ void test_save_tum()
     }
 }
 
+void test_load_tum()
+{
+    auto cfg = config::Params::getInstance();
+    std::string dir = cfg["saveMapDir"];
+    auto t2p = file::loadFromTum<float>(dir);
+
+    for(auto&& e : t2p){
+        cout << "time: " << e.first << endl;
+        cout << "pose: " << e.second.translation().transpose() << endl;
+    }
+}
+
 int main()
 {
-    test_save_tum();
+    // test_save_tum();
+    test_load_tum();
 
     return 0;
 }

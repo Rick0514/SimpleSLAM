@@ -7,6 +7,8 @@
 #include <pcp/pcp.hpp>
 #include <utils/Shared_ptr.hpp>
 
+#include <config/params.hpp>
+
 namespace dataproxy
 {
 
@@ -14,11 +16,16 @@ LidarDataProxy::LidarDataProxy(ros::NodeHandle& nh, int size) :
     DataProxy<pc_t>(size),
     mVisType(VisType::None)
 {
-    this->mLg->info("get in LidarDataProxy");
-    mSub = nh.subscribe("/lidar_points", 5, &LidarDataProxy::subscribe, this);
+    auto cfg = config::Params::getInstance();
+    std::string lidar_topic = cfg["dataproxy"]["lidar"];
+    std::string vis_align_topic = cfg["vis"]["align"];
+    std::string vis_submap_topic = cfg["vis"]["submap"];
 
-    mPubAligned = nh.advertise<sensor_msgs::PointCloud2>("/aligned", 1);
-    mPubGlobal = nh.advertise<sensor_msgs::PointCloud2>("/globalmap", 1);
+
+    mSub = nh.subscribe(lidar_topic, 5, &LidarDataProxy::subscribe, this);
+
+    mPubAligned = nh.advertise<sensor_msgs::PointCloud2>(vis_align_topic, 1);
+    mPubGlobal = nh.advertise<sensor_msgs::PointCloud2>(vis_submap_topic, 1);
     mVisPCThd = std::make_unique<utils::trd::ResidentThread>(&LidarDataProxy::visPCHandler, this);
 }
 
@@ -28,7 +35,6 @@ void LidarDataProxy::subscribe(const sensor_msgs::PointCloud2ConstPtr& msg)
     pcl::fromROSMsg(*msg, *cloud);
     pcl_conversions::toPCL(msg->header.stamp, cloud->header.stamp);
     pcp::removeNaNFromPointCloud(*cloud);
-    pcp::voxelDownSample<pt_t>(cloud, 0.7f);
 #if PCL_VERSION_COMPARE(<=, 1, 10, 0)
     auto stdcloud = utils::make_shared_ptr(cloud);
     this->mDataPtr->template push_back<constant::usebag>(std::move(stdcloud));
@@ -70,11 +76,12 @@ void LidarDataProxy::visPCHandler()
     if(mVisType != VisType::Exit)   mVisType = VisType::None;
 }
 
-void LidarDataProxy::setVisAligned(const KF& kf)
+void LidarDataProxy::setVisAligned(const pc_t::Ptr& pc, const pose_t& pose)
 {
     std::lock_guard<std::mutex> lk(mVisLock);
     mVisType = VisType::Aligned;
-    mAlignedKF = kf;
+    mAlignedKF.pc = pc;
+    mAlignedKF.pose = pose;
     mVisCV.notify_one();
 }
 

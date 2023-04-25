@@ -79,6 +79,7 @@ void Backend::optimHandler()
         return;
     }
 
+    mMapManagerPtr->saveKfs();
     // new kf is put
     addOdomFactor();
     mKFObjPtr->mKFNums = mKFObjPtr->keyframes.size();

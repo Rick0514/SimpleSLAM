@@ -16,6 +16,8 @@
 #include <time/tictoc.hpp>
 #include <geometry/trans.hpp>
 
+#include <config/params.hpp>
+
 using namespace PCLTypes;
 using namespace EigenTypes;
 
@@ -24,6 +26,10 @@ namespace frontend
 LidarOdometry::LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, RelocDataProxyPtr& rdp, MapManagerPtr& mmp)
 : mDataProxyPtr(dp), mFrontendPtr(ft), mMapManagerPtr(mmp), reloc(false)
 {
+    auto cfg = config::Params::getInstance();
+    auto grid_size = cfg["downSampleVoxelGridSize"].get<float>();
+    mVoxelGrid.setLeafSize(grid_size, grid_size, grid_size);
+
     mLastPos.setZero();
     mRelocPose.setIdentity();
     // xyz for temp
@@ -133,14 +139,20 @@ void LidarOdometry::generateOdom()
 
         // for now, pure LO, scan2map should be considered always success!!
         // lock here
+        pc_t::Ptr ds_scan = pcl::make_shared<pc_t>();
+        
         {
             std::lock_guard<std::mutex> lk(mMapManagerPtr->getSubmapLock());
             if(!mMapManagerPtr->getKeyFrameObjPtr()->isSubmapEmpty())
             {
+                // downsample
+                mVoxelGrid.setInputCloud(scan);
+                mVoxelGrid.filter(*ds_scan);
+
                 const auto& submap = mMapManagerPtr->getSubmap();
                 // lg->info("scan pts: {}, submap pts: {}", scan->points.size(), submap->points.size());
                 pose_t beform_optim_pose = init_pose;
-                if(!mPcr->scan2Map(scan, submap, init_pose)){
+                if(!mPcr->scan2Map(ds_scan, submap, init_pose)){
                     lg->warn("pcr not converge!!");
                 #ifdef DEBUG_PC
                     pcl::io::savePCDFileBinary(fmt::format("{}/submap.pcd", DEBUG_PC), *submap);
@@ -180,8 +192,8 @@ void LidarOdometry::generateOdom()
             selectKeyFrame(kf);
         }
 
-        // visualize
-        mDataProxyPtr.get()->setVisAligned(kf);
+        // visualize downsample scan
+        mDataProxyPtr.get()->setVisAligned(ds_scan, init_pose);
 
         // push the refined odom to deque
         auto global_odom = std::make_shared<Odometry>(stamp, init_pose);

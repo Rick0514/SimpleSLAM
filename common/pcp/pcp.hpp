@@ -60,5 +60,10 @@ void savePCDFile(const std::string& file, const typename PC<PointType>::Ptr& clo
     pcl::io::savePCDFileBinary(file, *cloud);
 }
 
+template <typename PointType>
+void loadPCDFile(const std::string& file, typename PC<PointType>::Ptr& cloud)
+{
+    pcl::io::loadPCDFile<PointType>(file, *cloud);
+}
 
 }

@@ -54,6 +54,9 @@ private:
 
     bool isMapping{true};
 
+    std::string mSaveMapDir;
+    float mGridSize;
+
 public:
 
     MapManager();
@@ -70,6 +73,7 @@ public:
     void putKeyFrame(const KeyFrame&);
 
     void updateMap();
+    void saveKfs();
 
     void initSubmapFromPCD(std::string pcd_file);
 

@@ -108,6 +108,7 @@ target_include_directories(file PRIVATE
     ${EIGEN3_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
     ${COMMON_HEADER}
+    ${config_INCLUDE_DIRS}
 )
 target_link_libraries(file
     Boost::filesystem

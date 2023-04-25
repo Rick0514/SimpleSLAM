@@ -1,6 +1,8 @@
 {
     "downSampleVoxelGridSize": 0.7, 
 
+    "saveMapDir" : "/home/rick/pcr/test/data/map",
+
     "dataproxy": {
         "lidar": "/lidar_points",
         "imu": "/imu/data",
@@ -9,7 +11,7 @@
 
     "vis": {
         "align": "/aligned",
-        "submap": "/global"
+        "submap": "/globalmap"
     },
 
     "backend" : {
