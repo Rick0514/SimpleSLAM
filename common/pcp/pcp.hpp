@@ -3,6 +3,7 @@
 // for point cloud preprocess
 #include <pcl/filters/filter.h>
 #include <types/PCLTypes.hpp>
+#include <pcl/io/pcd_io.h>
 #include <pcl/filters/voxel_grid.h>
 
 namespace pcp {
@@ -39,7 +40,7 @@ typename PC<PointType>::Ptr transformPointCloud(typename PC<PointType>::Ptr clou
     auto cloudSize = cloudIn->size();
     cloudOut->resize(cloudSize);
 
-#pragma omp parallel for num_threads(4)
+#pragma omp parallel for num_threads(2)
     for (int i = 0; i < cloudSize; ++i)
     {
         Eigen::Map<Eigen::Vector4f, Eigen::Aligned> pfrom = cloudIn->points[i].getVector4fMap();
@@ -51,5 +52,13 @@ typename PC<PointType>::Ptr transformPointCloud(typename PC<PointType>::Ptr clou
     }
     return cloudOut;
 }
+
+// assume it wont throw exception
+template <typename PointType>
+void savePCDFile(const std::string& file, const typename PC<PointType>::Ptr& cloud)
+{
+    pcl::io::savePCDFileBinary(file, *cloud);
+}
+
 
 }

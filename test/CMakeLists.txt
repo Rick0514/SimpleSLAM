@@ -100,3 +100,17 @@ target_include_directories(config PRIVATE
 )
 target_link_libraries(config spdlog)
 
+
+find_package(Boost REQUIRED filesystem)
+
+add_executable(file file.cpp)
+target_include_directories(file PRIVATE
+    ${EIGEN3_INCLUDE_DIRS}
+    ${Boost_INCLUDE_DIRS}
+    ${COMMON_HEADER}
+)
+target_link_libraries(file
+    Boost::filesystem
+    spdlog
+)
+

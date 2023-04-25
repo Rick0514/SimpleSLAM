@@ -56,7 +56,9 @@ public:
         static auto lg = std::shared_ptr<Logger>(new Logger());
         return lg;
     }
-
+    
+    // if really want to see src and line numbers, you can replace function by macro
+    
     template<typename ...ARGS>
     void trace(ARGS ...args)    { _lg->trace(args ...); }
 
