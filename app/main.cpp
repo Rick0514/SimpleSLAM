@@ -7,9 +7,13 @@
 #include <dataproxy/EkfOdomProxy.hpp>
 #include <dataproxy/RelocDataProxy.hpp>
 
+#include <config/params.hpp>
+#include <boost/filesystem.hpp>
+
 using namespace std;
 using namespace frontend;
 using namespace backend;
+namespace bfs = boost::filesystem;
 
 int main(int argc, char* argv[])
 {
@@ -20,31 +24,34 @@ int main(int argc, char* argv[])
     lg->setLogFile(LOG_FILE);
 #endif
 
-    if(argc != 2){
-        lg->error("please input: app [mode], mode : lo, lio");
+    // get params
+    auto cfg = config::Params::getInstance();
+    auto save_map = cfg["saveMapDir"].get<std::string>();
+    auto b_save_map = bfs::path(save_map);
+    if(!bfs::exists(b_save_map)){
+        lg->error("your mapdir [ {} ] is not exist, please check!!", b_save_map.string());
         return -1;
     }
-    auto mode = std::string(argv[1]);
-    lg->info("slam mode: {}", mode);
-    if(mode != "lo" && mode != "lio"){
-        lg->error("no such mode: {}", mode);
-        return -1;
-    }
+
+    auto mode = cfg["mode"].get<std::string>();
+    auto lidar_size = cfg["dataproxy"]["lidar_size"].get<int>();
+    auto local_size = cfg["frontend"]["local_size"].get<int>();
+    auto global_size = cfg["frontend"]["global_size"].get<int>();
 
     ros::init(argc, argv, "loc");
     ros::NodeHandle nh;
 
     // lidar data proxy
-    auto ldp = std::make_shared<LidarDataProxy>(nh, 10);   
+    auto ldp = std::make_shared<LidarDataProxy>(nh, lidar_size);   
     // ekf data proxy
-    auto edp = std::make_shared<EkfOdomProxy>(nh, 100);
+    auto edp = std::make_shared<EkfOdomProxy>(nh, local_size);
 
     // when slam mode, no reloc data proxy
     std::shared_ptr<RelocDataProxy> rdp;
     // frontend
     std::shared_ptr<Frontend> ftd;
-    if(mode == "lo")    ftd = std::make_shared<Frontend>(100, 10);
-    if(mode == "lio")   ftd = std::make_shared<Frontend>(edp->get(), 10);
+    if(mode == "lo")    ftd = std::make_shared<Frontend>(local_size, global_size);
+    if(mode == "lio")   ftd = std::make_shared<Frontend>(edp->get(), global_size);
 
     // mapmanager
     auto mmp = std::make_shared<MapManager>();
@@ -54,9 +61,17 @@ int main(int argc, char* argv[])
     // backend
     auto bkd = std::make_unique<Backend>(ftd, mmp);
 
-    ftd->run(std::move(lo));
+    // run lo, no dependency of lo and ftd, because lo alreay own a copy of
+    // ftd, if ftd own lo, circular reference will happen!!
+    trd::ResidentThread lo_thread([&](){
+        lo->generateOdom();
+    });
+
     ros::spin();
-    
+
+    // for valgrind test
+    // ros::spinOnce();
+    // sleep(2);
     lg->exitProgram();
 
     return 0;

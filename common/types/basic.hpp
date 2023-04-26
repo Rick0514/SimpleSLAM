@@ -1,6 +1,12 @@
 #pragma once
 #include <types/PCLTypes.hpp>
+#include <pcl/pcl_config.h>
+
+#if PCL_VERSION_COMPARE(<=, 1, 10, 0)
+#include <pcl/make_shared.h>
+#else
 #include <pcl/memory.h>
+#endif
 
 // provide basic types for the whole project !!
 

@@ -36,9 +36,12 @@ MapManager::MapManager() : mKFObjPtr(std::make_shared<KeyFramesObj>()),
         kf.pose = t2p[i].second;
         auto fn = fmt::format("{}/{}.pcd", mSaveMapDir, i);
         pcp::loadPCDFile<pt_t>(fn, kf.pc);
+        kf.pc->header.stamp = (size_t)(t2p[i].first * 1e6); // add time stamp
+        pcp::voxelDownSample<pt_t>(kf.pc, mGridSize);
         mKFObjPtr->keyframes.emplace_back(kf);
     }
     updateMap();    // init submap and submapIdx
+    printf("---------- load map done ----------");
 }
 
 // deprecated
@@ -76,7 +79,7 @@ void MapManager::putKeyFrame(const KeyFrame& kf)
 
     std::lock_guard<std::mutex> lk(mKFObjPtr->mLockKF);
     keyframes.emplace_back(std::move(kf));
-    // if keyframes size greater than some gap than notify
+    // if keyframes size greater than some gap then notify
     mKFObjPtr->mKFcv.notify_one();
 }
 

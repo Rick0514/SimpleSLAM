@@ -9,9 +9,6 @@ set(filter_INCLUDE_DIRS
     PARENT_SCOPE
 )
 
-# target_compile_definitions(pcr PRIVATE LOG_LEVEL=1)
-set(CMAKE_BUILD_TYPE Release)
-
 find_package(catkin REQUIRED COMPONENTS
     roscpp
     rosbag

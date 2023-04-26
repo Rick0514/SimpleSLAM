@@ -8,6 +8,8 @@
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 
+#include <config/params.hpp>
+
 namespace backend
 {
 
@@ -32,7 +34,24 @@ Backend::Backend(const FrontendPtr& ft, const MapManagerPtr& mp) : mRunning(true
     param.relinearizeSkip = 1;
     isam2 = std::make_unique<gtsam::ISAM2>(param);
 
+    loadFactorGraph();
+
     mOptimThread = std::make_unique<trd::ResidentThread>(&Backend::optimHandler, this);
+}
+
+void Backend::loadFactorGraph()
+{
+    auto cfg = config::Params::getInstance();
+    std::string map_dir = cfg["saveMapDir"];
+
+    // not that simple, maybe need to check out g2o format
+    // factorGraph.saveGraph(std::ostream &stm)
+    // auto tum = file::loadFromTum<scalar_t>(map_dir);
+
+    // for(const auto& e : tum){
+
+    // }
+
 }
 
 void Backend::addOdomFactor()
@@ -136,6 +155,7 @@ void Backend::optimHandler()
 Backend::~Backend()
 {
     mKFObjPtr->mKFcv.notify_all();
+    lg->info("exit backend!!");
 }
 
 }

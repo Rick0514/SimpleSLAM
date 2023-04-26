@@ -1,8 +1,4 @@
-cmake_minimum_required(VERSION 3.0.2)
-
 project(test)
-
-set(CMAKE_BUILD_TYPE Release)
 
 find_package(PCL REQUIRED COMPONENTS common io filters visualization)
 find_package(catkin REQUIRED COMPONENTS

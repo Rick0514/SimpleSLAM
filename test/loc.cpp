@@ -9,12 +9,19 @@
 #include <dataproxy/RelocDataProxy.hpp>
 
 #include <utils/Logger.hpp>
+#include <config/params.hpp>
 
 using namespace std;
 using namespace frontend;
 
 int main(int argc, char* argv[])
 {
+    // get params
+    auto cfg = config::Params::getInstance();
+    auto lidar_size = cfg["frontend"]["lidar_size"].get<int>();
+    auto local_size = cfg["frontend"]["local_size"].get<int>();
+    auto global_size = cfg["frontend"]["global_size"].get<int>();
+
     // set log first
     auto lg = utils::logger::Logger::getInstance();
     lg->setLogLevel(spdlog::level::debug);
@@ -28,11 +35,11 @@ int main(int argc, char* argv[])
     ros::NodeHandle nh;
 
     // lidar data proxy
-    auto ldp = std::make_shared<LidarDataProxy>(nh, 10);   
+    auto ldp = std::make_shared<LidarDataProxy>(nh, lidar_size);   
     // reloc data proxy
     auto rdp = make_shared<RelocDataProxy>(nh);
     // frontend
-    auto ftd = std::make_shared<Frontend>(100, 10);
+    auto ftd = std::make_shared<Frontend>(local_size, global_size);
     // mapmanager
     auto mmp = std::make_shared<MapManager>(pcd_file);
     // construct LO
@@ -45,7 +52,11 @@ int main(int argc, char* argv[])
     rospc.header.frame_id = "map";
     gpc_pub.publish(rospc);
 
-    ftd->run(std::move(lo));
+    // run lo, no dependency of lo and ftd, because lo alreay own a copy of
+    // ftd, if ftd own lo, circular reference will happen!!
+    trd::ResidentThread lo_thread([&](){
+        lo->generateOdom();
+    });
 
     ros::spin();
 

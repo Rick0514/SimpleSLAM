@@ -48,7 +48,9 @@ private:
 
     MapManagerPtr mMapManagerPtr;
 
+    pc_t::Ptr mDownSampleScan;
     pcl::VoxelGrid<pt_t> mVoxelGrid;
+
 
 public:
 

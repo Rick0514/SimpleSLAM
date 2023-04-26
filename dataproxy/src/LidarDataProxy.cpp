@@ -41,7 +41,6 @@ void LidarDataProxy::subscribe(const sensor_msgs::PointCloud2ConstPtr& msg)
 #else
     this->mDataPtr->template push_back<constant::usebag>(std::move(cloud));
 #endif
-
 }
 
 void LidarDataProxy::visPCHandler()

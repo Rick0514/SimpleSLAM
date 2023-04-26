@@ -1,10 +1,15 @@
 {
+    // mode has lio or lo
+    "mode": "lio",
+
     "downSampleVoxelGridSize": 0.7, 
 
-    "saveMapDir" : "/home/rick/pcr/test/data/map",
+    // "saveMapDir" : "/home/rick/pcr/test/data/map",
+    "saveMapDir" : "/home/hgy/hgy/PCR/test/data/map",
 
     "dataproxy": {
         "lidar": "/lidar_points",
+        "lidar_size": 10,
         "imu": "/imu/data",
         "wheel": "/odom/raw"
     },
@@ -19,7 +24,8 @@
     },
 
     "frontend" : {
-
+        "local_size": 100,
+        "global_size": 10
     }
 
 }

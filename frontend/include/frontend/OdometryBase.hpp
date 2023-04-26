@@ -17,7 +17,7 @@ public:
 
     virtual void generateOdom() = 0;
 
-    virtual ~OdometryBase(){}
+    virtual ~OdometryBase(){ lg->info("exit odombase!!"); }
 };
     
 } // namespace frontend

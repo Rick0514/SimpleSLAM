@@ -1,7 +1,5 @@
 project(frontend)
 
-set(CMAKE_BUILD_TYPE Release)
-
 find_package(PCL REQUIRED COMPONENTS common io filters)
 
 file(GLOB_RECURSE srcs CONFIGURE_DEPENDS src/*.cpp include/${PROJECT_NAME}/*.hpp)

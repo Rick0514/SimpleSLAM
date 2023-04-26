@@ -28,9 +28,6 @@ protected:
     OdomDequePtr mLocalOdometry;
     OdomDequePtr mGlobalOdometry;
 
-    std::unique_ptr<LidarOdometry> mLO;
-    std::unique_ptr<trd::ResidentThread> mLOthdPtr;
-
     std::shared_ptr<logger::Logger> lg;
 
 public:
@@ -39,14 +36,12 @@ public:
     Frontend(const OdomDequePtr& local_dq, int global_size);    // if local dq is already get!!
     Frontend(int local_size, int global_size);
 
-    void setOdom2MapFlag() noexcept { mOdom2MapInitFlag = true; }
-    bool getOdom2MapFlag() noexcept { return mOdom2MapInitFlag; }
+    void setInitOdom2Map() noexcept { mOdom2MapInitFlag = true; }
+    bool isInitOdom2Map() noexcept { return mOdom2MapInitFlag; }
 
     void publish() const;
 
     auto& get() { return mOdom2Map; }
-
-    void run(std::unique_ptr<LidarOdometry>&& lo);
 
     Odometry::Ptr getClosestLocalOdom(double stamp) const;
 

@@ -1,6 +1,6 @@
 project(PCR)
 
-set(CMAKE_BUILD_TYPE Release)
+add_compile_options(-O3)
 
 find_package(OpenMP REQUIRED)
 find_package(PCL REQUIRED COMPONENTS common filters)
@@ -28,5 +28,4 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     ${PCL_INCLUDE_DIRS}
     ../third_parties/nanoflann/include
 )
-
 

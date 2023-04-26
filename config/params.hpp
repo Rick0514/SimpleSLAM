@@ -25,7 +25,8 @@ private:
     Params(){
 #ifdef CONFIG_FILE
         std::ifstream inf(CONFIG_FILE);
-        inf >> _jps;
+        // allow json use comments!!
+        _jps = json::parse(inf, nullptr, true, true);
         inf.close();
 #endif
     }

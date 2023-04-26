@@ -22,18 +22,10 @@ Frontend::Frontend(int local_size, int global_size){
     init();
 }
 
-void Frontend::run(std::unique_ptr<LidarOdometry>&& lo)
-{
-    mLO = std::move(lo);
-    mLOthdPtr = std::make_unique<trd::ResidentThread>([&](){
-        mLO->generateOdom();
-    });
-}
-
 Odometry::Ptr Frontend::getClosestLocalOdom(double stamp) const
 {
     // 1.  stamp > back()
-    // 1.1 scope block ?? wait for closest local odom
+    // 1.1 spin block ?? wait for closest local odom
     std::unique_lock<std::mutex> lk(mLocalOdometry->getLock());
     auto& dq = mLocalOdometry->getDequeInThreadUnsafeWay();
     
@@ -60,9 +52,9 @@ Odometry::Ptr Frontend::getClosestLocalOdom(double stamp) const
 }
 
 Frontend::~Frontend() {
+    lg->info("exit frontend!");
     mLocalOdometry->abort();
     mGlobalOdometry->abort();   
-    lg->info("exit frontend!"); 
 }
 
 

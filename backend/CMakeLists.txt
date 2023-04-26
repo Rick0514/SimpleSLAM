@@ -1,9 +1,6 @@
 project(backend)
 
-set(CMAKE_BUILD_TYPE Release)
-
 # find_package(OpenMP)
-# find_package(PCL REQUIRED COMPONENTS common filters io)
 find_package(GTSAM REQUIRED)
 
 set(NANOFLANN ../third_parties/nanoflann/include)

@@ -10,6 +10,10 @@ endif()
 
 project(NaiveSLAM)
 
+set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_CXX_FLAGS_RELEASE "-O1 -g")
+add_compile_definitions(NDEBUG)
+
 message(STATUS "compiler is " ${CMAKE_CXX_COMPILER_ID})
 set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CMAKE_COMMAND} -E time")
 

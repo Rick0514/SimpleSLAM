@@ -24,7 +24,7 @@ using namespace EigenTypes;
 namespace frontend
 {
 LidarOdometry::LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, RelocDataProxyPtr& rdp, MapManagerPtr& mmp)
-: mDataProxyPtr(dp), mFrontendPtr(ft), mMapManagerPtr(mmp), reloc(false)
+: mDataProxyPtr(dp), mFrontendPtr(ft), mMapManagerPtr(mmp), reloc(false), mDownSampleScan(pcl::make_shared<pc_t>())
 {
     auto cfg = config::Params::getInstance();
     auto grid_size = cfg["downSampleVoxelGridSize"].get<float>();
@@ -100,7 +100,7 @@ void LidarOdometry::generateOdom()
             lg->info("reloc-ing...");
             // clear global odom
             mFrontendPtr->getGlobal()->clear();  
-        }else if(local_odom && mFrontendPtr->getOdom2MapFlag()){
+        }else if(local_odom && mFrontendPtr->isInitOdom2Map()){
             // only if local_odom is available and already init can be used
             init_pose.matrix() = odom2map.load().matrix() * local_odom->odom.matrix();
         }else{
@@ -139,20 +139,20 @@ void LidarOdometry::generateOdom()
 
         // for now, pure LO, scan2map should be considered always success!!
         // lock here
-        pc_t::Ptr ds_scan = pcl::make_shared<pc_t>();
-        
+        mDownSampleScan->points.clear();
+
         {
             std::lock_guard<std::mutex> lk(mMapManagerPtr->getSubmapLock());
             if(!mMapManagerPtr->getKeyFrameObjPtr()->isSubmapEmpty())
             {
                 // downsample
                 mVoxelGrid.setInputCloud(scan);
-                mVoxelGrid.filter(*ds_scan);
+                mVoxelGrid.filter(*mDownSampleScan);
 
                 const auto& submap = mMapManagerPtr->getSubmap();
                 // lg->info("scan pts: {}, submap pts: {}", scan->points.size(), submap->points.size());
                 pose_t beform_optim_pose = init_pose;
-                if(!mPcr->scan2Map(ds_scan, submap, init_pose)){
+                if(!mPcr->scan2Map(mDownSampleScan, submap, init_pose)){
                     lg->warn("pcr not converge!!");
                 #ifdef DEBUG_PC
                     pcl::io::savePCDFileBinary(fmt::format("{}/submap.pcd", DEBUG_PC), *submap);
@@ -193,7 +193,7 @@ void LidarOdometry::generateOdom()
         }
 
         // visualize downsample scan
-        mDataProxyPtr.get()->setVisAligned(ds_scan, init_pose);
+        mDataProxyPtr.get()->setVisAligned(mDownSampleScan, init_pose);
 
         // push the refined odom to deque
         auto global_odom = std::make_shared<Odometry>(stamp, init_pose);
@@ -201,8 +201,8 @@ void LidarOdometry::generateOdom()
         
         // update odom2map
         if(local_odom){
-            if(!mFrontendPtr->getOdom2MapFlag()){
-                mFrontendPtr->setOdom2MapFlag();
+            if(!mFrontendPtr->isInitOdom2Map()){
+                mFrontendPtr->setInitOdom2Map();
                 lg->info("init odom2map!!");
             }
             odom2map.store(init_pose * local_odom->odom.inverse());
@@ -218,6 +218,7 @@ void LidarOdometry::generateOdom()
 LidarOdometry::~LidarOdometry()
 {
     mDataProxyPtr->get()->abort();
+    lg->info("lo exit!!");
 }
 
 } // namespace frontend

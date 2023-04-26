@@ -55,6 +55,8 @@ private:
 
 protected:
 
+    void loadFactorGraph();
+
     void addOdomFactor();
 
     // TODO: loop-detect maybe another module
