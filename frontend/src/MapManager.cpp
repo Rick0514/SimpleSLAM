@@ -10,8 +10,8 @@
 
 namespace frontend {
 
-MapManager::MapManager() : mKFObjPtr(std::make_shared<KeyFramesObj>()),
-    mSubmap(pcl::make_shared<pc_t>())
+MapManager::MapManager(LidarDataProxyPtr ldp) : mKFObjPtr(std::make_shared<KeyFramesObj>()),
+    mSubmap(pcl::make_shared<pc_t>()), mLidarDataProxyPtr(ldp)
 {
     lg = logger::Logger::getInstance();
 
@@ -40,12 +40,13 @@ MapManager::MapManager() : mKFObjPtr(std::make_shared<KeyFramesObj>()),
         pcp::voxelDownSample<pt_t>(kf.pc, mGridSize);
         mKFObjPtr->keyframes.emplace_back(kf);
     }
+    mKFObjPtr->mKFNums = mKFObjPtr->keyframes.size();
     updateMap();    // init submap and submapIdx
-    printf("---------- load map done ----------");
+    std::cout << "---------- load map done ----------" << std::endl;
 }
 
 // deprecated
-MapManager::MapManager(std::string pcd_file) : MapManager()
+MapManager::MapManager(std::string pcd_file)
 {
     isMapping = false;
 
@@ -71,16 +72,27 @@ void MapManager::putKeyFrame(const KeyFrame& kf)
 
     auto& keyframes = mKFObjPtr->keyframes;
 
+    // no any kfs， it must be at first
+    if(keyframes.empty()){
+        lg->warn("no any keyframes, start mapping at the very first time!!");
+        std::lock_guard<std::mutex> lk(mKFObjPtr->mLockKF);
+        keyframes.emplace_back(std::move(kf));
+        mKFObjPtr->mKFcv.notify_one();
+        return;
+    }
+
     std::vector<index_t> k_indices;
     std::vector<scalar_t> k_sqr_distances;
     nanoflann::KeyFramesKdtree<kfs_t, scalar_t, 3> kf_kdtree(keyframes);
-    if(kf_kdtree.radiusSearch(kf.pose.translation(), minKFGap, k_indices, k_sqr_distances))
-        return;     // kf is not distant from other
+    kf_kdtree.nearestKSearch(kf.pose.translation(), 1, k_indices, k_sqr_distances);
 
-    std::lock_guard<std::mutex> lk(mKFObjPtr->mLockKF);
-    keyframes.emplace_back(std::move(kf));
     // if keyframes size greater than some gap then notify
-    mKFObjPtr->mKFcv.notify_one();
+    if(k_sqr_distances[0] > minKFGap){
+        std::lock_guard<std::mutex> lk(mKFObjPtr->mLockKF);
+        keyframes.emplace_back(std::move(kf));
+        mKFObjPtr->mClosestKfIdx.emplace_back(k_indices[0]);
+        mKFObjPtr->mKFcv.notify_one();
+    }
 }
 
 // keyframe should be locked before invoke
@@ -128,9 +140,6 @@ void MapManager::saveKfs()
 MapManager::~MapManager()
 {
     lg->info("exit MapManager!");
-    // save tum
-    std::lock_guard<std::mutex> lk(mKFObjPtr->mLockKF);
-    utils::file::writeAsTum(mSaveMapDir, mKFObjPtr->keyframes);
 }
 
 }

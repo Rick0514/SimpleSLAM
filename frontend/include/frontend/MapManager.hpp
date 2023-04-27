@@ -23,6 +23,8 @@ struct KeyFramesObj
     std::mutex mLockKF;
     std::condition_variable mKFcv;
     std::set<index_t> mSubmapIdx;
+    std::vector<index_t> mClosestKfIdx;
+
     KeyFramesObj() : mKFNums(0) {}
 
     bool isSubmapEmpty() {
@@ -59,9 +61,9 @@ private:
 
 public:
 
-    MapManager();
+    MapManager() = delete;
+    MapManager(LidarDataProxyPtr ldp=LidarDataProxyPtr());
     MapManager(std::string pcd_file);
-    void registerVis(const LidarDataProxyPtr& ldp) { mLidarDataProxyPtr = ldp; }
 
     void setCurPose(const pose_t& p) { mCurPose.store(p); }
 

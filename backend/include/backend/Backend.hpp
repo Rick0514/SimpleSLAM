@@ -46,12 +46,18 @@ private:
     gtsam::Values initialEstimate;
     gtsam::Values optimizedEstimate;
 
+    // for record!!
+    gtsam::Values recordEstimate;
+    gtsam::NonlinearFactorGraph recordFactorGraph;
+
     // optimize thread
     std::atomic_bool mRunning;
     std::unique_ptr<trd::ResidentThread> mOptimThread;
 
     // noise --> gtsam use double
     Eigen::Matrix<double, 6, 1> priorNoise, odomNoise;
+
+    std::string mSaveMapDir;
 
 protected:
 

@@ -140,7 +140,6 @@ void LidarOdometry::generateOdom()
         // for now, pure LO, scan2map should be considered always success!!
         // lock here
         mDownSampleScan->points.clear();
-
         {
             std::lock_guard<std::mutex> lk(mMapManagerPtr->getSubmapLock());
             if(!mMapManagerPtr->getKeyFrameObjPtr()->isSubmapEmpty())

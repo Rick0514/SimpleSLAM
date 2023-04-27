@@ -94,6 +94,11 @@ std::vector<std::pair<double, Pose6<Scalar>>> loadFromTum(const std::string& dir
     return res;
 }
 
+inline bool isFileExist(const std::string& file)
+{
+    return bfs::is_regular_file(file) && bfs::exists(file);
+}
+
 }
 
 }

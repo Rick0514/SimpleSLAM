@@ -17,7 +17,7 @@ echo "run app..."
 
 ./build/app/app &
 
-sleep 2
+sleep 1
 
 echo "play rosbag..."
 

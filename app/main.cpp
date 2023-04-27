@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
     auto local_size = cfg["frontend"]["local_size"].get<int>();
     auto global_size = cfg["frontend"]["global_size"].get<int>();
 
-    ros::init(argc, argv, "loc");
+    ros::init(argc, argv, "app");
     ros::NodeHandle nh;
 
     // lidar data proxy
@@ -54,8 +54,8 @@ int main(int argc, char* argv[])
     if(mode == "lio")   ftd = std::make_shared<Frontend>(edp->get(), global_size);
 
     // mapmanager
-    auto mmp = std::make_shared<MapManager>();
-    mmp->registerVis(ldp);
+    auto mmp = std::make_shared<MapManager>(ldp);
+
     // construct LO
     auto lo = std::make_unique<LidarOdometry>(ldp, ftd, rdp, mmp);
     // backend

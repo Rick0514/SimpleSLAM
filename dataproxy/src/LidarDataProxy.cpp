@@ -21,12 +21,14 @@ LidarDataProxy::LidarDataProxy(ros::NodeHandle& nh, int size) :
     std::string vis_align_topic = cfg["vis"]["align"];
     std::string vis_submap_topic = cfg["vis"]["submap"];
 
-
     mSub = nh.subscribe(lidar_topic, 5, &LidarDataProxy::subscribe, this);
 
     mPubAligned = nh.advertise<sensor_msgs::PointCloud2>(vis_align_topic, 1);
     mPubGlobal = nh.advertise<sensor_msgs::PointCloud2>(vis_submap_topic, 1);
     mVisPCThd = std::make_unique<utils::trd::ResidentThread>(&LidarDataProxy::visPCHandler, this);
+
+    // wait a bit, make all pub connect with sub!!
+    std::this_thread::sleep_for(std::chrono::seconds(1));
 }
 
 void LidarDataProxy::subscribe(const sensor_msgs::PointCloud2ConstPtr& msg)
@@ -63,9 +65,11 @@ void LidarDataProxy::visPCHandler()
             break;
         }
         case VisType::GlobalMap: {
+            mLg->info("vis is notified, show submap!!");
             if(mPubGlobal.getNumSubscribers() > 0){
+                mLg->info("get rviz sub, show submap!!");
                 mGlobalMap.header.frame_id = "map";
-                mPubGlobal.publish(mGlobalMap);
+                mPubGlobal.publish(mGlobalMap);           
             }
             break;
         }
@@ -90,6 +94,7 @@ void LidarDataProxy::setVisGlobalMap(const pc_t::ConstPtr& g)
     mVisType = VisType::GlobalMap;
     pcl::toROSMsg(*g, mGlobalMap);
     mVisCV.notify_one();    
+    mLg->info("info vis to show submap!!");
 }
 
 LidarDataProxy::~LidarDataProxy()
