@@ -24,6 +24,8 @@ MapManager::MapManager(LidarDataProxyPtr ldp) : mKFObjPtr(std::make_shared<KeyFr
     p.setIdentity();
     mCurPose.store(p);
 
+    mUpdateMapThreadPtr = std::make_unique<trd::ResidentThread>(&MapManager::updateMap, this);
+
     // load from tum
     auto t2p = utils::file::loadFromTum<scalar_t>(mSaveMapDir);
     if(t2p.empty()){
@@ -41,8 +43,8 @@ MapManager::MapManager(LidarDataProxyPtr ldp) : mKFObjPtr(std::make_shared<KeyFr
         mKFObjPtr->keyframes.emplace_back(kf);
     }
     mKFObjPtr->mKFNums = mKFObjPtr->keyframes.size();
-    updateMap();    // init submap and submapIdx
-    std::cout << "---------- load map done ----------" << std::endl;
+
+    notifyUpdateMap();
 }
 
 // deprecated
@@ -95,18 +97,36 @@ void MapManager::putKeyFrame(const KeyFrame& kf)
     }
 }
 
-// keyframe should be locked before invoke
 void MapManager::updateMap()
 {
+    std::unique_lock<std::mutex> lk(mLockMap);
+    mSubmapCv.wait(lk, [&](){ return mSetUpdateMap.load() || lg->isProgramExit(); });
+    mSetUpdateMap.store(false);
+
+    lk.unlock();
+
+    if(lg->isProgramExit()){ 
+        lg->warn("program exit, give up update map!"); 
+        return;
+    }
+
     lg->info("update map...");
     // it is said that nano-kdtree is thread-safe
     auto& keyframes = mKFObjPtr->keyframes;
+
+    if(keyframes.empty()){
+        lg->warn("no any keyframes to update!!");
+        return;
+    }
+
     std::vector<index_t> k_indices;
     std::vector<scalar_t> k_sqr_distances;
     nanoflann::KeyFramesKdtree<kfs_t, scalar_t, 3> kf_kdtree(keyframes);
     kf_kdtree.radiusSearch(mCurPose.load().translation(), mSurroundingKeyframeSearchRadius, k_indices, k_sqr_distances);
 
-    std::lock_guard<std::mutex> mlk(mLockMap);
+    lk.lock();
+    std::lock_guard<std::mutex> kf_lock(mKFObjPtr->mLockKF);
+
     mKFObjPtr->mSubmapIdx.clear();
     mSubmap->points.clear();
     for(auto i : k_indices){
@@ -137,9 +157,17 @@ void MapManager::saveKfs()
     }
 }
 
+void MapManager::notifyUpdateMap()
+{
+    mSetUpdateMap.store(true);
+    mSubmapCv.notify_one();
+}
+
 MapManager::~MapManager()
 {
     lg->info("exit MapManager!");
+    mUpdateMapThreadPtr->Stop();
+    notifyUpdateMap();
 }
 
 }

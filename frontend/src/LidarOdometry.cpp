@@ -58,7 +58,8 @@ void LidarOdometry::selectKeyFrame(const KeyFrame& kf)
     if((mCurPos - mLastPos).norm() > minKFGap){
         mMapManagerPtr->putKeyFrame(kf);
         mLastPos = mCurPos;
-        // lg->info("first select pass, try push kf!!");
+        lg->info("first select pass, try push kf and notify update map!!");
+        mMapManagerPtr->notifyUpdateMap();
     }
 }
 

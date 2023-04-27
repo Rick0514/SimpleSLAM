@@ -49,6 +49,8 @@ private:
     
     pc_t::Ptr mSubmap;
     std::mutex mLockMap;
+    std::condition_variable mSubmapCv;
+    std::atomic_bool mSetUpdateMap;
 
     trd::AtomicVar<pose_t> mCurPose;
 
@@ -58,6 +60,11 @@ private:
 
     std::string mSaveMapDir;
     float mGridSize;
+
+    std::unique_ptr<trd::ResidentThread> mUpdateMapThreadPtr;
+
+    // private
+    void updateMap();
 
 public:
 
@@ -74,10 +81,11 @@ public:
 
     void putKeyFrame(const KeyFrame&);
 
-    void updateMap();
     void saveKfs();
 
     void initSubmapFromPCD(std::string pcd_file);
+
+    void notifyUpdateMap();
 
     ~MapManager();
 };

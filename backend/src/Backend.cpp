@@ -142,6 +142,9 @@ void Backend::optimHandler()
 
     // update frontend, make it se3
     pose_t delta = keyframes.back().pose * latest_pose.inverse();
+
+    lk.unlock();
+
     {
         std::stringstream ss;
         ss << delta.translation().transpose();
@@ -153,18 +156,20 @@ void Backend::optimHandler()
     const auto& gb = mFrontendPtr->getGlobal();
 
     {
+        lg->info("update globalodom queue!!");
+
         std::lock_guard<std::mutex> _lk(gb->getLock());
         auto gbq = gb->getDequeInThreadUnsafeWay();
         // will pose become non-se3??
         for(auto& e : gbq) e->odom = delta * e->odom;
     }
-    lg->info("update globalodom queue!!");
 
+    // update odom2map
     pose_t p = delta * mFrontendPtr->get().load();
     mFrontendPtr->get().store(p);
     
     // now update map immediately
-    mMapManagerPtr->updateMap();
+    mMapManagerPtr->notifyUpdateMap();
 }
 
 Backend::~Backend()
