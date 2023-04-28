@@ -73,7 +73,7 @@ public:
 
     template<typename ...ARGS>
     void error(ARGS ...args)    { SPDLOG_LOGGER_ERROR(_lg, args ...); }
-
+    
 };
 
 } // namespace logger

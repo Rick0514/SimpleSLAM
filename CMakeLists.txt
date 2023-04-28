@@ -20,10 +20,17 @@ set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CMAKE_COMMAND} -E time")
 set(ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(COMMON_HEADER ${ROOT_DIR}/common)
 
+option(USE_BAG "USE ROSBAG OR NOT" OFF)
+message("USE ROSBAG OR NOT: " ${USE_BAG})
+
 find_package(Eigen3 REQUIRED)
 find_package(spdlog REQUIRED)
 
 add_definitions(-DCONFIG_FILE="${ROOT_DIR}/config/params.json")
+
+if(USE_BAG)
+	add_definitions(-DUSE_BAG)
+endif()
 
 add_subdirectory(config)
 add_subdirectory(PCR)

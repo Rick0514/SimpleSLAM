@@ -7,21 +7,19 @@ if [ $? != 0 ]; then
     exit 1
 fi
 
-echo "start rviz..."
+if [[ $# == 1 && $1 = "rviz" ]]; then
+    echo "start rviz..."
 
-rviz -d ./test/rviz/slam.rviz > /dev/null 2>&1 &
-
-sleep 1
+    rviz -d ./test/rviz/slam.rviz > /dev/null 2>&1 &
+    
+    sleep 1
+fi
 
 echo "run app..."
 
-./build/app/app &
+./build/app/app
 
-sleep 1
-
-echo "play rosbag..."
-
-rosbag play --clock /home/hgy/sda2/rosbag/zhengzhou0711.orig.bag
+# rosbag play --clock /home/hgy/sda2/rosbag/zhengzhou0711.orig.bag
 # rosbag play --clock /home/rick/jtcx/hgy_gitee/minimal_ws/bag/zhengzhou0711.orig.bag
 # rosbag play --clock /home/hgy/sda2/rosbag/huaqiaocheng-1.bag
 # rosbag play --clock /home/rick/jtcx/hgy_gitee/minimal_ws/bag/huaqiaocheng-1.bag

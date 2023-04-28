@@ -53,10 +53,31 @@ void test_log_vector()
     lg->info("{}", a);    
 }
 
+void progressBar(float perc)
+{
+    #define PBSTR "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
+    #define PBWIDTH 60
+    int val = (int) (perc * 100);
+    int lpad = (int) (perc * PBWIDTH);
+    int rpad = PBWIDTH - lpad;
+    printf("\r%3d%% [%.*s%*s]", val, lpad, PBSTR, rpad, "");
+    fflush(stdout);
+}
+
+void test_progress_bar()
+{
+    auto lg = logger::Logger::getInstance();
+    for(int i=0; i<=10; i++){
+        progressBar(0.1f * i);
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    }
+}
+
 int main(int argc, char const *argv[])
 {
     // test_single_thread();
     // test_multi_threads();
-    test_log_vector();
+    // test_log_vector();
+    test_progress_bar();
     return 0;
 }

@@ -6,6 +6,7 @@
 
     // "saveMapDir" : "/home/rick/pcr/test/data/map",
     "saveMapDir" : "/home/hgy/hgy/PCR/test/data/map",
+    "rosbag": "/home/hgy/sda2/rosbag/zhengzhou0711.orig.bag",
 
     "dataproxy": {
         "lidar": "/lidar_points",

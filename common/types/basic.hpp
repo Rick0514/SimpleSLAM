@@ -19,7 +19,13 @@ using pose_t = EigenTypes::Pose6<scalar_t>;
 
 struct constant
 {
+
+#ifdef USE_BAG
+    static constexpr bool usebag = true;
+#else
     static constexpr bool usebag = false;
+#endif
+
 };
 
 struct KeyFrame
