@@ -41,6 +41,9 @@ private:
     KFObjPtr mKFObjPtr;
 
     // factor graph
+    gtsam::noiseModel::Diagonal::shared_ptr gtPriorNoise;
+    gtsam::noiseModel::Diagonal::shared_ptr gtOdomNoise;
+
     std::unique_ptr<gtsam::ISAM2> isam2;
     gtsam::NonlinearFactorGraph factorGraph;
     gtsam::Values initialEstimate;
@@ -67,6 +70,8 @@ protected:
 
     // TODO: loop-detect maybe another module
     void addLoopFactor();
+
+    void myReadG2o(const std::string& file, gtsam::NonlinearFactorGraph& fg, gtsam::Values& v);
 
 public:
 

@@ -53,6 +53,7 @@ private:
     std::atomic_bool mSetUpdateMap;
 
     trd::AtomicVar<pose_t> mCurPose;
+    pose_t mLastPose;
 
     LidarDataProxyPtr mLidarDataProxyPtr;
 
@@ -72,7 +73,7 @@ public:
     MapManager(LidarDataProxyPtr ldp=LidarDataProxyPtr());
     MapManager(std::string pcd_file);
 
-    void setCurPose(const pose_t& p) { mCurPose.store(p); }
+    void setCurPose(const pose_t& p);
 
     auto getSubmap() { return mSubmap; }    // not thread-safe!!
     std::mutex& getSubmapLock() { return mLockMap; }

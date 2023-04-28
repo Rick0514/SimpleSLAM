@@ -22,6 +22,7 @@ MapManager::MapManager(LidarDataProxyPtr ldp) : mKFObjPtr(std::make_shared<KeyFr
     // important!! init pose decide what submap is like!!
     pose_t p;
     p.setIdentity();
+    mLastPose = p;
     mCurPose.store(p);
 
     mUpdateMapThreadPtr = std::make_unique<trd::ResidentThread>(&MapManager::updateMap, this);
@@ -65,6 +66,18 @@ MapManager::MapManager(std::string pcd_file)
 
     pcp::voxelDownSample<pt_t>(mSubmap, mGridSize);
     lg->info("submap size: {}", mSubmap->size());
+}
+
+void MapManager::setCurPose(const pose_t &p)
+{
+    mCurPose.store(p);
+
+    V3<scalar_t> ot = mLastPose.translation();
+    V3<scalar_t> ct = p.translation();
+    if((ot - ct).norm() > minKFGap){
+        mLastPose = p;
+        notifyUpdateMap();
+    }
 }
 
 // carefully check kf

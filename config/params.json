@@ -4,8 +4,8 @@
 
     "downSampleVoxelGridSize": 0.7, 
 
-    "saveMapDir" : "/home/rick/pcr/test/data/map",
-    // "saveMapDir" : "/home/hgy/hgy/PCR/test/data/map",
+    // "saveMapDir" : "/home/rick/pcr/test/data/map",
+    "saveMapDir" : "/home/hgy/hgy/PCR/test/data/map",
 
     "dataproxy": {
         "lidar": "/lidar_points",

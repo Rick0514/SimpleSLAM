@@ -30,6 +30,9 @@ Backend::Backend(const FrontendPtr& ft, const MapManagerPtr& mp) : mRunning(true
     priorNoise << 1e-2, 1e-2, M_PI / 72, 1e-1, 1e-1, 1e-1;
     odomNoise << 1e-4, 1e-4, 1e-4, 1e-1, 1e-1, 1e-1;
 
+    gtOdomNoise = noiseModel::Diagonal::Variances(odomNoise);
+    gtPriorNoise = noiseModel::Diagonal::Variances(priorNoise);
+
     // get keyframe obj to optimize
     mKFObjPtr = mMapManagerPtr->getKeyFrameObjPtr();
 
@@ -43,6 +46,79 @@ Backend::Backend(const FrontendPtr& ft, const MapManagerPtr& mp) : mRunning(true
     mOptimThread = std::make_unique<trd::ResidentThread>(&Backend::optimHandler, this);
 }
 
+void Backend::myReadG2o(const std::string& file, gtsam::NonlinearFactorGraph& fg, gtsam::Values& v)
+{
+    std::ifstream inf(file);
+    if(!inf.is_open()){
+        auto msg = fmt::format("failed to open g2o file: [{}]!", file);
+        lg->error(msg);
+        throw std::invalid_argument(msg);
+    }
+
+    std::string line;
+    index_t id = 0;
+    while(std::getline(inf, line))
+    {
+        std::istringstream ss(line);
+        string tag;
+        ss >> tag;
+
+        if (tag == "VERTEX3") {
+            double x, y, z, roll, pitch, yaw;
+            ss >> id >> x >> y >> z >> roll >> pitch >> yaw;
+            Rot3 R = Rot3::ypr(yaw,pitch,roll);
+            Point3 t = Point3(x, y, z);
+            v.insert(id++, Pose3(R,t));
+        }else if (tag == "VERTEX_SE3:QUAT") {
+            double x, y, z, qx, qy, qz, qw;
+            ss >> id >> x >> y >> z >> qx >> qy >> qz >> qw;
+            Rot3 R = Rot3::quaternion(qw, qx, qy, qz);
+            Point3 t = Point3(x, y, z);
+
+            if(id == 0)
+                factorGraph.add(PriorFactor<gtsam::Pose3>(0, Pose3(R, t), gtPriorNoise));
+
+            v.insert(id++, Pose3(R,t));
+        }else if (tag == "EDGE3") {
+            index_t id1, id2;
+            double x, y, z, roll, pitch, yaw;
+            ss >> id1 >> id2 >> x >> y >> z >> roll >> pitch >> yaw;
+            Rot3 R = Rot3::ypr(yaw,pitch,roll);
+            Point3 t = Point3(x, y, z);
+            Matrix m = eye(6);
+            for (int i = 0; i < 6; i++)
+                for (int j = i; j < 6; j++)
+                    ss >> m(i, j);
+            SharedNoiseModel model = noiseModel::Gaussian::Information(m);
+            NonlinearFactor::shared_ptr factor(new BetweenFactor<Pose3>(id1, id2, Pose3(R,t), model));
+            fg.push_back(factor);
+        }else if (tag == "EDGE_SE3:QUAT") {
+            Matrix m = eye(6);
+            index_t id1, id2;
+            double x, y, z, qx, qy, qz, qw;
+            ss >> id1 >> id2 >> x >> y >> z >> qx >> qy >> qz >> qw;
+            Rot3 R = Rot3::quaternion(qw, qx, qy, qz);
+            Point3 t = Point3(x, y, z);
+            for (int i = 0; i < 6; i++){
+                for (int j = i; j < 6; j++){
+                    double mij;
+                    ss >> mij;
+                    m(i, j) = mij;
+                    m(j, i) = mij;
+                }
+            }
+            Matrix mgtsam = eye(6);
+            mgtsam.block(0,0,3,3) = m.block(3,3,3,3); // cov rotation
+            mgtsam.block(3,3,3,3) = m.block(0,0,3,3); // cov translation
+            mgtsam.block(0,3,3,3) = m.block(0,3,3,3); // off diagonal
+            mgtsam.block(3,0,3,3) = m.block(3,0,3,3); // off diagonal
+            SharedNoiseModel model = noiseModel::Gaussian::Information(mgtsam);
+            NonlinearFactor::shared_ptr factor(new BetweenFactor<Pose3>(id1, id2, Pose3(R,t), model));
+            fg.push_back(factor);
+        }
+    }
+}
+
 void Backend::loadFactorGraph()
 {
     std::string fn = fmt::format("{}/fg.g2o", mSaveMapDir);
@@ -50,13 +126,11 @@ void Backend::loadFactorGraph()
         lg->info("no factor graph file, maybe first build or rebuild!!");
         return;
     }
-    gtsam::NonlinearFactorGraph::shared_ptr fg;
-    gtsam::Values::shared_ptr ie;
-    std::tie(fg, ie) = gtsam::readG2o(fn, true);
 
-    factorGraph = *fg;
-    recordFactorGraph = *fg;
-    recordEstimate = *ie;
+    myReadG2o(fn, factorGraph, initialEstimate);
+
+    recordFactorGraph = factorGraph;
+    recordEstimate = initialEstimate;
     // isam2->update(factorGraph, initialEstimate);
     // isam2->update();
     // factorGraph.resize(0);
@@ -71,7 +145,6 @@ void Backend::addOdomFactor()
     auto& keyframes = mKFObjPtr->keyframes;
 
     if(n == 0){
-        noiseModel::Diagonal::shared_ptr gtPriorNoise = noiseModel::Diagonal::Variances(priorNoise);
         
         // turn to 2d
         pose_t kfp = keyframes.front().pose;
@@ -83,7 +156,6 @@ void Backend::addOdomFactor()
         n++;
     }
 
-    noiseModel::Diagonal::shared_ptr gtOdomNoise = noiseModel::Diagonal::Variances(odomNoise);
     int cidx = 0;
     for(int i=n; i<keyframes.size(); i++){
         auto from_idx = mKFObjPtr->mClosestKfIdx[cidx++];
@@ -168,8 +240,6 @@ void Backend::optimHandler()
     pose_t p = delta * mFrontendPtr->get().load();
     mFrontendPtr->get().store(p);
     
-    // now update map immediately
-    mMapManagerPtr->notifyUpdateMap();
 }
 
 Backend::~Backend()
