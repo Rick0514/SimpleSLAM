@@ -32,7 +32,7 @@ private:
 
     std::unique_ptr<utils::trd::ResidentThread> mVisPCThd;
 
-    KF mAlignedKF;
+    pc_t::Ptr mAlignedScan;
     sensor_msgs::PointCloud2 mGlobalMap;
     
     VisType mVisType;

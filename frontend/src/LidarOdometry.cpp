@@ -192,7 +192,7 @@ void LidarOdometry::generateOdom()
         }
 
         // visualize downsample scan
-        mDataProxyPtr.get()->setVisAligned(mDownSampleScan, init_pose);
+        mDataProxyPtr->setVisAligned(mDownSampleScan, init_pose);
 
         // push the refined odom to deque
         auto global_odom = std::make_shared<Odometry>(stamp, init_pose);

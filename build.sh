@@ -8,7 +8,7 @@ if [[ $# == 1 && $1 = "rosbag" ]]; then
     usebag=true
 fi
 
-if [ $usebag ]; then
+if [ "$usebag" = true ]; then
     usebag_flag="-DUSE_BAG=ON"
 fi
 

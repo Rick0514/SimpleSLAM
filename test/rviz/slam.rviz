@@ -8,6 +8,7 @@ Panels:
         - /Status1
         - /pc1
         - /pc1/aligned1
+        - /pc1/aligned1/Status1
         - /pc1/globalmap1
       Splitter Ratio: 0.5
     Tree Height: 455
@@ -29,7 +30,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: aligned
+    SyncSource: globalmap
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -143,25 +144,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 84.99574279785156
+      Distance: 151.56895446777344
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 2.817627191543579
-        Y: -11.827359199523926
-        Z: -8.560194969177246
+        X: -3.9941904544830322
+        Y: -31.024532318115234
+        Z: -8.428640365600586
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5697963237762451
+      Pitch: 1.1697967052459717
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.0853872299194336
+      Yaw: 2.785383939743042
     Saved: ~
 Window Geometry:
   Displays:
@@ -179,5 +180,5 @@ Window Geometry:
   Views:
     collapsed: true
   Width: 1267
-  X: 599
-  Y: 155
+  X: 110
+  Y: 45

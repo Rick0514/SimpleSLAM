@@ -60,7 +60,7 @@ void Backend::myReadG2o(const std::string& file, gtsam::NonlinearFactorGraph& fg
     while(std::getline(inf, line))
     {
         std::istringstream ss(line);
-        string tag;
+        std::string tag;
         ss >> tag;
 
         if (tag == "VERTEX3") {

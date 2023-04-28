@@ -55,10 +55,8 @@ void LidarDataProxy::visPCHandler()
             // trans
             if(mPubAligned.getNumSubscribers() > 0)
             {
-                pc_t::Ptr aligned(new pc_t());
-                pcl::transformPointCloud(*mAlignedKF.pc, *aligned, mAlignedKF.pose.matrix().cast<float>());
                 sensor_msgs::PointCloud2 rospc;
-                pcl::toROSMsg(*aligned, rospc);
+                pcl::toROSMsg(*mAlignedScan, rospc);
                 rospc.header.frame_id = "map";
                 mPubAligned.publish(rospc);
             }
@@ -83,8 +81,7 @@ void LidarDataProxy::setVisAligned(const pc_t::Ptr& pc, const pose_t& pose)
 {
     std::lock_guard<std::mutex> lk(mVisLock);
     mVisType = VisType::Aligned;
-    mAlignedKF.pc = pc;
-    mAlignedKF.pose = pose;
+    mAlignedScan = pcp::transformPointCloud<pt_t>(pc, pose.cast<float>());
     mVisCV.notify_one();
 }
 
