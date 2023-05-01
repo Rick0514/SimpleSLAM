@@ -18,7 +18,7 @@ int main(int argc, char* argv[])
 {
     // get params
     auto cfg = config::Params::getInstance();
-    auto lidar_size = cfg["frontend"]["lidar_size"].get<int>();
+    auto lidar_size = cfg["dataproxy"]["lidar_size"].get<int>();
     auto local_size = cfg["frontend"]["local_size"].get<int>();
     auto global_size = cfg["frontend"]["global_size"].get<int>();
 
@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
     // lg->setLogFile(LOG_FILE);
 #endif
 
-    string pcd_file = "/home/gy/.robot/data/maps/hqc/hqc.pcd";  
+    string pcd_file = cfg["pcd_file"];  
     ros::init(argc, argv, "loc");
     ros::NodeHandle nh;
 

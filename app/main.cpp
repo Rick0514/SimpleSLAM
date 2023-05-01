@@ -106,7 +106,6 @@ int main(int argc, char* argv[])
         std::vector<std::string> topics{imu_topic, wheel_topic, lidar_topic};
 
         common::time::tictoc tt;
-
         for(const rosbag::MessageInstance& m : rosbag::View(bag, rosbag::TopicQuery(topics)))
         {   
             std::string tp = m.getTopic();
@@ -122,6 +121,8 @@ int main(int argc, char* argv[])
                 sensor_msgs::PointCloud2ConstPtr pc = m.instantiate<sensor_msgs::PointCloud2>();
                 ldp->subscribe(pc);  
             }
+
+            if(!nh.ok())  break;
 
             auto perc = (cur_time - start_time).toSec() / total_time;
             progressBar(perc);

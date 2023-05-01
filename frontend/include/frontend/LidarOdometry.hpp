@@ -5,6 +5,7 @@
 #include <frontend/OdometryBase.hpp>
 
 #include <pcl/filters/voxel_grid.h>
+#include <pcp/pcp.hpp>
 
 // ------------ forward declaration ------------
 namespace dataproxy { 
@@ -50,7 +51,7 @@ private:
 
     pc_t::Ptr mDownSampleScan;
     pcl::VoxelGrid<pt_t> mVoxelGrid;
-
+    pcp::VoxelDownSampleV2 mVoxelDownSampleV2;
 
 public:
 

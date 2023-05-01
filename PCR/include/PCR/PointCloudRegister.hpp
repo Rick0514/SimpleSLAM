@@ -13,7 +13,6 @@ class PointCloudRegister
 
 protected:
     bool isConverge;
-    static constexpr int numCores{2};
     std::shared_ptr<utils::logger::Logger> lg;
 
 public:

@@ -43,3 +43,15 @@ target_include_directories(kdtree PUBLIC
 target_link_libraries(kdtree
     ${PCL_LIBRARIES}
 )
+
+add_executable(vgf voxelgridfilter.cpp)
+target_include_directories(vgf PUBLIC
+    ${catkin_INCLUDE_DIRS}
+    ${PCL_INCLUDE_DIRS}
+    ../../common
+)
+target_link_libraries(vgf
+    ${catkin_LIBRARIES}
+    ${PCL_LIBRARIES}
+    spdlog
+)

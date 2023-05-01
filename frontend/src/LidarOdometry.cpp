@@ -29,6 +29,7 @@ LidarOdometry::LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, RelocDataProxyPt
     auto cfg = config::Params::getInstance();
     auto grid_size = cfg["downSampleVoxelGridSize"].get<float>();
     mVoxelGrid.setLeafSize(grid_size, grid_size, grid_size);
+    mVoxelDownSampleV2 = pcp::VoxelDownSampleV2(grid_size);
 
     mLastPos.setZero();
     mRelocPose.setIdentity();
@@ -144,8 +145,13 @@ void LidarOdometry::generateOdom()
             if(!mMapManagerPtr->getKeyFrameObjPtr()->isSubmapEmpty())
             {
                 // downsample
-                mVoxelGrid.setInputCloud(scan);
-                mVoxelGrid.filter(*mDownSampleScan);
+                // mVoxelGrid.setInputCloud(scan);
+                // mVoxelGrid.filter(*mDownSampleScan);
+                mVoxelDownSampleV2.filter<pt_t>(scan, *mDownSampleScan);
+
+                lg->info("voxel ds cost: {:.3f}s", tt);
+                lg->info("voxel ds size: {}", mDownSampleScan->points.size());
+                tt.tic();
 
                 const auto& submap = mMapManagerPtr->getSubmap();
                 // lg->info("scan pts: {}, submap pts: {}", scan->points.size(), submap->points.size());
@@ -166,7 +172,7 @@ void LidarOdometry::generateOdom()
                     throw std::runtime_error("pcr not converge abort!!");
                 #endif
                 }   
-                // lg->info("scan2map cost: {:.3f}s", tt);
+                lg->info("scan2map cost: {:.3f}s", tt);
             }
         }
 
@@ -207,8 +213,8 @@ void LidarOdometry::generateOdom()
             odom2map.store(init_pose * local_odom->odom.inverse());
         }
 
-    }else{
-        lg->debug("scan deque is empty for now, please check!!");
+    }else if(!constant::usebag){
+        lg->warn("scan deque is empty for now, please check!!");
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 

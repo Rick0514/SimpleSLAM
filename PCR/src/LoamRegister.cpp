@@ -108,7 +108,7 @@ bool LoamRegister::scan2Map(const PC_cPtr& src, const PC_cPtr& dst, pose_t& res)
         // scalar_t ta = 0;
         // scalar_t te = 0;
 
-        #pragma omp parallel for num_threads(numCores)
+        #pragma omp parallel for num_threads(constant::numCores)
         for(int i=0; i<src->points.size(); i++){
             // trans point to map frame
             tt.tic();

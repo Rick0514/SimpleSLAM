@@ -8,6 +8,8 @@
 #include <config/params.hpp>
 #include <utils/File.hpp>
 
+#include <time/tictoc.hpp>
+
 namespace frontend {
 
 MapManager::MapManager(LidarDataProxyPtr ldp) : mKFObjPtr(std::make_shared<KeyFramesObj>()),
@@ -51,8 +53,21 @@ MapManager::MapManager(LidarDataProxyPtr ldp) : mKFObjPtr(std::make_shared<KeyFr
 // deprecated
 MapManager::MapManager(std::string pcd_file)
 {
-    isMapping = false;
+    lg = logger::Logger::getInstance();
 
+    auto cfg = config::Params::getInstance();
+    mGridSize = cfg["downSampleVoxelGridSize"].get<float>();
+
+    // important!! init pose decide what submap is like!!
+    pose_t p;
+    p.setIdentity();
+    mLastPose = p;
+    mCurPose.store(p);
+
+    isMapping = false;
+    mSubmap = pcl::make_shared<pc_t>();
+
+    mKFObjPtr = std::make_shared<KeyFramesObj>();
     mKFObjPtr->mSubmapIdx.insert(0);
     // load global map mode
     if(pcl::io::loadPCDFile<pt_t>(pcd_file, *mSubmap) == -1)
@@ -64,7 +79,9 @@ MapManager::MapManager(std::string pcd_file)
 
     lg->info("load map success!!");
 
+    common::time::tictoc tt;
     pcp::voxelDownSample<pt_t>(mSubmap, mGridSize);
+    lg->info("submap ds cost: {:.3f}", tt);
     lg->info("submap size: {}", mSubmap->size());
 }
 
@@ -179,7 +196,7 @@ void MapManager::notifyUpdateMap()
 MapManager::~MapManager()
 {
     lg->info("exit MapManager!");
-    mUpdateMapThreadPtr->Stop();
+    if(mUpdateMapThreadPtr) mUpdateMapThreadPtr->Stop();
     notifyUpdateMap();
 }
 

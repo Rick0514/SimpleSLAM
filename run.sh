@@ -7,12 +7,22 @@ if [ $? != 0 ]; then
     exit 1
 fi
 
-if [[ $# == 1 && $1 = "rviz" ]]; then
+cmd="$@"
+
+if echo $cmd | grep -q "rviz"; then
     echo "start rviz..."
 
     rviz -d ./test/rviz/slam.rviz > /dev/null 2>&1 &
     
     sleep 1
+fi
+
+if echo $cmd | grep -q "rebuild"; then
+
+    echo "rebuild map, rm all files in map dir!!"
+
+    rm ./test/data/map/*
+
 fi
 
 echo "run app..."
