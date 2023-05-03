@@ -4,6 +4,7 @@
 #include <pcl/io/pcd_io.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/visualization/pcl_visualizer.h>
+#include <pcp/pcp.hpp>
 
 #include <nanoflann/pcl_adaptor.hpp>
 
@@ -119,14 +120,20 @@ int main(int argc, char const *argv[])
 
     common::time::tictoc tt;
     lg->info("start to downsample pc!");
-    voxelDownSample(target_cloud, 0.7f);
-    voxelDownSample(source_cloud, 0.7f);
+    voxelDownSample(target_cloud, 0.1f);
+    voxelDownSample(source_cloud, 0.1f);
+
+    // voxel downsample version 2
+    // pcp::VoxelDownSampleV3 vds(0.1f);
+    // source_cloud = vds.filter<pt_t>(source_cloud);
+    // target_cloud = vds.filter<pt_t>(target_cloud);
+
     lg->info("downsample pc elapsed {:.6f}s", tt);
 
     lg->info("--------- after downsample ---------");
     lg->info("target cloud size: {}", target_cloud->points.size());
     lg->info("source cloud size: {}", source_cloud->points.size());
-
+    
     lg->info("start to scan2map!");
     tt.tic();
     if(!pcr->scan2Map(source_cloud, target_cloud, init_pose))

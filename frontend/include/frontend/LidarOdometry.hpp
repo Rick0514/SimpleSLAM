@@ -52,6 +52,7 @@ private:
     pc_t::Ptr mDownSampleScan;
     pcl::VoxelGrid<pt_t> mVoxelGrid;
     pcp::VoxelDownSampleV2 mVoxelDownSampleV2;
+    pcp::VoxelDownSampleV3 mVoxelDownSampleV3;
 
 public:
 

@@ -81,6 +81,9 @@ MapManager::MapManager(std::string pcd_file)
 
     common::time::tictoc tt;
     pcp::voxelDownSample<pt_t>(mSubmap, mGridSize);
+    // pcp::VoxelDownSampleV2 vds(mGridSize);
+    // mSubmap = vds.filter<pt_t>(mSubmap);
+
     lg->info("submap ds cost: {:.3f}", tt);
     lg->info("submap size: {}", mSubmap->size());
 }
@@ -158,7 +161,7 @@ void MapManager::updateMap()
     std::lock_guard<std::mutex> kf_lock(mKFObjPtr->mLockKF);
 
     mKFObjPtr->mSubmapIdx.clear();
-    mSubmap->points.clear();
+    mSubmap->clear();
     for(auto i : k_indices){
         const auto& src = keyframes[i].pc;
         *mSubmap += *pcp::transformPointCloud<pt_t, scalar_t>(src, keyframes[i].pose);
@@ -169,7 +172,7 @@ void MapManager::updateMap()
     lg->info("kf size: {}", keyframes.size());
     lg->info("kf dist: {}", k_sqr_distances);
     lg->info("submap idx: {}", k_indices);
-    lg->info("submap pts: {}", mSubmap->points.size());
+    lg->info("submap pts: {}", mSubmap->size());
 
     // vis
     if(mLidarDataProxyPtr)    mLidarDataProxyPtr->setVisGlobalMap(mSubmap);

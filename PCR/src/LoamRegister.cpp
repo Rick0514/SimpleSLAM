@@ -68,8 +68,10 @@ void LoamRegister::_removeDegeneratePart(const M6& JtJ, V6& x){
 
         V6 ev = JtJ.eigenvalues().real();
         
-        // std::stringstream ss;
-        // ss << "ev: " << ev.transpose();
+        std::stringstream ss;
+        ss << "ev: " << ev.transpose();
+        lg->debug("{}", ss.str());
+
         // DEBUG(debug_file, ss.str());
 
         M6 JtJ_copy = JtJ;
@@ -82,7 +84,7 @@ void LoamRegister::_removeDegeneratePart(const M6& JtJ, V6& x){
         degenerateProj = JtJ.inverse() * JtJ;
     }
     
-    if(isDegenerate)    x = degenerateProj * x;
+    // if(isDegenerate)    x = degenerateProj * x;
 }
 
 bool LoamRegister::scan2Map(const PC_cPtr& src, const PC_cPtr& dst, pose_t& res)
@@ -109,7 +111,7 @@ bool LoamRegister::scan2Map(const PC_cPtr& src, const PC_cPtr& dst, pose_t& res)
         // scalar_t te = 0;
 
         #pragma omp parallel for num_threads(constant::numCores)
-        for(int i=0; i<src->points.size(); i++){
+        for(int i=0; i<src->size(); i++){
             // trans point to map frame
             tt.tic();
             const auto& pointOri = src->points[i];

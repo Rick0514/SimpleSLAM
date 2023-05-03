@@ -27,7 +27,7 @@ void test_pcl_vgf(ros::Publisher& pub)
     voxelgrid.setInputCloud(sm);
     voxelgrid.filter(pc);
 
-    lg->info("map pts: {}, ds pts: {}, ds cost: {:.3f}s", sm->points.size(), pc.points.size(), tt);
+    lg->info("map pts: {}, ds pts: {}, ds cost: {:.3f}s", sm->size(), pc.size(), tt);
 
     sensor_msgs::PointCloud2 rospc;
     pcl::toROSMsg(pc, rospc);
@@ -43,10 +43,13 @@ void test_my_vgf(ros::Publisher& pub)
 
     common::time::tictoc tt;
 
-    pcp::VoxelDownSampleV2 vds(gs);
+    // pcp::VoxelDownSampleV2 vds(gs);
+    // pc = vds.filter<pt_t>(sm);
+
+    pcp::VoxelDownSampleV3 vds(gs);
     pc = vds.filter<pt_t>(sm);
 
-    lg->info("map pts: {}, ds pts: {}, ds cost: {:.3f}s", sm->points.size(), pc->points.size(), tt);
+    lg->info("map pts: {}, ds pts: {}, ds cost: {:.3f}s", sm->size(), pc->size(), tt);
 
     sensor_msgs::PointCloud2 rospc;
     pcl::toROSMsg(*pc, rospc);

@@ -18,7 +18,7 @@ protected:
     struct PointCloudAdaptor
     {
         inline size_t kdtree_get_point_count() const{
-            if(_pc) return _pc->points.size();
+            if(_pc) return _pc->size();
             return 0;
         }
         inline Scalar kdtree_get_pt(const size_t idx, int dim) const

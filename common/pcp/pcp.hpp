@@ -5,6 +5,7 @@
 #include <types/PCLTypes.hpp>
 #include <pcl/io/pcd_io.h>
 #include <pcl/filters/voxel_grid.h>
+#include <pcl/common/centroid.h>
 
 namespace pcp {
 using namespace EigenTypes;
@@ -84,19 +85,20 @@ protected:
     float _grid_size;
     int _max_voxel_pts;
     int _min_voxel_pts;
+    float _max_range{1000.0f};
 
 public:
 
     VoxelDownSampleV2() = default;
-    VoxelDownSampleV2(float gs, int max_vp=10, int min_vp=0) : _grid_size(gs), _max_voxel_pts(max_vp), _min_voxel_pts(min_vp) {}
+    VoxelDownSampleV2(float gs, int max_vp=20, int min_vp=0) : _grid_size(gs), _max_voxel_pts(max_vp), _min_voxel_pts(min_vp) {}
 
     template <typename PointType>
-    void filter(const typename PC<PointType>::ConstPtr& cloudIn, PC<PointType>& cloudOut)
+    typename PC<PointType>::Ptr filter(const typename PC<PointType>::ConstPtr& cloud)
     {
         _map.clear();
 
-        for(int i=0; i<cloudIn->points.size(); i++){
-            Eigen::Vector3f p = cloudIn->points[i].getVector3fMap();
+        for(int i=0; i<cloud->size(); i++){
+            Eigen::Vector3f p = cloud->points[i].getVector3fMap();
             Voxel vx = (p / _grid_size).cast<int>();
             if(_map.find(vx) == _map.end()){
                 std::vector<int> vb;
@@ -110,25 +112,135 @@ public:
         // return the first one
         typename PC<PointType>::Ptr out = pcl::make_shared<PC<PointType>>();
         // worse case
-        cloudOut.points.reserve(_max_voxel_pts * _map.size());
+        out->reserve(_max_voxel_pts * _map.size());
 
         for(const auto& [vx, vb] : _map){
             if(vb.size() > _min_voxel_pts){
-                auto sid = vb.front();
+                // auto sid = vb.front();
+                // PointType pt = cloud->points[sid];
+
+                // bool select = true;
+                // for(int i=0; i<3; i++){
+                //     if(std::isnan(sp.data[i]) || sp.data[i] < -_max_range || sp.data[i] > _max_range)
+                //     {
+                //         select = false;
+                //         break;
+                //     }
+                // }
+                // if(select)  out->emplace_back(sp);
+
                 Eigen::Vector3f p;
                 p.setZero();
 
-                for(auto&& idx : vb)    p += cloudIn->points[idx].getVector3fMap();
+                for(auto&& idx : vb)    p += cloud->points[idx].getVector3fMap();
                 p /= vb.size();
 
-                PointType pt = cloudIn->points[vb.front()];
+                PointType pt = cloud->points[vb.front()];
                 pt.getVector3fMap() = p;
-                cloudOut.points.emplace_back(pt);
-                // cloudOut.points.emplace_back(cloudIn->points[sid]);
+                out->emplace_back(pt);
+                // out.points.emplace_back(pt);
             }
+        }
+        return out;
+    }
+
+};
+
+// simplified pcl implementation
+class VoxelDownSampleV3
+{
+protected:
+
+    float _grid_size;
+    float _inverse_grid_size;
+
+    Eigen::Array3f _max_p, _min_p;
+
+public:
+    VoxelDownSampleV3() = default;
+    VoxelDownSampleV3(float gs) : _grid_size(gs) {
+        _inverse_grid_size = 1.0f / _grid_size;
+    }
+
+    template <typename PointType>
+    void filter(const typename PC<PointType>::ConstPtr& cloud, typename PC<PointType>::Ptr& out)
+    {
+        if(cloud->empty())  return;
+
+        _max_p = cloud->points[0].getArray3fMap();
+        _min_p = _max_p;
+
+        // find max and min first
+        for(const auto& p : cloud->points){
+            pcl::Array3fMapConst pt = p.getArray3fMap();
+            _max_p = _max_p.max(pt);
+            _min_p = _min_p.min(pt);
+        }
+
+        Eigen::Array3i max_b, min_b;
+        min_b[0] = static_cast<int> (std::floor (_min_p[0] * _inverse_grid_size));
+        max_b[0] = static_cast<int> (std::floor (_max_p[0] * _inverse_grid_size));
+        min_b[1] = static_cast<int> (std::floor (_min_p[1] * _inverse_grid_size));
+        max_b[1] = static_cast<int> (std::floor (_max_p[1] * _inverse_grid_size));
+        min_b[2] = static_cast<int> (std::floor (_min_p[2] * _inverse_grid_size));
+        max_b[2] = static_cast<int> (std::floor (_max_p[2] * _inverse_grid_size));
+
+        int dx = max_b[0] - min_b[0] + 1;
+        int dy = max_b[1] - min_b[1] + 1;
+
+        std::unordered_map<size_t, std::vector<size_t>> _map;
+
+        for(size_t i=0; i<cloud->size(); i++){
+            const auto& pt = cloud->points[i];
+            size_t ijk0 = static_cast<size_t> (std::floor (pt.x * _inverse_grid_size) - static_cast<float> (min_b[0]));
+            size_t ijk1 = static_cast<size_t> (std::floor (pt.y * _inverse_grid_size) - static_cast<float> (min_b[1]));
+            size_t ijk2 = static_cast<size_t> (std::floor (pt.z * _inverse_grid_size) - static_cast<float> (min_b[2]));
+
+            size_t idx = ijk0 + ijk1 * dx + ijk2 * dx * dy;
+
+            if(_map.count(idx) == 0){
+                _map.emplace(idx, std::vector<size_t>{i});
+            }else{
+                _map[idx].emplace_back(i);
+            }
+        }
+
+        out->clear();
+        out->reserve(_map.size());
+
+        // for(const auto& [_, vb] : _map){
+        //     // Compute the centroid leaf index
+        //     Eigen::Vector3f p;
+        //     p.setZero();
+
+        //     for(auto&& idx : vb)    p += cloud->points[idx].getVector3fMap();
+        //     p /= vb.size();
+
+        //     PointType pt = cloud->points[vb.front()];
+        //     pt.getVector3fMap() = p;
+        //     out->emplace_back(pt);
+        // }
+
+        for(const auto& [_, vb] : _map){
+            pcl::CentroidPoint<PointType> centroid;
+
+            // fill in the accumulator with leaf points
+            for (auto&& idx : vb)
+                centroid.add(cloud->points[idx]);  
+            
+            PointType pt;
+            centroid.get(pt);
+            out->emplace_back(pt);
         }
     }
 
+    std::string getMaxMin()
+    {
+        std::stringstream ss;
+        ss << "min: " << _min_p.transpose() << " "
+           << "max: " << _max_p.transpose() << std::endl;
+        return ss.str();
+    }
 };
 
 }

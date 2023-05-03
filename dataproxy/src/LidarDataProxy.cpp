@@ -14,7 +14,8 @@ namespace dataproxy
 
 LidarDataProxy::LidarDataProxy(ros::NodeHandle& nh, int size) :
     DataProxy<pc_t>(size),
-    mVisType(VisType::None)
+    mVisType(VisType::None),
+    mAlignedScan(pcl::make_shared<pc_t>())
 {
     auto cfg = config::Params::getInstance();
     std::string lidar_topic = cfg["dataproxy"]["lidar"];
@@ -81,7 +82,8 @@ void LidarDataProxy::setVisAligned(const pc_t::Ptr& pc, const pose_t& pose)
 {
     std::lock_guard<std::mutex> lk(mVisLock);
     mVisType = VisType::Aligned;
-    mAlignedScan = pcp::transformPointCloud<pt_t>(pc, pose.cast<float>());
+    // mAlignedScan = pcp::transformPointCloud<pt_t>(pc, pose.cast<float>());
+    pcl::transformPointCloud(*pc, *mAlignedScan, pose.cast<float>());
     mVisCV.notify_one();
 }
 

@@ -28,8 +28,11 @@ LidarOdometry::LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, RelocDataProxyPt
 {
     auto cfg = config::Params::getInstance();
     auto grid_size = cfg["downSampleVoxelGridSize"].get<float>();
+    // mVoxelGrid.setDownsampleAllData(false);
     mVoxelGrid.setLeafSize(grid_size, grid_size, grid_size);
-    mVoxelDownSampleV2 = pcp::VoxelDownSampleV2(grid_size);
+    
+    // mVoxelDownSampleV2 = pcp::VoxelDownSampleV2(grid_size);
+    mVoxelDownSampleV3 = pcp::VoxelDownSampleV3(grid_size);
 
     mLastPos.setZero();
     mRelocPose.setIdentity();
@@ -110,7 +113,7 @@ void LidarOdometry::generateOdom()
             auto& gbq = gb->getDequeInThreadUnsafeWay();
 
             auto cidx = Frontend::getClosestItem(gbq, stamp);
-            // lg->info("cidx: {}", cidx);
+            lg->info("cidx: {}", cidx);
             
             // here maybe some bug when dt is larger than 0.1
             if(cidx <= 0){
@@ -139,7 +142,7 @@ void LidarOdometry::generateOdom()
 
         // for now, pure LO, scan2map should be considered always success!!
         // lock here
-        mDownSampleScan->points.clear();
+        mDownSampleScan->clear();
         {
             std::lock_guard<std::mutex> lk(mMapManagerPtr->getSubmapLock());
             if(!mMapManagerPtr->getKeyFrameObjPtr()->isSubmapEmpty())
@@ -147,10 +150,11 @@ void LidarOdometry::generateOdom()
                 // downsample
                 // mVoxelGrid.setInputCloud(scan);
                 // mVoxelGrid.filter(*mDownSampleScan);
-                mVoxelDownSampleV2.filter<pt_t>(scan, *mDownSampleScan);
-
+                // mDownSampleScan = mVoxelDownSampleV2.filter<pt_t>(scan);
+                mVoxelDownSampleV3.filter<pt_t>(scan, mDownSampleScan);
                 lg->info("voxel ds cost: {:.3f}s", tt);
-                lg->info("voxel ds size: {}", mDownSampleScan->points.size());
+                lg->info("voxel ds size: {}", mDownSampleScan->size());
+                // lg->info("voxel mm: {}", mVoxelDownSampleV3.getMaxMin());
                 tt.tic();
 
                 const auto& submap = mMapManagerPtr->getSubmap();
@@ -176,11 +180,11 @@ void LidarOdometry::generateOdom()
             }
         }
 
-        // {
-        //     std::stringstream ss;
-        //     ss << init_pose.translation().transpose();
-        //     lg->info("pose: {}", ss.str());
-        // }
+        {
+            std::stringstream ss;
+            ss << init_pose.translation().transpose();
+            lg->info("pose: {}", ss.str());
+        }
 
         // constrain to 2d case
         init_pose = geometry::trans::SixDof2Mobile(init_pose);
