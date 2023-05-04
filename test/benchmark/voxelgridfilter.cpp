@@ -47,7 +47,7 @@ void test_my_vgf(ros::Publisher& pub)
     // pc = vds.filter<pt_t>(sm);
 
     pcp::VoxelDownSampleV3 vds(gs);
-    pc = vds.filter<pt_t>(sm);
+    vds.filter<pt_t>(sm, pc);
 
     lg->info("map pts: {}, ds pts: {}, ds cost: {:.3f}s", sm->size(), pc->size(), tt);
 
@@ -59,7 +59,7 @@ void test_my_vgf(ros::Publisher& pub)
 
 int main(int argc, char** argv)
 {
-    const string pcd_file = "/home/gy/.robot/data/maps/hqc/hqc.pcd";
+    const string pcd_file = "/home/hgy/.robot/data/maps/hqc/hqc.pcd";
     sm = pcl::make_shared<pc_t>();
     pcl::io::loadPCDFile<pt_t>(pcd_file, *sm);
 

@@ -64,9 +64,9 @@ void LidarDataProxy::visPCHandler()
             break;
         }
         case VisType::GlobalMap: {
-            mLg->info("vis is notified, show submap!!");
+            // mLg->info("vis is notified, show submap!!");
             if(mPubGlobal.getNumSubscribers() > 0){
-                mLg->info("get rviz sub, show submap!!");
+                // mLg->info("get rviz sub, show submap!!");
                 mGlobalMap.header.frame_id = "map";
                 mPubGlobal.publish(mGlobalMap);           
             }
@@ -82,8 +82,8 @@ void LidarDataProxy::setVisAligned(const pc_t::Ptr& pc, const pose_t& pose)
 {
     std::lock_guard<std::mutex> lk(mVisLock);
     mVisType = VisType::Aligned;
-    // mAlignedScan = pcp::transformPointCloud<pt_t>(pc, pose.cast<float>());
-    pcl::transformPointCloud(*pc, *mAlignedScan, pose.cast<float>());
+    pcp::transformPointCloud<pt_t>(pc, *mAlignedScan, pose.cast<float>());
+    // pcl::transformPointCloud(*pc, *mAlignedScan, pose.cast<float>());
     mVisCV.notify_one();
 }
 
@@ -93,7 +93,7 @@ void LidarDataProxy::setVisGlobalMap(const pc_t::ConstPtr& g)
     mVisType = VisType::GlobalMap;
     pcl::toROSMsg(*g, mGlobalMap);
     mVisCV.notify_one();    
-    mLg->info("info vis to show submap!!");
+    // mLg->info("info vis to show submap!!");
 }
 
 LidarDataProxy::~LidarDataProxy()

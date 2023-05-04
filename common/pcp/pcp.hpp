@@ -27,10 +27,8 @@ void removeNaNFromPointCloud(PC<PointType> &cloud)
 }
 
 template<typename PointType, typename Scalar=float>
-typename PC<PointType>::Ptr transformPointCloud(typename PC<PointType>::Ptr cloudIn, Pose6<Scalar> trans)
+void transformPointCloud(const typename PC<PointType>::ConstPtr cloudIn, PC<PointType>& cloudOut, Pose6<Scalar> trans)
 {
-    typename PC<PointType>::Ptr cloudOut(new PC<PointType>());
-
     Pose6<float> tr;
     if constexpr (std::is_same_v<Scalar, float>){
         tr = trans;
@@ -38,20 +36,21 @@ typename PC<PointType>::Ptr transformPointCloud(typename PC<PointType>::Ptr clou
         tr = trans.template cast<float>();
     }
 
-    auto cloudSize = cloudIn->size();
-    cloudOut->resize(cloudSize);
+    cloudOut.header = cloudIn->header;
 
-#pragma omp parallel for num_threads(2)
+    auto cloudSize = cloudIn->size();
+    cloudOut.resize(cloudSize);
+
+    #pragma omp parallel for num_threads(2)
     for (int i = 0; i < cloudSize; ++i)
     {
-        Eigen::Map<Eigen::Vector4f, Eigen::Aligned> pfrom = cloudIn->points[i].getVector4fMap();
-        Eigen::Map<Eigen::Vector4f, Eigen::Aligned> pto = cloudOut->points[i].getVector4fMap();
+        pcl::Vector3fMapConst pfrom = cloudIn->points[i].getVector3fMap();
+        pcl::Vector3fMap pto = cloudOut.points[i].getVector3fMap();
         pto.noalias() = tr * pfrom;
         if constexpr (std::is_same_v<PointType, Pxyzi>){
-            cloudOut->points[i].intensity = cloudIn->points[i].intensity;
+            cloudOut.points[i].intensity = cloudIn->points[i].intensity;
         }
     }
-    return cloudOut;
 }
 
 // assume it wont throw exception
@@ -67,7 +66,7 @@ void loadPCDFile(const std::string& file, typename PC<PointType>::Ptr& cloud)
     pcl::io::loadPCDFile<PointType>(file, *cloud);
 }
 
-// adaptor from https://github.com/PRBonn/kiss-icp/blob/main/cpp/kiss_icp/core/VoxelHashMap.hpp
+// adapt from https://github.com/PRBonn/kiss-icp/blob/main/cpp/kiss_icp/core/VoxelHashMap.hpp
 class VoxelDownSampleV2
 {
 protected:
@@ -167,6 +166,10 @@ public:
     {
         if(cloud->empty())  return;
 
+        out->header = cloud->header;
+        out->sensor_origin_ = cloud->sensor_origin_;
+        out->sensor_orientation_ = cloud->sensor_orientation_;
+
         _max_p = cloud->points[0].getArray3fMap();
         _min_p = _max_p;
 
@@ -204,9 +207,15 @@ public:
                 _map[idx].emplace_back(i);
             }
         }
+        
+        PC<PointType>& out_ = *out;
+        PC<PointType> out_tmp;
 
-        out->clear();
-        out->reserve(_map.size());
+        if(cloud.get() == out.get())
+            out_ = out_tmp;
+
+        out_.clear();
+        out_.reserve(_map.size());
 
         // for(const auto& [_, vb] : _map){
         //     // Compute the centroid leaf index
@@ -230,8 +239,10 @@ public:
             
             PointType pt;
             centroid.get(pt);
-            out->emplace_back(pt);
+            out_.emplace_back(pt);
         }
+
+        if(cloud.get() == out.get())    pcl::copyPointCloud(out_tmp, *out);
     }
 
     std::string getMaxMin()

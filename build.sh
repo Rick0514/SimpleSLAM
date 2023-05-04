@@ -1,15 +1,22 @@
 #! /bin/bash
 
-usebag=false
 usebag_flag=""
 
-if [[ $# == 1 && $1 = "rosbag" ]]; then
+cmd="$@"
+
+if echo $cmd | grep -q "rosbag"; then
     echo "build as usebag mode..."
-    usebag=true
+    usebag_flag="-DUSE_BAG=ON"
 fi
 
-if [ "$usebag" = true ]; then
-    usebag_flag="-DUSE_BAG=ON"
+if echo $cmd | grep -q "rebuild"; then
+    if [ -d "./build" ]; then
+        echo "remove build dir first"
+        rm -rf build
+    else
+        echo "build dir is not exist, no need to remove"
+    fi 
+    echo "rebuild all target..."
 fi
 
 echo "exec cmake -B build $usebag_flag"

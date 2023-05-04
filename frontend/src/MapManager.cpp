@@ -81,11 +81,12 @@ MapManager::MapManager(std::string pcd_file)
 
     common::time::tictoc tt;
     pcp::voxelDownSample<pt_t>(mSubmap, mGridSize);
-    // pcp::VoxelDownSampleV2 vds(mGridSize);
-    // mSubmap = vds.filter<pt_t>(mSubmap);
+    // pcp::VoxelDownSampleV3 vds(mGridSize);
+    // vds.filter<pt_t>(mSubmap, mSubmap);
 
     lg->info("submap ds cost: {:.3f}", tt);
     lg->info("submap size: {}", mSubmap->size());
+    // lg->info("submap mm: {}", vds.getMaxMin());
 }
 
 void MapManager::setCurPose(const pose_t &p)
@@ -144,29 +145,33 @@ void MapManager::updateMap()
     }
 
     lg->info("update map...");
-    // it is said that nano-kdtree is thread-safe
-    auto& keyframes = mKFObjPtr->keyframes;
 
+    auto& keyframes = mKFObjPtr->keyframes;
     if(keyframes.empty()){
         lg->warn("no any keyframes to update!!");
         return;
     }
 
     std::vector<index_t> k_indices;
-    std::vector<scalar_t> k_sqr_distances;
+    std::vector<scalar_t> k_sqr_distances;    
+    
+    std::unique_lock<std::mutex> kf_lock(mKFObjPtr->mLockKF);
     nanoflann::KeyFramesKdtree<kfs_t, scalar_t, 3> kf_kdtree(keyframes);
     kf_kdtree.radiusSearch(mCurPose.load().translation(), mSurroundingKeyframeSearchRadius, k_indices, k_sqr_distances);
 
     lk.lock();
-    std::lock_guard<std::mutex> kf_lock(mKFObjPtr->mLockKF);
-
     mKFObjPtr->mSubmapIdx.clear();
     mSubmap->clear();
     for(auto i : k_indices){
         const auto& src = keyframes[i].pc;
-        *mSubmap += *pcp::transformPointCloud<pt_t, scalar_t>(src, keyframes[i].pose);
+        pc_t pc;
+        pcp::transformPointCloud<pt_t, scalar_t>(src, pc, keyframes[i].pose);
+        *mSubmap += pc;
         mKFObjPtr->mSubmapIdx.insert(i);
     }
+    
+    kf_lock.unlock();
+
     pcp::voxelDownSample<pt_t>(mSubmap, mGridSize);
 
     lg->info("kf size: {}", keyframes.size());

@@ -32,7 +32,7 @@ LidarOdometry::LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, RelocDataProxyPt
     mVoxelGrid.setLeafSize(grid_size, grid_size, grid_size);
     
     // mVoxelDownSampleV2 = pcp::VoxelDownSampleV2(grid_size);
-    mVoxelDownSampleV3 = pcp::VoxelDownSampleV3(grid_size);
+    // mVoxelDownSampleV3 = pcp::VoxelDownSampleV3(grid_size);
 
     mLastPos.setZero();
     mRelocPose.setIdentity();
@@ -143,42 +143,42 @@ void LidarOdometry::generateOdom()
         // for now, pure LO, scan2map should be considered always success!!
         // lock here
         mDownSampleScan->clear();
+        if(!mMapManagerPtr->getKeyFrameObjPtr()->isSubmapEmpty())
         {
-            std::lock_guard<std::mutex> lk(mMapManagerPtr->getSubmapLock());
-            if(!mMapManagerPtr->getKeyFrameObjPtr()->isSubmapEmpty())
-            {
-                // downsample
-                // mVoxelGrid.setInputCloud(scan);
-                // mVoxelGrid.filter(*mDownSampleScan);
-                // mDownSampleScan = mVoxelDownSampleV2.filter<pt_t>(scan);
-                mVoxelDownSampleV3.filter<pt_t>(scan, mDownSampleScan);
-                lg->info("voxel ds cost: {:.3f}s", tt);
-                lg->info("voxel ds size: {}", mDownSampleScan->size());
-                // lg->info("voxel mm: {}", mVoxelDownSampleV3.getMaxMin());
-                tt.tic();
+            // downsample
+            mVoxelGrid.setInputCloud(scan);
+            mVoxelGrid.filter(*mDownSampleScan);
+            // mDownSampleScan = mVoxelDownSampleV2.filter<pt_t>(scan);
+            // mVoxelDownSampleV3.filter<pt_t>(scan, mDownSampleScan);
+            // lg->info("voxel ds cost: {:.3f}s", tt);
+            // lg->info("voxel ds size: {}", mDownSampleScan->size());
+            // lg->info("voxel mm: {}", mVoxelDownSampleV3.getMaxMin());
+            tt.tic();
 
-                const auto& submap = mMapManagerPtr->getSubmap();
-                // lg->info("scan pts: {}, submap pts: {}", scan->points.size(), submap->points.size());
-                pose_t beform_optim_pose = init_pose;
-                if(!mPcr->scan2Map(mDownSampleScan, submap, init_pose)){
-                    lg->warn("pcr not converge!!");
-                #ifdef DEBUG_PC
-                    pcl::io::savePCDFileBinary(fmt::format("{}/submap.pcd", DEBUG_PC), *submap);
-                    pcl::io::savePCDFileBinary(fmt::format("{}/scan.pcd", DEBUG_PC), *scan);
-                    Eigen::IOFormat iof(8);
-                    std::stringstream ss;
-                    ss << beform_optim_pose.matrix().format(iof);
-                    lg->warn("before optim: \n{}", ss.str());
-                    ss.str("");
-                    ss.clear();
-                    ss << init_pose.matrix().format(iof);
-                    lg->warn("after optim: \n{}", ss.str());
-                    throw std::runtime_error("pcr not converge abort!!");
-                #endif
-                }   
-                lg->info("scan2map cost: {:.3f}s", tt);
-            }
+            // try to get one lock at a time!!!
+            std::lock_guard<std::mutex> lk(mMapManagerPtr->getSubmapLock());
+            const auto& submap = mMapManagerPtr->getSubmap();
+            // lg->info("scan pts: {}, submap pts: {}", scan->points.size(), submap->points.size());
+            pose_t beform_optim_pose = init_pose;
+            if(!mPcr->scan2Map(mDownSampleScan, submap, init_pose)){
+                lg->warn("pcr not converge!!");
+            #ifdef DEBUG_PC
+                pcl::io::savePCDFileBinary(fmt::format("{}/submap.pcd", DEBUG_PC), *submap);
+                pcl::io::savePCDFileBinary(fmt::format("{}/scan.pcd", DEBUG_PC), *scan);
+                Eigen::IOFormat iof(8);
+                std::stringstream ss;
+                ss << beform_optim_pose.matrix().format(iof);
+                lg->warn("before optim: \n{}", ss.str());
+                ss.str("");
+                ss.clear();
+                ss << init_pose.matrix().format(iof);
+                lg->warn("after optim: \n{}", ss.str());
+                throw std::runtime_error("pcr not converge abort!!");
+            #endif
+            }   
+            lg->info("scan2map cost: {:.3f}s", tt);
         }
+    
 
         {
             std::stringstream ss;
