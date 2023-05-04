@@ -150,7 +150,7 @@ void LidarOdometry::generateOdom()
             mVoxelGrid.filter(*mDownSampleScan);
             // mDownSampleScan = mVoxelDownSampleV2.filter<pt_t>(scan);
             // mVoxelDownSampleV3.filter<pt_t>(scan, mDownSampleScan);
-            // lg->info("voxel ds cost: {:.3f}s", tt);
+            lg->info("voxel ds cost: {:.3f}s", tt);
             // lg->info("voxel ds size: {}", mDownSampleScan->size());
             // lg->info("voxel mm: {}", mVoxelDownSampleV3.getMaxMin());
             tt.tic();

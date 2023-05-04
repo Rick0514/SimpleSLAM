@@ -26,7 +26,7 @@ struct constant
     static constexpr bool usebag = false;
 #endif
 
-    static constexpr int numCores{6};
+    static constexpr int numCores{2};
 };
 
 struct KeyFrame
