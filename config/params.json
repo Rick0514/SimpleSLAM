@@ -5,13 +5,12 @@
     // use ndt maybe no need to downsample, or sample rate should be small
     "downSampleVoxelGridSize": 0.5, 
 
-    // "pcd_file": "/home/hgy/.robot/data/maps/hqc/hqc.pcd",
+    "pcd_file": "/home/hgy/.robot/data/maps/hqc/hqc.pcd",
     
-    "pcd_file": "/home/gy/Downloads/data/hqc.pcd",
     // "saveMapDir" : "/home/rick/pcr/test/data/map",
     "saveMapDir" : "/home/hgy/hgy/PCR/test/data/map",
-    // "rosbag": "/home/hgy/sda2/rosbag/zhengzhou0711.orig.bag",
-    "rosbag": "/home/rick/jtcx/hgy_gitee/minimal_ws/bag/zhengzhou0711.orig.bag",
+    "rosbag": "/home/hgy/sda2/rosbag/zhengzhou0711.orig.bag",
+    // "rosbag": "/home/rick/jtcx/hgy_gitee/minimal_ws/bag/zhengzhou0711.orig.bag",
 
     "dataproxy": {
         "lidar": "/lidar_points",

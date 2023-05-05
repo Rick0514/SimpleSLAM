@@ -12,13 +12,26 @@ set(HEADERS
 	src/pclomp/gicp_omp.h
 	src/pclomp/ndt_omp.h
 	src/pclomp/voxel_grid_covariance_omp.h
+
+	# fast vgicp
+	src/pclomp/gicp_setting.hpp
+	src/pclomp/lsq_registration.hpp
+	src/pclomp/fast_gicp.hpp
+	src/pclomp/fast_vgicp_voxel.hpp
+	src/pclomp/fast_vgicp.hpp
 )
 
 add_library(registration SHARED
-src/voxel_grid_covariance_omp.cpp
-src/ndt_omp.cpp
-src/gicp_omp.cpp
+	src/voxel_grid_covariance_omp.cpp
+	src/ndt_omp.cpp
+	src/gicp_omp.cpp
+
+	# fast vgicp
+	src/lsq_registration.cpp
+	src/fast_gicp.cpp
+	src/fast_vgicp.cpp
 )
+
 add_library(pclomp::registration ALIAS registration)
 
 set_target_properties(registration PROPERTIES
