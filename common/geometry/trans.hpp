@@ -7,6 +7,18 @@ namespace trans {
 
 using namespace EigenTypes;
 
+template <typename T>
+inline T rad2deg(T rad)
+{
+    return rad * 180.0 / M_PI;
+}
+
+template <typename T>
+inline T deg2rad(T deg)
+{
+    return deg * M_PI / 180.0;
+}
+
 // below are rotate by static axis implementation!!
 template<typename Scalar>
 inline V3<Scalar> q2ypr(const Eigen::Quaternion<Scalar>& q)

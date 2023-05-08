@@ -172,6 +172,11 @@ void Backend::addOdomFactor()
     }
 }
 
+void Backend::addLoopFactor()
+{
+    
+}
+
 void Backend::optimHandler()
 {
     std::unique_lock<std::mutex> lk(mKFObjPtr->mLockKF);
@@ -191,7 +196,7 @@ void Backend::optimHandler()
 
     lk.unlock();    // ------------------------------------
 
-    //  maybe time comsuming
+    //  maybe time consuming
     isam2->update(factorGraph, initialEstimate);
     isam2->update();
 
