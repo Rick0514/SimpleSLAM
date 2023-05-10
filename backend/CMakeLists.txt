@@ -5,8 +5,10 @@ find_package(GTSAM REQUIRED)
 
 set(NANOFLANN ../third_parties/nanoflann/include)
 
-file(GLOB_RECURSE srcs CONFIGURE_DEPENDS src/*.cpp include/${PROJECT_NAME}/*.hpp)
-add_library(${PROJECT_NAME} SHARED ${srcs})
+add_library(${PROJECT_NAME} SHARED
+    include/backend/Backend.hpp
+    src/Backend.cpp
+)
 
 target_include_directories(${PROJECT_NAME} PUBLIC
     include

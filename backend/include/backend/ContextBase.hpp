@@ -11,7 +11,7 @@ protected:
 
 public:
 
-    virtual void makeContext(const SourceType& input) = 0;
+    virtual ContextType makeContext(const SourceType& input) = 0;
     virtual double computeSimularity(size_t from, size_t to) = 0;
     virtual double computeSimularity(const ContextType& from, const ContextType& to) = 0;
 

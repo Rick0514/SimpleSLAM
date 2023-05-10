@@ -5,7 +5,7 @@
     // use ndt maybe no need to downsample, or sample rate should be small
     "downSampleVoxelGridSize": 0.5, 
 
-    "pcd_file": "/home/hgy/.robot/data/maps/hqc/hqc.pcd",
+    "pcd_file": "/home/gy/.robot/data/maps/hqc/hqc.pcd",
     
     // "saveMapDir" : "/home/rick/pcr/test/data/map",
     "saveMapDir" : "/home/hgy/hgy/PCR/test/data/map",

@@ -46,72 +46,48 @@
   *  \tparam Distance The distance metric to use: nanoflann::metric_L1, nanoflann::metric_L2, nanoflann::metric_L2_Simple, etc.
   *  \tparam IndexType The type for indices in the KD-tree index (typically, size_t of int)
   */
-template <class VectorOfVectorsType, typename num_t = double, int DIM = -1, class Distance = nanoflann::metric_L2, typename IndexType = size_t>
-struct KDTreeVectorOfVectorsAdaptor
+namespace nanoflann {
+
+template <class VectorOfVectorsType, typename num_t, int DIM, class Distance = nanoflann::metric_L2, typename IndexType = size_t>
+class VectorOfVectorsKdTree
 {
-	typedef KDTreeVectorOfVectorsAdaptor<VectorOfVectorsType,num_t,DIM,Distance> self_t;
-	typedef typename Distance::template traits<num_t,self_t>::distance_t metric_t;
-	typedef nanoflann::KDTreeSingleIndexAdaptor< metric_t,self_t,DIM,IndexType>  index_t;
+protected:
 
-	index_t* index; //! The kd-tree index for the user to call its methods as usual with any other FLANN index.
+    struct VectorOfVectorsAdaptor
+    {
+        const VectorOfVectorsAdaptor& derived() const { return *this; }
+	    VectorOfVectorsAdaptor& derived() { return *this; }
+        // Must return the number of data points
+        inline IndexType kdtree_get_point_count() const { return m_data.size(); }
+        // Returns the dim'th component of the idx'th point in the class:
+        inline num_t kdtree_get_pt(const IndexType idx, int dim) const { return m_data[idx][dim]; }
+    	template <class BBOX> bool kdtree_get_bbox(BBOX & /*bb*/) const { return false; }
 
-	/// Constructor: takes a const ref to the vector of vectors object with the data points
-	KDTreeVectorOfVectorsAdaptor(const size_t /* dimensionality */, const VectorOfVectorsType &mat, const int leaf_max_size = 10) : m_data(mat)
-	{
-		assert(mat.size() != 0 && mat[0].size() != 0);
-		const size_t dims = mat[0].size();
-		if (DIM>0 && static_cast<int>(dims) != DIM)
-			throw std::runtime_error("Data set dimensionality does not match the 'DIM' template argument");
-		index = new index_t( static_cast<int>(dims), *this /* adaptor */, nanoflann::KDTreeSingleIndexAdaptorParams(leaf_max_size ) );
-		index->buildIndex();
-	}
+        const VectorOfVectorsType &m_data;
+    }_adaptor;
 
-	~KDTreeVectorOfVectorsAdaptor() {
-		delete index;
-	}
+    typedef VectorOfVectorsAdaptor self_t;
+	typedef typename Distance::template traits<num_t, self_t>::distance_t metric_t;
+	typedef KDTreeSingleIndexAdaptor<metric_t, self_t, DIM, IndexType> kdtree_t;
 
-	const VectorOfVectorsType &m_data;
+    kdtree_t _kdtree;
 
-	/** Query for the \a num_closest closest points to a given point (entered as query_point[0:dim-1]).
-	  *  Note that this is a short-cut method for index->findNeighbors().
-	  *  The user can also call index->... methods as desired.
-	  * \note nChecks_IGNORED is ignored but kept for compatibility with the original FLANN interface.
-	  */
-	inline void query(const num_t *query_point, const size_t num_closest, IndexType *out_indices, num_t *out_distances_sq, const int nChecks_IGNORED = 10) const
-	{
-		nanoflann::KNNResultSet<num_t,IndexType> resultSet(num_closest);
-		resultSet.init(out_indices, out_distances_sq);
-		index->findNeighbors(resultSet, query_point, nanoflann::SearchParams());
-	}
+public:
 
-	/** @name Interface expected by KDTreeSingleIndexAdaptor
-	  * @{ */
+    VectorOfVectorsKdTree() : _kdtree(DIM, _adaptor) {}
 
-	const self_t & derived() const {
-		return *this;
-	}
-	self_t & derived()       {
-		return *this;
-	}
+    void setInput(const VectorOfVectorsType& data){
+        _adaptor.m_data = data;
+        _kdtree.buildIndex();
+    }
 
-	// Must return the number of data points
-	inline size_t kdtree_get_point_count() const {
-		return m_data.size();
-	}
-
-	// Returns the dim'th component of the idx'th point in the class:
-	inline num_t kdtree_get_pt(const size_t idx, const size_t dim) const {
-		return m_data[idx][dim];
-	}
-
-	// Optional bounding-box computation: return false to default to a standard bbox computation loop.
-	//   Return true if the BBOX was already computed by the class and returned in "bb" so it can be avoided to redo it again.
-	//   Look at bb.size() to find out the expected dimensionality (e.g. 2 or 3 for point clouds)
-	template <class BBOX>
-	bool kdtree_get_bbox(BBOX & /*bb*/) const {
-		return false;
-	}
-
-	/** @} */
+    size_t nearestKSearch(num_t* point, int k, std::vector<size_t> &k_indices,
+        std::vector<num_t> &k_sqr_distances) const
+    {
+        return _kdtree.knnSearch(point, k, k_indices.data(), k_sqr_distances.data());
+    }
 
 }; // end of KDTreeVectorOfVectorsAdaptor
+
+}
+

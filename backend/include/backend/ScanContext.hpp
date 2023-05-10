@@ -11,16 +11,19 @@ namespace backend {
 class ScanContext : public ContextBase<pc_t, Eigen::MatrixXd>
 {
 
+private:
+    static constexpr int PC_NUM_RING = 20;      // 20 in the original paper (IROS 18)
+
 public:
     using SourceType = pc_t;
     using Context = Eigen::MatrixXd;
     using KeyMat = std::vector<std::vector<double>>;
-    using InvKeyTree = KDTreeVectorOfVectorsAdaptor<KeyMat, double>;
+    using InvKeyTree = nanoflann::VectorOfVectorsKdTree<KeyMat, double, PC_NUM_RING>;
 
 protected:
     const float LIDAR_HEIGHT = 2.0;    // lidar height : add this for simply directly using lidar scan in the lidar local coord (not robot base coord) / if you use robot-coord-transformed lidar scans, just set this as 0.
 
-    const int PC_NUM_RING = 20;      // 20 in the original paper (IROS 18)
+    
     const int PC_NUM_SECTOR = 60;    // 60 in the original paper (IROS 18)
     const float PC_MAX_RADIUS = 80.0f;  // 80 meter max in the original paper (IROS 18)
     const float PC_UNIT_SECTORANGLE = 360.0f / float(PC_NUM_SECTOR);
@@ -40,27 +43,25 @@ protected:
     int          tree_making_period_conter = 0;
 
     // data 
-    std::vector<double> polarcontexts_timestamp_; // optional.
-    std::vector<Eigen::MatrixXd> polarcontexts_;
-    std::vector<Eigen::MatrixXd> polarcontext_invkeys_;
-    std::vector<Eigen::MatrixXd> polarcontext_vkeys_;
+    std::vector<Context> polarcontexts_;
+    std::vector<Context> polarcontext_invkeys_;
+    std::vector<Context> polarcontext_vkeys_;
 
     KeyMat polarcontext_invkeys_mat_;
     KeyMat polarcontext_invkeys_to_search_;
     std::unique_ptr<InvKeyTree> polarcontext_tree_;
 
     // ------------- func -------------
-    static float xy2theta( const float & _x, const float & _y );
-    static Context circshift( Context &_mat, int _num_shift );
-    static std::vector<double> eig2stdvec(const Context& _eigmat );
+    static float xy2theta(const float & _x, const float & _y);
+    static Context circshift(const Context &_mat, int _num_shift);
+    static std::vector<double> eig2stdvec(const Context& _eigmat);
 
-    int fastAlignUsingVkey ( Context & _vkey1, Context & _vkey2 ); 
-    std::pair<double, int> distanceBtnScanContext ( Context &_sc1, Context &_sc2 ); // "D" (eq 6) in the original paper (IROS 18)
+    int fastAlignUsingVkey(Context & _vkey1, Context & _vkey2); 
+    std::pair<double, int> distanceBtnScanContext (const Context &_sc1, const Context &_sc2); // "D" (eq 6) in the original paper (IROS 18)
     int fastAlignUsingVkey(const Context& _vkey1, const Context& _vkey2);
 
     Context makeRingkeyFromScancontext(const Context& _desc);
     Context makeSectorkeyFromScancontext(const Context& _desc);
-
 
 public:
 

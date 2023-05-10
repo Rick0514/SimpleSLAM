@@ -24,7 +24,7 @@ namespace backend
 
 using namespace utils;
 
-class LoopManager;
+// class LoopManager;
 
 class Backend
 {
@@ -34,7 +34,7 @@ private:
     using KFObjPtr = std::shared_ptr<frontend::KeyFramesObj>;
     using MapManagerPtr = std::shared_ptr<frontend::MapManager>;
     using FrontendPtr = std::shared_ptr<frontend::Frontend>;
-    using LoopManagerPtr = std::unique_ptr<LoopManager>;
+    // using LoopManagerPtr = std::unique_ptr<LoopManager>;
 
     std::shared_ptr<logger::Logger> lg;
 
@@ -43,7 +43,7 @@ private:
     MapManagerPtr mMapManagerPtr;
     KFObjPtr mKFObjPtr;
 
-    LoopManagerPtr mLoopManagerPtr;
+    // LoopManagerPtr mLoopManagerPtr;
 
     // factor graph
     gtsam::noiseModel::Diagonal::shared_ptr gtPriorNoise;

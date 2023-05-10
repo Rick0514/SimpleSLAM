@@ -23,14 +23,14 @@ float ScanContext::xy2theta( const float & _x, const float & _y )
         return 360 - trans::rad2deg((180/M_PI) * atan((-_y) / _x));
 } // xy2theta
 
-Context ScanContext::circshift(Context &_mat, int _num_shift)
+Context ScanContext::circshift(const Context &_mat, int _num_shift)
 {
     // shift columns to right direction 
     assert(_num_shift >= 0);
 
     if( _num_shift == 0 )
     {
-        Context shifted_mat( _mat );
+        Context shifted_mat(_mat);
         return shifted_mat; // Early return 
     }
 
@@ -117,7 +117,7 @@ std::pair<double, int> ScanContext::distanceBtnScanContext(const Context& _sc1, 
     for ( int num_shift: shift_idx_search_space )
     {
         Context sc2_shifted = circshift(_sc2, num_shift);
-        double cur_sc_dist = distDirectSC( _sc1, sc2_shifted );
+        double cur_sc_dist = computeSimularity(_sc1, sc2_shifted);
         if( cur_sc_dist < min_sc_dist )
         {
             argmin_shift = num_shift;
@@ -125,8 +125,7 @@ std::pair<double, int> ScanContext::distanceBtnScanContext(const Context& _sc1, 
         }
     }
 
-    return make_pair(min_sc_dist, argmin_shift);
-
+    return std::make_pair(min_sc_dist, argmin_shift);
 } // distanceBtnScanContext
 
 Context ScanContext::makeContext(const pc_t& _scan_down)
