@@ -18,19 +18,41 @@ using kfs_t = std::deque<kf_t>;
 
 struct KeyFramesObj
 {
+    enum class Event{
+        None,
+        NewKFCome,
+        LC
+    };
+
     int mKFNums;
     kfs_t keyframes;
     std::mutex mLockKF;
     std::condition_variable mKFcv;
     std::set<index_t> mSubmapIdx;
     std::vector<index_t> mClosestKfIdx;
+    Event mKFEvent;
 
-    KeyFramesObj() : mKFNums(0) {}
+    KeyFramesObj() : mKFNums(0), mKFEvent(Event::None) {}
 
     bool isSubmapEmpty() {
         std::lock_guard<std::mutex> lk(mLockKF);
         return mSubmapIdx.empty();
     }
+
+    // should be locked in advance
+    void newKFIsComing() {
+        mKFEvent = Event::NewKFCome;
+        mKFcv.notify_one();
+    }
+
+    void LCIsHappening() {
+        mKFEvent = Event::LC;
+        mKFcv.notify_one();
+    }
+
+    bool isEventComing() { return mKFEvent != Event::None; }
+    Event getEvent() { return mKFEvent; }
+    bool resetEvent() { mKFEvent = Event::None; }
 };
 
 class MapManager

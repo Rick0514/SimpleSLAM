@@ -113,7 +113,7 @@ void MapManager::putKeyFrame(const KeyFrame& kf)
         lg->warn("no any keyframes, start mapping at the very first time!!");
         std::lock_guard<std::mutex> lk(mKFObjPtr->mLockKF);
         keyframes.emplace_back(std::move(kf));
-        mKFObjPtr->mKFcv.notify_one();
+        mKFObjPtr->newKFIsComing();
         return;
     }
 
@@ -127,7 +127,7 @@ void MapManager::putKeyFrame(const KeyFrame& kf)
         std::lock_guard<std::mutex> lk(mKFObjPtr->mLockKF);
         keyframes.emplace_back(std::move(kf));
         mKFObjPtr->mClosestKfIdx.emplace_back(k_indices[0]);
-        mKFObjPtr->mKFcv.notify_one();
+        mKFObjPtr->newKFIsComing();
     }
 }
 

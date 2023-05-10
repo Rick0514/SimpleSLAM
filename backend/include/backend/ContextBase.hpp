@@ -1,23 +1,29 @@
 #pragma once
-#include <vector>
+#include <types/basic.hpp>
 
 namespace backend {
 
-template <typename SourceType, typename ContextType>
+namespace context {
+
+using SourceType = pc_t;
+using Context = Eigen::MatrixXd;
+using QueryResult = std::pair<int, float>;
+
 class ContextBase
 {
-protected:
-    std::vector<ContextType> mContextStorage; 
-
 public:
 
-    virtual ContextType makeContext(const SourceType& input) = 0;
-    virtual double computeSimularity(size_t from, size_t to) = 0;
-    virtual double computeSimularity(const ContextType& from, const ContextType& to) = 0;
+    virtual void addContext(const SourceType& input) = 0;
+    virtual QueryResult query(int id);
+
+    // virtual double computeSimularity(size_t from, size_t to) = 0;
+    virtual double computeSimularity(const Context& from, const Context& to) = 0;
 
     virtual void saveContext(){};
     virtual void loadContext(){};
     
 };
+
+}
 
 }

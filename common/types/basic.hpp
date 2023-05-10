@@ -10,6 +10,7 @@
 
 // provide basic types for the whole project !!
 
+#define scpr_t static constexpr
 using index_t = size_t;
 using stamp_t = double;
 using scalar_t = double;

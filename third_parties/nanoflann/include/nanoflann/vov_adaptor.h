@@ -33,7 +33,6 @@
 #include <vector>
 
 // ===== This example shows how to use nanoflann with these types of containers: =======
-//typedef std::vector<std::vector<double> > my_vector_of_vectors_t;
 //typedef std::vector<Eigen::VectorXd> my_vector_of_vectors_t;   // This requires #include <Eigen/Dense>
 // =====================================================================================
 
@@ -60,7 +59,7 @@ protected:
         // Must return the number of data points
         inline IndexType kdtree_get_point_count() const { return m_data.size(); }
         // Returns the dim'th component of the idx'th point in the class:
-        inline num_t kdtree_get_pt(const IndexType idx, int dim) const { return m_data[idx][dim]; }
+        inline num_t kdtree_get_pt(const IndexType idx, int dim) const { return m_data[idx](dim); }
     	template <class BBOX> bool kdtree_get_bbox(BBOX & /*bb*/) const { return false; }
 
         const VectorOfVectorsType &m_data;
@@ -81,7 +80,7 @@ public:
         _kdtree.buildIndex();
     }
 
-    size_t nearestKSearch(num_t* point, int k, std::vector<size_t> &k_indices,
+    size_t nearestKSearch(const num_t* point, int k, std::vector<size_t> &k_indices,
         std::vector<num_t> &k_sqr_distances) const
     {
         return _kdtree.knnSearch(point, k, k_indices.data(), k_sqr_distances.data());

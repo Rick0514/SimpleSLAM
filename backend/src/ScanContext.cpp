@@ -5,13 +5,17 @@
 
 namespace backend {
 
+namespace context {
+
 using namespace geometry;
-using Context = ScanContext::Context;
+using VContext = ScanContext::VContext;
+
+ScanContext::ScanContext() {}
 
 float ScanContext::xy2theta( const float & _x, const float & _y )
 {
     if(_x >= 0 && _y >= 0) 
-        return  trans::rad2deg(atan(_y / _x));
+        return trans::rad2deg(atan(_y / _x));
 
     if(_x < 0 && _y >= 0) 
         return 180.0f - trans::rad2deg(atan(_y / (-_x)));
@@ -44,11 +48,16 @@ Context ScanContext::circshift(const Context &_mat, int _num_shift)
     return shifted_mat;
 } // circshift
 
-std::vector<double> ScanContext::eig2stdvec(const Context& _eigmat)
+void ScanContext::addContext(const SourceType &input)
 {
-    std::vector<double> vec( _eigmat.data(), _eigmat.data() + _eigmat.size() );
-    return vec;
-} // eig2stdvec
+    Context sc = makeScanContext(input); // v1 
+    VContext ringct = makeRingkeyFromScancontext( sc );
+    VContext sectorct = makeSectorkeyFromScancontext( sc );
+
+    polarcontexts_.push_back(sc);
+    ringcontexts_.push_back(ringct);
+    sectorcontexts_.push_back(sectorct); 
+}
 
 double ScanContext::computeSimularity(const Context& _sc1, const Context& _sc2)
 {
@@ -128,7 +137,7 @@ std::pair<double, int> ScanContext::distanceBtnScanContext(const Context& _sc1, 
     return std::make_pair(min_sc_dist, argmin_shift);
 } // distanceBtnScanContext
 
-Context ScanContext::makeContext(const pc_t& _scan_down)
+Context ScanContext::makeScanContext(const pc_t& _scan_down)
 {
     // TicToc t_making_desc;
 
@@ -174,37 +183,82 @@ Context ScanContext::makeContext(const pc_t& _scan_down)
     return desc;
 } // SCManager::makeScancontext
 
-Context ScanContext::makeRingkeyFromScancontext(const Context& _desc)
+VContext ScanContext::makeRingkeyFromScancontext(const Context& _desc)
 {
     /* 
      * summary: rowwise mean vector
     */
-    Context invariant_key(_desc.rows(), 1);
+    VContext invariant_key(_desc.rows());
     for ( int row_idx = 0; row_idx < _desc.rows(); row_idx++ )
     {
-        Context curr_row = _desc.row(row_idx);
-        invariant_key(row_idx, 0) = curr_row.mean();
+        VContext curr_row = _desc.row(row_idx);
+        invariant_key(row_idx) = curr_row.mean();
     }
 
     return invariant_key;
 } // SCManager::makeRingkeyFromScancontext
 
 
-Context ScanContext::makeSectorkeyFromScancontext(const Context& _desc)
+VContext ScanContext::makeSectorkeyFromScancontext(const Context& _desc)
 {
     /* 
      * summary: columnwise mean vector
     */
-    Eigen::MatrixXd variant_key(1, _desc.cols());
-    for ( int col_idx = 0; col_idx < _desc.cols(); col_idx++ )
+    VContext variant_key(_desc.cols());
+    for (int col_idx = 0; col_idx < _desc.cols(); col_idx++)
     {
-        Eigen::MatrixXd curr_col = _desc.col(col_idx);
-        variant_key(0, col_idx) = curr_col.mean();
+        VContext curr_col = _desc.col(col_idx);
+        variant_key(col_idx) = curr_col.mean();
     }
 
     return variant_key;
 } // SCManager::makeSectorkeyFromScancontext
 
+QueryResult ScanContext::query(int id)
+{
+    const VContext& key = ringcontexts_.at(id);
+    const Context& desc = polarcontexts_.at(id);
 
+    if(ringcontexts_.size() < NUM_EXCLUDE_RECENT + 1)   return {-1, 0};
+
+    if(ringcontexts_.size() - ring_sub_.size() > NUM_EXCLUDE_RECENT + BUILD_TREE_GAP)
+    {
+        ring_sub_.clear();
+        int n = ringcontexts_.size() - NUM_EXCLUDE_RECENT;
+        ring_sub_.resize(n);
+        for(int i=0; i<n; i++)  ring_sub_[i] = ringcontexts_[i];
+        ring_kdtree_->setInput(ring_sub_);
+    }
+
+    std::vector<size_t> k_indices;
+    std::vector<double> k_sqr_distances;
+    
+    ring_kdtree_->nearestKSearch(key.data(), NUM_CANDIDATES_FROM_TREE, k_indices, k_sqr_distances);
+
+    double min_dist = std::numeric_limits<double>::max();
+    int nn_align = 0;
+    int nn_idx = 0;
+
+    for(int i=0; i<NUM_CANDIDATES_FROM_TREE; i++){
+        const Context& cand_desc = polarcontexts_[k_indices[i]];
+        auto res = distanceBtnScanContext(desc, cand_desc);
+
+        double candidate_dist = res.first;
+        int candidate_align = res.second;
+
+        if(candidate_dist < min_dist)
+        {
+            min_dist = candidate_dist;
+            nn_align = candidate_align;
+            nn_idx = k_indices[i];
+        }
+    }
+
+    if(min_dist > SC_DIST_THRES)    return {-1, 0};
+    
+    return {nn_idx, trans::deg2rad(PC_UNIT_SECTORANGLE * nn_align)};
+}
+
+}
 
 }

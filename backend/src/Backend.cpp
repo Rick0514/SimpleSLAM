@@ -16,8 +16,7 @@ namespace backend
 {
 
 using namespace gtsam;
-using namespace EigenTypes;
-using namespace PCLTypes;
+using KFEvent = frontend::KeyFramesObj::Event;
 
 Backend::Backend(const FrontendPtr& ft, const MapManagerPtr& mp) : mRunning(true), mFrontendPtr(ft), mMapManagerPtr(mp)
 {
@@ -180,7 +179,9 @@ void Backend::addLoopFactor()
 void Backend::optimHandler()
 {
     std::unique_lock<std::mutex> lk(mKFObjPtr->mLockKF);
-    mKFObjPtr->mKFcv.wait(lk, [&](){ return (mKFObjPtr->keyframes.size() > mKFObjPtr->mKFNums || lg->isProgramExit()); });
+    mKFObjPtr->mKFcv.wait(lk, [&](){ return (mKFObjPtr->isEventComing() || lg->isProgramExit()); });
+    KFEvent kfe = mKFObjPtr->getEvent();
+
     lg->info("backend start to optimize!!");
 
     if(lg->isProgramExit()){
@@ -188,11 +189,15 @@ void Backend::optimHandler()
         return;
     }
 
-    mMapManagerPtr->saveKfs();
-    // new kf is put
-    addOdomFactor();
-    mKFObjPtr->mKFNums = mKFObjPtr->keyframes.size();
-    mKFObjPtr->mClosestKfIdx.clear();
+    if(kfe == KFEvent::NewKFCome){
+        mMapManagerPtr->saveKfs();
+        // new kf is put
+        addOdomFactor();
+        mKFObjPtr->mKFNums = mKFObjPtr->keyframes.size();
+        mKFObjPtr->mClosestKfIdx.clear();
+    }else if(kfe == KFEvent::LC){
+        addLoopFactor();        
+    }
 
     lk.unlock();    // ------------------------------------
 
@@ -200,6 +205,8 @@ void Backend::optimHandler()
     isam2->update(factorGraph, initialEstimate);
     isam2->update();
 
+    if(kfe == KFEvent::LC)  for(int i=0; i<3; i++)  isam2->update();
+    
     factorGraph.resize(0);
     initialEstimate.clear();
     optimizedEstimate = isam2->calculateEstimate();
@@ -244,7 +251,6 @@ void Backend::optimHandler()
     // update odom2map
     pose_t p = delta * mFrontendPtr->get().load();
     mFrontendPtr->get().store(p);
-    
 }
 
 Backend::~Backend()
