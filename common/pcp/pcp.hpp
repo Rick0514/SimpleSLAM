@@ -20,6 +20,14 @@ void voxelDownSample(typename PC<PointType>::Ptr& cloud, float grid_size){
 }
 
 template<typename PointType>
+void voxelDownSample(const typename PC<PointType>::ConstPtr& cloudIn, PC<PointType>& cloudOut, float grid_size){
+    pcl::VoxelGrid<PointType> voxelgrid;
+    voxelgrid.setLeafSize(grid_size, grid_size, grid_size);
+    voxelgrid.setInputCloud(cloudIn);
+    voxelgrid.filter(cloudOut);
+}
+
+template<typename PointType>
 void removeNaNFromPointCloud(PC<PointType> &cloud)
 {
     std::vector<int> index;

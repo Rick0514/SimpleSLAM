@@ -63,6 +63,8 @@ public:
 
     ScanContext();
 
+    virtual size_t size() const override { return polarcontexts_.size(); }
+
     virtual void addContext(const SourceType& input) override;
     virtual QueryResult query(int id) override;
     // virtual double computeSimularity(size_t from, size_t to) override;

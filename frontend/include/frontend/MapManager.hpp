@@ -52,7 +52,7 @@ struct KeyFramesObj
 
     bool isEventComing() { return mKFEvent != Event::None; }
     Event getEvent() { return mKFEvent; }
-    bool resetEvent() { mKFEvent = Event::None; }
+    void resetEvent() { mKFEvent = Event::None; }
 };
 
 class MapManager

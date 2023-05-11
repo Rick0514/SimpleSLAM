@@ -26,8 +26,13 @@
 
     "backend" : {
 
+        "lc": {
+            "contextDownSampleGridSize" : 0.5,
+            "historySubmapRange" : 5,
+            "fitnessThreshold" : 0.3
+        }
     },
-
+    
     "frontend" : {
         "local_size": 100,
         "global_size": 10

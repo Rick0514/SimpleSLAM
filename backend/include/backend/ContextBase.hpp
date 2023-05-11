@@ -16,6 +16,7 @@ public:
     virtual void addContext(const SourceType& input) = 0;
     virtual QueryResult query(int id);
 
+    virtual size_t size() const = 0;
     // virtual double computeSimularity(size_t from, size_t to) = 0;
     virtual double computeSimularity(const Context& from, const Context& to) = 0;
 

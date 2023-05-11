@@ -1,6 +1,7 @@
 #include <geometry/trans.hpp>
 
 #include <backend/Backend.hpp>
+#include <backend/LoopClosureManager.hpp>
 #include <frontend/Frontend.hpp>
 #include <frontend/MapManager.hpp>
 
@@ -26,11 +27,16 @@ Backend::Backend(const FrontendPtr& ft, const MapManagerPtr& mp) : mRunning(true
     auto cfg = config::Params::getInstance();
     mSaveMapDir = cfg["saveMapDir"];
 
+    // noise --> gtsam use double
+    Eigen::Matrix<double, 6, 1> priorNoise, odomNoise, lcNoise;
+
     priorNoise << 1e-2, 1e-2, M_PI / 72, 1e-1, 1e-1, 1e-1;
     odomNoise << 1e-4, 1e-4, 1e-4, 1e-1, 1e-1, 1e-1;
-
+    lcNoise << 1e-1, 1e-1, 1e-1, 1e-1, 1e-1, 1e-1;
+    
     gtOdomNoise = noiseModel::Diagonal::Variances(odomNoise);
     gtPriorNoise = noiseModel::Diagonal::Variances(priorNoise);
+    gtLcNoise = noiseModel::Diagonal::Variances(lcNoise);
 
     // get keyframe obj to optimize
     mKFObjPtr = mMapManagerPtr->getKeyFrameObjPtr();
@@ -173,7 +179,16 @@ void Backend::addOdomFactor()
 
 void Backend::addLoopFactor()
 {
-    
+    // consume lcq
+    auto& lcq = mLCManagerPtr->getLCQ();
+    auto n = lcq.size();
+
+    for(int i=0; i<n; i++){
+        auto r = lcq.consume_front();
+        auto p = gtsam::Pose3(r->between.matrix().cast<double>());
+        factorGraph.add(BetweenFactor<gtsam::Pose3>(r->from, r->to, p, gtLcNoise));
+        recordFactorGraph.add(BetweenFactor<gtsam::Pose3>(r->from, r->to, p, gtLcNoise));
+    }
 }
 
 void Backend::optimHandler()
@@ -181,6 +196,7 @@ void Backend::optimHandler()
     std::unique_lock<std::mutex> lk(mKFObjPtr->mLockKF);
     mKFObjPtr->mKFcv.wait(lk, [&](){ return (mKFObjPtr->isEventComing() || lg->isProgramExit()); });
     KFEvent kfe = mKFObjPtr->getEvent();
+    mKFObjPtr->resetEvent();
 
     lg->info("backend start to optimize!!");
 
@@ -190,6 +206,8 @@ void Backend::optimHandler()
     }
 
     if(kfe == KFEvent::NewKFCome){
+        // before saveKfs, use raw pc to make context, ds rate depend on loop-closure module
+        mLCManagerPtr->addContext();
         mMapManagerPtr->saveKfs();
         // new kf is put
         addOdomFactor();
