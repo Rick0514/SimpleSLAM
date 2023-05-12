@@ -1,17 +1,26 @@
 #include <PCR/LoamRegister.hpp>
+
 #include <geometry/manifolds.hpp>
 #include <geometry/trans.hpp>
 #include <time/tictoc.hpp>
 
 #include <Eigen/Eigenvalues>
 
+#include <nanoflann/pcl_adaptor.hpp>
+
 namespace PCR
 {
 using namespace geometry;
 
-LoamRegister::LoamRegister(){
-    // mKdtree.reset(new pcl::KdTreeFLANN<PointType>());
+struct LoamRegister::Kdtree
+{
+    nanoflann::PointCloudKdtree<pt_t, scalar_t> mKdtree;
+    Kdtree() = default;
+};
 
+LoamRegister::LoamRegister() : mKdtree(std::make_unique<Kdtree>())
+{
+    // mKdtree.reset(new pcl::KdTreeFLANN<PointType>());
 #ifdef DEBUG_DIR
     debug_file = std::ofstream(fmt::format("{}/{}.txt", DEBUG_DIR, "loam"));
 #endif
@@ -44,7 +53,7 @@ bool LoamRegister::_extractPlaneMatrix(const pt_t& pointInMap, const PC_cPtr& ds
     scalar_t p[3];
     for(int i=0; i<3; i++)  p[i] = pointInMap.data[i];
 
-    mKdtree.nearestKSearch(p, mPlanePtsNum, pointSearchInd, pointSearchSqDis);
+    mKdtree->mKdtree.nearestKSearch(p, mPlanePtsNum, pointSearchInd, pointSearchSqDis);
 
     // DEBUG(debug_file, fmt::format("nks: {}", pointSearchSqDis[mPlanePtsNum-1]));
     if(pointSearchSqDis[mPlanePtsNum-1] < mKdtreeMaxSearchDist)
@@ -98,7 +107,7 @@ bool LoamRegister::scan2Map(const PC_cPtr& src, const PC_cPtr& dst, pose_t& res)
     std::vector<scalar_t> E_vec;
     
     common::time::tictoc tt;
-    mKdtree.setInputCloud(dst);
+    mKdtree->mKdtree.setInputCloud(dst);
     this->lg->debug("kdtree build idx cost: {}", tt);
 
     for(int it=0; it<iters; it++){
@@ -212,6 +221,8 @@ bool LoamRegister::scan2Map(const PC_cPtr& src, const PC_cPtr& dst, pose_t& res)
 
     return this->isConverge;
 }
+
+LoamRegister::~LoamRegister() {}
 
 } // namespace PCR
 

@@ -25,6 +25,7 @@ message("USE ROSBAG OR NOT: " ${USE_BAG})
 
 find_package(Eigen3 REQUIRED)
 find_package(spdlog REQUIRED)
+set(NANOFLANN ${CMAKE_CURRENT_SOURCE_DIR}/third_parties/nanoflann/include)
 
 add_definitions(-DCONFIG_FILE="${ROOT_DIR}/config/params.json")
 
@@ -37,6 +38,6 @@ add_subdirectory(PCR)
 add_subdirectory(filter)
 add_subdirectory(dataproxy)
 add_subdirectory(frontend)
-add_subdirectory(backend)
+# add_subdirectory(backend)
 add_subdirectory(test)
-add_subdirectory(app)
+# add_subdirectory(app)

@@ -1,21 +1,15 @@
 #pragma once
-
-#include <ros/ros.h>
 #include <types/basic.hpp>
-
-#include <sensor_msgs/Imu.h>
-#include <nav_msgs/Odometry.h>
 
 #include <dataproxy/DataProxy.hpp>
 
-#include <filter/SystemModel.hpp>
-#include <filter/ImuMeasModel.hpp>
-#include <filter/WheelMeasModel.hpp>
-#include <kalman/ExtendedKalmanFilter.hpp>
+// ---------- ros ----------
+#include <ros/ros.h>
+#include <sensor_msgs/Imu.h>
+#include <nav_msgs/Odometry.h>
 
 namespace dataproxy
 {
-using namespace filter;
 
 class EkfOdomProxy : public DataProxy<Odometry>
 {
@@ -24,11 +18,8 @@ protected:
     ros::Subscriber mImuSub;
     ros::Subscriber mWheelSub;
 
-    State<scalar_t> x;
-    SystemModel<scalar_t> sys;
-    ImuMeasModel<scalar_t> imu;
-    WheelMeasModel<scalar_t> wheel;
-    Kalman::ExtendedKalmanFilter<State<scalar_t>> ekf;
+    struct Filter;
+    std::unique_ptr<Filter> mFilter;
 
     bool mUpdateImuFlag;
 
@@ -38,15 +29,13 @@ protected:
 public:
     explicit EkfOdomProxy(ros::NodeHandle& nh, int size);
 
-    void initFilter();
-
     void ekfHandler(const nav_msgs::OdometryConstPtr& msg);
 
     void imuHandler(const sensor_msgs::ImuConstPtr& msg);
     void wheelHandler(const nav_msgs::OdometryConstPtr& msg);
     // void chassisHandler(const mobile_platform_msgs::ChassisConstPtr& msg);
 
-    ~EkfOdomProxy() {};
+    ~EkfOdomProxy();
 };
     
 } // namespace dataproxy

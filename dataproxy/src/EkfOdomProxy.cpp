@@ -4,31 +4,32 @@
 #include <geometry/trans.hpp>
 
 #include <tf2_eigen/tf2_eigen.h>
-
 #include <config/params.hpp>
+
+// ---------- filter -----------
+#include <filter/SystemModel.hpp>
+#include <filter/ImuMeasModel.hpp>
+#include <filter/WheelMeasModel.hpp>
+#include <kalman/ExtendedKalmanFilter.hpp>
 
 namespace dataproxy
 {
 
+using namespace filter;
 using namespace geometry;
 
-EkfOdomProxy::EkfOdomProxy(ros::NodeHandle& nh, int size) 
-    : DataProxy<Odometry>(size),
-      mUpdateImuFlag(false)
+struct EkfOdomProxy::Filter
 {
-    initFilter();
+    State<scalar_t> x;
+    SystemModel<scalar_t> sys;
+    ImuMeasModel<scalar_t> imu;
+    WheelMeasModel<scalar_t> wheel;
+    Kalman::ExtendedKalmanFilter<State<scalar_t>> ekf;
 
-    auto params = config::Params::getInstance()["dataproxy"];
+    Filter();
+};
 
-    std::string imu_topic = params["imu"];
-    std::string wheel_topic = params["wheel"];
-
-    // mEkfSub = nh.subscribe("/ekf_odom", 50, &EkfOdomProxy::ekfHandler, this);
-    mImuSub = nh.subscribe(imu_topic, 100, &EkfOdomProxy::imuHandler, this);
-    mWheelSub = nh.subscribe(wheel_topic, 50, &EkfOdomProxy::wheelHandler, this);
-}
-
-void EkfOdomProxy::initFilter()
+EkfOdomProxy::Filter::Filter()
 {
     x.setZero();
 
@@ -51,6 +52,21 @@ void EkfOdomProxy::initFilter()
     NoiseVector<filter::WheelMeas<float>> wheelNoise;
     wheelNoise << 0.1, 0.1; // assume 0.1m/s
     wheel.setCovariance(wheelNoise.array().square().matrix().asDiagonal());
+}
+
+
+EkfOdomProxy::EkfOdomProxy(ros::NodeHandle& nh, int size) 
+    : DataProxy<Odometry>(size), mFilter(std::make_unique<Filter>()),
+      mUpdateImuFlag(false)
+{
+    auto params = config::Params::getInstance()["dataproxy"];
+
+    std::string imu_topic = params["imu"];
+    std::string wheel_topic = params["wheel"];
+
+    // mEkfSub = nh.subscribe("/ekf_odom", 50, &EkfOdomProxy::ekfHandler, this);
+    mImuSub = nh.subscribe(imu_topic, 100, &EkfOdomProxy::imuHandler, this);
+    mWheelSub = nh.subscribe(wheel_topic, 50, &EkfOdomProxy::wheelHandler, this);
 }
 
 void EkfOdomProxy::ekfHandler(const nav_msgs::OdometryConstPtr& msg)
@@ -81,8 +97,10 @@ void EkfOdomProxy::imuHandler(const sensor_msgs::ImuConstPtr &msg)
         lastTime = msg->header.stamp.toSec();
         lastImu = *msg;
         V3<scalar_t> ypr = trans::q2ypr(eq);
+
+        State<scalar_t>& x = mFilter->x;
         x.yaw() = ypr(0);
-        ekf.init(x);
+        mFilter->ekf.init(x);
         mLg->info("imu init x done: ({}, {}, {})", x.x(), x.y(), x.yaw());
         return;
     }
@@ -104,9 +122,11 @@ void EkfOdomProxy::imuHandler(const sensor_msgs::ImuConstPtr &msg)
 
         // update!!
         filter::ImuMeas<scalar_t> ims;
+        State<scalar_t>& x = mFilter->x;
+
         ims.yaw() = x.yaw() + ypr(0);
         utils::math::correctAngles(ims.yaw(), x.yaw());
-        x = ekf.update(imu, ims, dt);
+        x = mFilter->ekf.update(mFilter->imu, ims, dt);
         
         lastTime = now;
         lastImu = *msg;
@@ -120,20 +140,24 @@ void EkfOdomProxy::wheelHandler(const nav_msgs::OdometryConstPtr &msg)
 
     stamp_t now = msg->header.stamp.toSec();
     
+    State<scalar_t>& x = mFilter->x;
+
     if(lastTime < 0){
         lastTime = now;
         lastWheel = *msg;
         auto p = msg->pose.pose.position;
+
         x.x() = p.x;
         x.y() = p.y;
-        ekf.init(x);
+        mFilter->ekf.init(x);
+
         mLg->info("wheel init x done: ({}, {}, {})", x.x(), x.y(), x.yaw());
         return;
     }
 
     // the pred rate is the same of wheel rate!!
     stamp_t dt = now - lastWheel.header.stamp.toSec();
-    x = ekf.predict(sys, dt);
+    x = mFilter->ekf.predict(mFilter->sys, dt);
     mUpdateImuFlag = true;
 
     Pose6<double> pc, pl, po;
@@ -148,7 +172,7 @@ void EkfOdomProxy::wheelHandler(const nav_msgs::OdometryConstPtr &msg)
     filter::WheelMeas<scalar_t> wms;
     wms.x() = delta.translation().x();
     wms.y() = delta.translation().y();
-    x = ekf.update(wheel, wms, dt);
+    x = mFilter->ekf.update(mFilter->wheel, wms, dt);
 
     lastTime = now;
     lastWheel = *msg;
@@ -169,5 +193,7 @@ void EkfOdomProxy::wheelHandler(const nav_msgs::OdometryConstPtr &msg)
     this->mDataPtr->template push_back<constant::usebag>(std::move(odom));
     // mLg->debug("ekf size: {}", mDataPtr->size());
 }
+
+EkfOdomProxy::~EkfOdomProxy() {}
 
 }

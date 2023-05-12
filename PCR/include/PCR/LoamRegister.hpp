@@ -1,7 +1,6 @@
 #pragma once
 
 #include <PCR/PointCloudRegister.hpp>
-#include <nanoflann/pcl_adaptor.hpp>
 
 #if defined(DEBUG_DIR)
 #include <fstream>
@@ -44,7 +43,8 @@ private:
     bool degenerateProjSet;
     M6 degenerateProj;
 
-    nanoflann::PointCloudKdtree<pt_t, scalar_t> mKdtree;
+    struct Kdtree;
+    std::unique_ptr<Kdtree> mKdtree;
 
 #ifdef DEBUG_DIR
     std::ofstream debug_file;
@@ -83,6 +83,7 @@ public:
 
     virtual bool scan2Map(const PC_cPtr& src, const PC_cPtr& dst, pose_t& res) override;
 
+    ~LoamRegister();
 };
 
 } // namespace PCR

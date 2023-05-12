@@ -9,13 +9,13 @@ add_definitions(-DDATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data")
 
 add_executable(align align.cpp)
 target_include_directories(align PUBLIC
-    ${ROOT_DIR}/PCR/include
+    ${NANOFLANN}
     ${PCL_INCLUDE_DIRS}
 )
 
-target_link_libraries(align PUBLIC
+target_link_libraries(align
+    pthread
     PCR
-    spdlog::spdlog
     ${PCL_LIBRARIES}
 )
 
@@ -59,11 +59,8 @@ target_compile_definitions(testlog PRIVATE SPDLOG_ACTIVE_LEVEL=0)
 
 
 add_executable(loc loc.cpp)
-target_include_directories(loc PUBLIC
-    ${ROOT_DIR}/dataproxy/include
-    ${ROOT_DIR}/frontend/include
-)
 target_link_libraries(loc
+    dataproxy
     frontend
 )
 target_compile_definitions(loc PRIVATE LOG_FILE="${CMAKE_CURRENT_SOURCE_DIR}/data/loc.log")

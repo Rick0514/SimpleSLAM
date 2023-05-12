@@ -10,10 +10,17 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     ${PCL_INCLUDE_DIRS}
 )
 
-target_link_libraries(${PROJECT_NAME} PUBLIC
+target_include_directories(${PROJECT_NAME} PRIVATE
+    ${NANOFLANN}
+)
+
+target_link_libraries(${PROJECT_NAME} PUBLIC    
+    ${PCL_LIBRARIES}
+)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE
     dataproxy
     PCR
-    ${PCL_LIBRARIES}
 )
 
 # target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG_PC="${ROOT_DIR}/test/data")

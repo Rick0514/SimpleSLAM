@@ -9,24 +9,31 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 file(GLOB_RECURSE srcs CONFIGURE_DEPENDS src/*.cpp include/${PROJECT_NAME}/*.hpp)
-add_library(dataproxy SHARED ${srcs})
+add_library(${PROJECT_NAME} SHARED ${srcs})
 
 message(STATUS "filter: " ${filter_INCLUDE_DIRS})
 
-target_include_directories(dataproxy PUBLIC
+target_include_directories(${PROJECT_NAME} PUBLIC
     ${COMMON_HEADER}
-    ${filter_INCLUDE_DIRS}
     ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${catkin_INCLUDE_DIRS}
     ${EIGEN3_INCLUDE_DIRS}
     ${PCL_INCLUDE_DIRS}
     ${config_INCLUDE_DIRS}
+    ${catkin_INCLUDE_DIRS}
 )
 
-target_link_libraries(dataproxy
-    ${catkin_LIBRARIES}   
-    ${PCL_LIBRARIES}
+target_include_directories(${PROJECT_NAME} PRIVATE
+    ${filter_INCLUDE_DIRS}
 )
+
+target_link_libraries(${PROJECT_NAME} PUBLIC
+    ${PCL_LIBRARIES}
+    ${catkin_LIBRARIES}
+)
+
+# target_link_libraries(${PROJECT_NAME} PRIVATE
+# )
+
 
 
 

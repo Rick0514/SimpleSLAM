@@ -15,9 +15,10 @@ add_library(${PROJECT_NAME} SHARED ${srcs})
 target_link_libraries(${PROJECT_NAME} PUBLIC
     ${PCL_LIBRARIES}
     spdlog
-    pclomp::registration
 )
+    
 target_link_libraries(${PROJECT_NAME} PRIVATE 
+    pclomp::registration
     OpenMP::OpenMP_CXX
 )
 
@@ -26,6 +27,10 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     ${COMMON_HEADER}
     ${EIGEN3_INCLUDE_DIRS}
     ${PCL_INCLUDE_DIRS}
+)
+    
+target_include_directories(${PROJECT_NAME} PRIVATE
     ../third_parties/nanoflann/include
 )
+
 
