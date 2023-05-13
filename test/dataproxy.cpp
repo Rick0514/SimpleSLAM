@@ -7,6 +7,7 @@
 #include <rosbag/bag.h>
 #include <rosbag/view.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <pcl_conversions/pcl_conversions.h>
 
 #include <dataproxy/EkfOdomProxy.hpp>
 #include <dataproxy/LidarDataProxy.hpp>
@@ -41,8 +42,17 @@ public:
         {
             sensor_msgs::PointCloud2ConstPtr pc = m.instantiate<sensor_msgs::PointCloud2>();
             if(pc){
+                auto cloud = pcl::make_shared<pc_t>();
+                pcl::fromROSMsg(*pc, *cloud);
+                pcl_conversions::toPCL(pc->header.stamp, cloud->header.stamp);
                 lg->info("pre deque size {}", ldp.get()->size());
-                ldp.subscribe(pc);
+
+                #if PCL_VERSION_COMPARE(<=, 1, 10, 0)
+                    auto stdcloud = utils::make_shared_ptr(cloud);
+                    ldp->subscribe(stdcloud);
+                #else
+                    ldp.subscribe(cloud);
+                #endif
                 lg->info("push one");
                 this_thread::sleep_for(chrono::milliseconds(200));
             }

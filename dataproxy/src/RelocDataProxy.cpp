@@ -1,10 +1,29 @@
+#include <ros/ros.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
+
 #include <dataproxy/RelocDataProxy.hpp>
 
 namespace dataproxy {
 
-RelocDataProxy::RelocDataProxy(ros::NodeHandle& nh) : DataProxy<void>(0)
+class RelocDataProxy::Ros
 {
-    mSub = nh.subscribe("/initialpose", 1, &RelocDataProxy::subscriber, this);
+public:
+    ros::Subscriber mSub;
+    RelocDataProxy* rdp;
+
+    Ros(ros::NodeHandle& nh);
+    void subscriber(const geometry_msgs::PoseWithCovarianceStampedConstPtr&);
+
+};
+
+RelocDataProxy::Ros::Ros(ros::NodeHandle& nh)
+{
+    mSub = nh.subscribe("/initialpose", 1, &Ros::subscriber, this);
+}
+
+RelocDataProxy::RelocDataProxy(ros::NodeHandle& nh) : DataProxy<void>(0), mRosImpl(std::make_unique<Ros>(nh))
+{
+    mRosImpl->rdp = this;
 }
     
 void RelocDataProxy::registerFunc(const RelocFuncType& f)
@@ -12,7 +31,7 @@ void RelocDataProxy::registerFunc(const RelocFuncType& f)
     mRelocFunc = f;   
 }
 
-void RelocDataProxy::subscriber(const geometry_msgs::PoseWithCovarianceStampedConstPtr& pc)
+void RelocDataProxy::Ros::subscriber(const geometry_msgs::PoseWithCovarianceStampedConstPtr& pc)
 {
     auto p = pc->pose.pose.position;
     auto q = pc->pose.pose.orientation;
@@ -23,10 +42,11 @@ void RelocDataProxy::subscriber(const geometry_msgs::PoseWithCovarianceStampedCo
 
     std::stringstream ss;
     ss << "get init pose:\n" << ep.matrix();
-    mLg->info("{}", ss.str());
+    rdp->mLg->info("{}", ss.str());
     
-    mRelocFunc(ep);
+    rdp->mRelocFunc(ep);
 }
 
+RelocDataProxy::~RelocDataProxy() = default;
 
 }

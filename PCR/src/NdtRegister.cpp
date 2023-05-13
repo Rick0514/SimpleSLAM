@@ -3,7 +3,6 @@
 
 namespace PCR
 {
-
 struct NdtRegister::Ndt
 {
     using ndt_t = pclomp::NormalDistributionsTransform<pt_t, pt_t>;
@@ -30,6 +29,6 @@ bool NdtRegister::scan2Map(const PC_cPtr& src, const PC_cPtr& dst, pose_t& res)
     return _ndt->_ndt_omp.hasConverged();
 }
 
-NdtRegister::~NdtRegister(){}
+NdtRegister::~NdtRegister() = default;
 
 } // namespace PCR

@@ -12,6 +12,7 @@ class OdometryBase
 {
 protected:
     std::shared_ptr<logger::Logger> lg;
+    
 public:
     OdometryBase() { lg = logger::Logger::getInstance(); }
 

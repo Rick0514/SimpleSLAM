@@ -21,6 +21,11 @@ fi
 
 echo "exec cmake -B build $usebag_flag"
 
-cmake -B build $usebag_flag
+start=$(date +%s%N)
 
+cmake -B build $usebag_flag
 cmake --build build -- -j 8
+
+end=$(date +%s%N)
+
+echo "Compilation elapsed time: $(($(($end-$start))/1000000)) ms"

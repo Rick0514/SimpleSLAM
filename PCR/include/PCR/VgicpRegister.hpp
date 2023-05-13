@@ -8,7 +8,7 @@ class VgicpRegister : public PCR::PointCloudRegister
 protected:
 
     struct Vgicp;
-    std::shared_ptr<Vgicp> vgicp_;
+    std::unique_ptr<Vgicp> vgicp_;
 
 public:
 
@@ -17,8 +17,9 @@ public:
 
     VgicpRegister();
 
-    std::shared_ptr<Vgicp> getPtr() { return vgicp_; }
+    void initForLC();
 
+    virtual scalar_t getFitnessScore() override;
     virtual bool scan2Map(const PC_cPtr& src, const PC_cPtr& dst, pose_t& res) override;
 
     ~VgicpRegister();

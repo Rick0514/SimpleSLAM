@@ -16,6 +16,7 @@ add_library(loopclosure SHARED
 target_include_directories(loopclosure PUBLIC
     include
     ${COMMON_HEADER}    
+    ${config_INCLUDE_DIRS}
 )
 
 target_include_directories(loopclosure PRIVATE
@@ -25,6 +26,7 @@ target_include_directories(loopclosure PRIVATE
 )
 
 target_link_libraries(loopclosure PRIVATE
+    PCR
     frontend
     OpenMP::OpenMP_CXX
 )
@@ -42,5 +44,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     gtsam
+    frontend
     loopclosure    
 )

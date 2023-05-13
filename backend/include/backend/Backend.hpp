@@ -1,17 +1,11 @@
 #pragma once
 
+#include <deque>
+
 #include <utils/Atomic.hpp>
 #include <utils/Logger.hpp>
 #include <utils/Thread.hpp>
 #include <types/basic.hpp>
-
-// add a tmp macro to enable c++11 for tbb, https://github.com/oneapi-src/oneTBB/issues/22
-// clang++-12 -v to see what glibcxx version you got
-// #define TBB_USE_GLIBCXX_VERSION 70500
-
-#include <gtsam/nonlinear/Values.h>
-#include <gtsam/nonlinear/ISAM2.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 namespace frontend { 
     class Frontend;
@@ -44,19 +38,9 @@ private:
     KFObjPtr mKFObjPtr;
     LCManagerPtr mLCManagerPtr;
 
-    // factor graph
-    gtsam::noiseModel::Diagonal::shared_ptr gtPriorNoise;
-    gtsam::noiseModel::Diagonal::shared_ptr gtOdomNoise;
-    gtsam::noiseModel::Diagonal::shared_ptr gtLcNoise;
-
-    std::unique_ptr<gtsam::ISAM2> isam2;
-    gtsam::NonlinearFactorGraph factorGraph;
-    gtsam::Values initialEstimate;
-    gtsam::Values optimizedEstimate;
-
-    // for record!!
-    gtsam::Values recordEstimate;
-    gtsam::NonlinearFactorGraph recordFactorGraph;
+    // gtsam stuff
+    class Gtsam;
+    std::unique_ptr<Gtsam> mGtsamImpl;
 
     // optimize thread
     std::atomic_bool mRunning;
@@ -66,14 +50,8 @@ private:
 
 protected:
 
-    void loadFactorGraph();
-
     void addOdomFactor();
-
-    // TODO: loop-detect maybe another module
     void addLoopFactor();
-
-    void myReadG2o(const std::string& file, gtsam::NonlinearFactorGraph& fg, gtsam::Values& v);
 
 public:
 
@@ -86,6 +64,3 @@ public:
 };
     
 } // namespace backend
-
-
-

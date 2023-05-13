@@ -15,8 +15,16 @@ struct VgicpRegister::Vgicp
     }
 };
 
-VgicpRegister::VgicpRegister() : vgicp_(std::make_shared<Vgicp>()) {}
+VgicpRegister::VgicpRegister() : vgicp_(std::make_unique<Vgicp>()) {}
     
+void VgicpRegister::initForLC()
+{
+    vgicp_->vgicp_.setMaxCorrespondenceDistance(150);
+    vgicp_->vgicp_.setMaximumIterations(100);
+    vgicp_->vgicp_.setTransformationEpsilon(1e-6);
+    vgicp_->vgicp_.setEuclideanFitnessEpsilon(1e-6);
+    vgicp_->vgicp_.setRANSACIterations(0);
+}
 
 bool VgicpRegister::scan2Map(const PC_cPtr& src, const PC_cPtr& dst, pose_t& res)
 {
@@ -30,6 +38,12 @@ bool VgicpRegister::scan2Map(const PC_cPtr& src, const PC_cPtr& dst, pose_t& res
     return vgicp_->vgicp_.hasConverged();
 }
 
-VgicpRegister::~VgicpRegister() {}
+scalar_t VgicpRegister::getFitnessScore()
+{
+    return vgicp_->vgicp_.getFitnessScore();
+}
+
+
+VgicpRegister::~VgicpRegister() = default;
 
 }

@@ -231,4 +231,3 @@ LidarOdometry::~LidarOdometry()
 }
 
 } // namespace frontend
-

@@ -19,19 +19,9 @@ LoopClosureManager::LoopClosureManager(const MapManagerPtr& mmp) : mmp_(mmp), lc
 
     ctb_ = std::make_unique<context::ScanContext>();
     pcr_ = std::make_unique<PCR::VgicpRegister>();    
-    initPCR();
+    pcr_->initForLC();
 
     lc_thd_ = std::make_unique<trd::ResidentThread>(&LoopClosureManager::lcHandler, this);
-}
-
-void LoopClosureManager::initPCR()
-{
-    const auto& vgicp = pcr_->getPtr();
-    vgicp->setMaxCorrespondenceDistance(150);
-    vgicp->setMaximumIterations(100);
-    vgicp->setTransformationEpsilon(1e-6);
-    vgicp->setEuclideanFitnessEpsilon(1e-6);
-    vgicp->setRANSACIterations(0);
 }
 
 // not thread-safe, kf should be guard
@@ -97,7 +87,7 @@ void LoopClosureManager::lcHandler()
             // pcr
             bool conv = pcr_->scan2Map(lc_scan_, lc_map_, cur_pose);
 
-            if(conv && pcr_->getPtr()->getFitnessScore() < fitness_score_){
+            if(conv && pcr_->getFitnessScore() < fitness_score_){
                 auto r = std::make_shared<LCResult_t>(oldKey, curKey, cur_pose.inverse() * old_pose);
                 lcq_.push_back<true>(std::move(r));
             }

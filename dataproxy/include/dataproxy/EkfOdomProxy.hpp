@@ -1,45 +1,44 @@
 #pragma once
 #include <types/basic.hpp>
-
+#include <types/EigenTypes.hpp>
 #include <dataproxy/DataProxy.hpp>
 
-// ---------- ros ----------
-#include <ros/ros.h>
-#include <sensor_msgs/Imu.h>
-#include <nav_msgs/Odometry.h>
+namespace ros { class NodeHandle; }
 
 namespace dataproxy
 {
+using namespace EigenTypes;
 
 class EkfOdomProxy : public DataProxy<Odometry>
 {
+public:
+    struct Odom{
+        stamp_t stamp;
+        V3<scalar_t> t;
+        Qt<scalar_t> q;
+    };
+
 protected:
-    ros::Subscriber mEkfSub;
-    ros::Subscriber mImuSub;
-    ros::Subscriber mWheelSub;
-
-    struct Filter;
-    std::unique_ptr<Filter> mFilter;
-
-    bool mUpdateImuFlag;
-
+    
     template <typename T>
     using NoiseVector = Eigen::Matrix<scalar_t, T::RowsAtCompileTime, 1>;
 
+    class Ros;
+    std::unique_ptr<Ros> mRosImpl;
+
+    class Filter;
+    std::unique_ptr<Filter> mFilterImpl;
+
+    bool mUpdateImuFlag;
+
 public:
+
     explicit EkfOdomProxy(ros::NodeHandle& nh, int size);
 
-    void ekfHandler(const nav_msgs::OdometryConstPtr& msg);
-
-    void imuHandler(const sensor_msgs::ImuConstPtr& msg);
-    void wheelHandler(const nav_msgs::OdometryConstPtr& msg);
-    // void chassisHandler(const mobile_platform_msgs::ChassisConstPtr& msg);
+    void imuHandler(const Odom&);
+    void wheelHandler(const Odom&);
 
     ~EkfOdomProxy();
 };
     
 } // namespace dataproxy
-
-
-
-

@@ -26,6 +26,8 @@ public:
     PointCloudRegister(){
         lg = utils::logger::Logger::getInstance();
     }
+
+    virtual scalar_t getFitnessScore() { return 0; }
     virtual bool scan2Map(const PC_cPtr& src, const PC_cPtr& dst, pose_t& res) = 0;
 
     virtual ~PointCloudRegister(){}

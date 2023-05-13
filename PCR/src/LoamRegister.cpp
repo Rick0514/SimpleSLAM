@@ -222,7 +222,6 @@ bool LoamRegister::scan2Map(const PC_cPtr& src, const PC_cPtr& dst, pose_t& res)
     return this->isConverge;
 }
 
-LoamRegister::~LoamRegister() {}
+LoamRegister::~LoamRegister() = default;
 
 } // namespace PCR
-

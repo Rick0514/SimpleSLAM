@@ -55,8 +55,6 @@ public:
 
     void loopFindNearKeyframes(pc_t::Ptr& nearKeyframes, int key, int searchNum);
 
-    void initPCR();
-
     void addContext();
     void lcHandler();
 

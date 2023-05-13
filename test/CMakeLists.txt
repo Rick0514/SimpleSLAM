@@ -12,7 +12,6 @@ target_include_directories(align PUBLIC
     ${NANOFLANN}
     ${PCL_INCLUDE_DIRS}
 )
-
 target_link_libraries(align
     pthread
     PCR
@@ -59,7 +58,11 @@ target_compile_definitions(testlog PRIVATE SPDLOG_ACTIVE_LEVEL=0)
 
 
 add_executable(loc loc.cpp)
+target_include_directories(loc PUBLIC
+    ${catkin_INCLUDE_DIRS}
+)
 target_link_libraries(loc
+    ${catkin_LIBRARIES}
     dataproxy
     frontend
 )
@@ -82,7 +85,6 @@ target_include_directories(edp PRIVATE
 )
 
 target_link_libraries(edp
-    spdlog
     dataproxy
     ${catkin_LIBRARIES}
 )

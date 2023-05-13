@@ -5,6 +5,12 @@
 #include <frontend/Frontend.hpp>
 #include <frontend/MapManager.hpp>
 
+// add a tmp macro to enable c++11 for tbb, https://github.com/oneapi-src/oneTBB/issues/22
+// clang++-12 -v to see what glibcxx version you got
+// #define TBB_USE_GLIBCXX_VERSION 70500
+#include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/ISAM2.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
@@ -19,14 +25,66 @@ namespace backend
 using namespace gtsam;
 using KFEvent = frontend::KeyFramesObj::Event;
 
-Backend::Backend(const FrontendPtr& ft, const MapManagerPtr& mp) : mRunning(true), mFrontendPtr(ft), mMapManagerPtr(mp)
+class Backend::Gtsam
 {
-    lg = logger::Logger::getInstance();
-    lg->info("backend is constructing!!");
+private:
+    gtsam::noiseModel::Diagonal::shared_ptr gtPriorNoise;
+    gtsam::noiseModel::Diagonal::shared_ptr gtOdomNoise;
+    gtsam::noiseModel::Diagonal::shared_ptr gtLcNoise;
 
-    auto cfg = config::Params::getInstance();
-    mSaveMapDir = cfg["saveMapDir"];
+    std::string mSaveMapDir;
 
+public:
+
+    Backend* bkd;
+
+    std::unique_ptr<gtsam::ISAM2> isam2;
+    gtsam::NonlinearFactorGraph factorGraph;
+    gtsam::Values initialEstimate;
+    gtsam::Values optimizedEstimate;
+
+    // for record!!
+    gtsam::Values recordEstimate;
+    gtsam::NonlinearFactorGraph recordFactorGraph;
+
+    Gtsam();
+    void myReadG2o(const std::string& file, gtsam::NonlinearFactorGraph& fg, gtsam::Values& v);
+    void myWriteG2o();
+    void loadFactorGraph();
+
+    void addPrior(const Pose3& pose){
+        factorGraph.add(PriorFactor<gtsam::Pose3>(0, pose, gtPriorNoise));
+        recordFactorGraph.add(PriorFactor<gtsam::Pose3>(0, pose, gtPriorNoise));
+    }
+
+    void addEstimate(int key, const Pose3& pose){
+        initialEstimate.insert(key, pose);
+    }
+
+    void addBetween(int from, int to, const Pose3& bt){
+        factorGraph.add(BetweenFactor<gtsam::Pose3>(from, to, bt, gtOdomNoise));
+        recordFactorGraph.add(BetweenFactor<gtsam::Pose3>(from, to, bt, gtOdomNoise));
+    }
+
+    void addLC(int from, int to, const Pose3& bt){
+        factorGraph.add(BetweenFactor<gtsam::Pose3>(from, to, bt, gtLcNoise));
+        recordFactorGraph.add(BetweenFactor<gtsam::Pose3>(from, to, bt, gtLcNoise));
+    }
+
+    void updateWithGraphAndInit() { isam2->update(factorGraph, initialEstimate); }
+    void update(int times) { for(int i=0; i<times; i++) isam2->update(); }
+
+    void calAndMarginal(){
+        factorGraph.resize(0);
+        initialEstimate.clear();
+        optimizedEstimate = isam2->calculateEstimate();
+        recordEstimate = optimizedEstimate;
+    }
+};
+
+Backend::Gtsam::Gtsam()
+{
+    // bkd is not init, should not use this pointer
     // noise --> gtsam use double
     Eigen::Matrix<double, 6, 1> priorNoise, odomNoise, lcNoise;
 
@@ -38,25 +96,38 @@ Backend::Backend(const FrontendPtr& ft, const MapManagerPtr& mp) : mRunning(true
     gtPriorNoise = noiseModel::Diagonal::Variances(priorNoise);
     gtLcNoise = noiseModel::Diagonal::Variances(lcNoise);
 
-    // get keyframe obj to optimize
-    mKFObjPtr = mMapManagerPtr->getKeyFrameObjPtr();
-
     gtsam::ISAM2Params param;
     param.relinearizeThreshold = 0.1;
     param.relinearizeSkip = 1;
     isam2 = std::make_unique<gtsam::ISAM2>(param);
 
-    loadFactorGraph();
+}
+
+Backend::Backend(const FrontendPtr& ft, const MapManagerPtr& mp) : mRunning(true), mFrontendPtr(ft),
+    mMapManagerPtr(mp), mGtsamImpl(std::make_unique<Gtsam>())
+{
+    // lg should init first !!
+    lg = logger::Logger::getInstance();
+    lg->info("backend is constructing!!");
+
+    mGtsamImpl->bkd = this;
+    mGtsamImpl->loadFactorGraph();
+
+    auto cfg = config::Params::getInstance();
+    mSaveMapDir = cfg["saveMapDir"];
+
+    // get keyframe obj to optimize
+    mKFObjPtr = mMapManagerPtr->getKeyFrameObjPtr();
 
     mOptimThread = std::make_unique<trd::ResidentThread>(&Backend::optimHandler, this);
 }
 
-void Backend::myReadG2o(const std::string& file, gtsam::NonlinearFactorGraph& fg, gtsam::Values& v)
+void Backend::Gtsam::myReadG2o(const std::string& file, gtsam::NonlinearFactorGraph& fg, gtsam::Values& v)
 {
     std::ifstream inf(file);
     if(!inf.is_open()){
         auto msg = fmt::format("failed to open g2o file: [{}]!", file);
-        lg->error(msg);
+        bkd->lg->error(msg);
         throw std::invalid_argument(msg);
     }
 
@@ -124,11 +195,18 @@ void Backend::myReadG2o(const std::string& file, gtsam::NonlinearFactorGraph& fg
     }
 }
 
-void Backend::loadFactorGraph()
+void Backend::Gtsam::myWriteG2o(){
+    gtsam::writeG2o(recordFactorGraph, recordEstimate, fmt::format("{}/fg.g2o", mSaveMapDir));
+}
+
+void Backend::Gtsam::loadFactorGraph()
 {
+    auto cfg = config::Params::getInstance();
+    mSaveMapDir = cfg["saveMapDir"];
+
     std::string fn = fmt::format("{}/fg.g2o", mSaveMapDir);
     if(!utils::file::isFileExist(fn)){
-        lg->info("no factor graph file, maybe first build or rebuild!!");
+        bkd->lg->info("no factor graph file, maybe first build or rebuild!!");
         return;
     }
 
@@ -140,8 +218,7 @@ void Backend::loadFactorGraph()
     // isam2->update();
     // factorGraph.resize(0);
     // initialEstimate.clear();
-
-    lg->info("load factor graph done!");
+    bkd->lg->info("load factor graph done!");
 }
 
 void Backend::addOdomFactor()
@@ -155,9 +232,8 @@ void Backend::addOdomFactor()
         pose_t kfp = keyframes.front().pose;
         // kfp = geometry::trans::SixDof2Mobile(kfp);
         auto pose = gtsam::Pose3(kfp.matrix().cast<double>());
-        factorGraph.add(PriorFactor<gtsam::Pose3>(0, pose, gtPriorNoise));
-        recordFactorGraph.add(PriorFactor<gtsam::Pose3>(0, pose, gtPriorNoise));
-        initialEstimate.insert(0, pose);
+        mGtsamImpl->addPrior(pose);
+        mGtsamImpl->addEstimate(0, pose);
         n++;
     }
 
@@ -167,13 +243,12 @@ void Backend::addOdomFactor()
         auto from = gtsam::Pose3(keyframes[from_idx].pose.matrix().cast<double>());
         auto to = gtsam::Pose3(keyframes[i].pose.matrix().cast<double>());
         lg->info("factor graph add edge from {} to {}", from_idx, i);
-        factorGraph.add(BetweenFactor<gtsam::Pose3>(from_idx, i, from.between(to), gtOdomNoise));
-        recordFactorGraph.add(BetweenFactor<gtsam::Pose3>(from_idx, i, from.between(to), gtOdomNoise));
+        mGtsamImpl->addBetween(from_idx, i, from.between(to));
+        mGtsamImpl->addEstimate(i, to);
         // insert pose that project to 2d
         // pose_t kf_to = keyframes[i].pose;
         // kf_to = geometry::trans::SixDof2Mobile(kf_to);
         // to = gtsam::Pose3(kf_to.matrix().cast<double>());
-        initialEstimate.insert(i, to);
     }
 }
 
@@ -186,8 +261,7 @@ void Backend::addLoopFactor()
     for(int i=0; i<n; i++){
         auto r = lcq.consume_front();
         auto p = gtsam::Pose3(r->between.matrix().cast<double>());
-        factorGraph.add(BetweenFactor<gtsam::Pose3>(r->from, r->to, p, gtLcNoise));
-        recordFactorGraph.add(BetweenFactor<gtsam::Pose3>(r->from, r->to, p, gtLcNoise));
+        mGtsamImpl->addLC(r->from, r->to, p);
     }
 }
 
@@ -220,16 +294,13 @@ void Backend::optimHandler()
     lk.unlock();    // ------------------------------------
 
     //  maybe time consuming
-    isam2->update(factorGraph, initialEstimate);
-    isam2->update();
+    mGtsamImpl->updateWithGraphAndInit();
+    mGtsamImpl->update(1);
 
-    if(kfe == KFEvent::LC)  for(int i=0; i<3; i++)  isam2->update();
+    if(kfe == KFEvent::LC)  mGtsamImpl->update(3);
     
-    factorGraph.resize(0);
-    initialEstimate.clear();
-    optimizedEstimate = isam2->calculateEstimate();
-    recordEstimate = optimizedEstimate;
-
+    mGtsamImpl->calAndMarginal();
+    
     lk.lock();     // ------------------------------------  
     
     auto n = mKFObjPtr->mKFNums;
@@ -238,7 +309,7 @@ void Backend::optimHandler()
     pose_t latest_pose = keyframes.back().pose; 
     // update kfs
     for(int i=0; i<n; i++){
-        const auto& p = optimizedEstimate.at<gtsam::Pose3>(i);
+        const auto& p = mGtsamImpl->optimizedEstimate.at<gtsam::Pose3>(i);
         keyframes[i].pose.matrix() = p.matrix().cast<scalar_t>();
     }
 
@@ -279,7 +350,7 @@ Backend::~Backend()
     // save tum
     std::lock_guard<std::mutex> lk(mKFObjPtr->mLockKF);
     utils::file::writeAsTum(mSaveMapDir, mKFObjPtr->keyframes);
-    gtsam::writeG2o(recordFactorGraph, recordEstimate, fmt::format("{}/fg.g2o", mSaveMapDir));
+    mGtsamImpl->myWriteG2o();
 }
 
 }

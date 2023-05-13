@@ -227,13 +227,13 @@ QueryResult ScanContext::query(int id)
         int n = ringcontexts_.size() - NUM_EXCLUDE_RECENT;
         ring_sub_.resize(n);
         for(int i=0; i<n; i++)  ring_sub_[i] = ringcontexts_[i];
-        ring_kdtree_->setInput(ring_sub_);
+        ring_kdtree_.setInput(&ring_sub_);
     }
 
     std::vector<size_t> k_indices;
     std::vector<double> k_sqr_distances;
     
-    ring_kdtree_->nearestKSearch(key.data(), NUM_CANDIDATES_FROM_TREE, k_indices, k_sqr_distances);
+    ring_kdtree_.nearestKSearch(key.data(), NUM_CANDIDATES_FROM_TREE, k_indices, k_sqr_distances);
 
     double min_dist = std::numeric_limits<double>::max();
     int nn_align = 0;

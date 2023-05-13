@@ -45,13 +45,12 @@ protected:
     VcContainer sectorcontexts_;
 
     VcContainer ring_sub_;
-    std::unique_ptr<RingKdtree> ring_kdtree_;
+    RingKdtree ring_kdtree_;
 
     // ------------- func -------------
     static float xy2theta(const float & _x, const float & _y);
     static Context circshift(const Context &_mat, int _num_shift);
 
-    int fastAlignUsingVkey(Context & _vkey1, Context & _vkey2); 
     std::pair<double, int> distanceBtnScanContext (const Context &_sc1, const Context &_sc2); // "D" (eq 6) in the original paper (IROS 18)
     int fastAlignUsingVkey(const Context& _vkey1, const Context& _vkey2);
 
@@ -73,6 +72,5 @@ public:
 };
 
 }
-
 
 }

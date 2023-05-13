@@ -13,12 +13,19 @@
 #include <rosbag/bag.h>
 #include <rosbag/view.h>
 
+#include <pcl_conversions/pcl_conversions.h>
+
+#include <sensor_msgs/Imu.h>
+#include <nav_msgs/Odometry.h>
+#include <sensor_msgs/PointCloud2.h>
+
 #include <time/tictoc.hpp>
 
 using namespace std;
 using namespace frontend;
 using namespace backend;
 namespace bfs = boost::filesystem;
+using Odom_t = EkfOdomProxy::Odom;
 
 void progressBar(stamp_t perc)
 {
@@ -29,6 +36,37 @@ void progressBar(stamp_t perc)
     int rpad = PBWIDTH - lpad;
     printf("\r%3d%% [%.*s%*s]", val, lpad, PBSTR, rpad, "");
     fflush(stdout);
+}
+
+Odom_t imuFromROS(const sensor_msgs::ImuConstPtr& imu){
+    auto q = imu->orientation;
+    Qt<scalar_t> eq(q.w, q.x, q.y, q.z);
+
+    Odom_t o;
+    o.stamp = imu->header.stamp.toSec();
+    o.q = eq;
+    return o;
+}
+
+Odom_t wheelFromROS(const nav_msgs::OdometryConstPtr& wheel)
+{
+    auto p = wheel->pose.pose.position;
+    auto q = wheel->pose.pose.orientation;
+    Qt<scalar_t> eq(q.w, q.x, q.y, q.z);
+
+    Odom_t o;
+    o.stamp = wheel->header.stamp.toSec();
+    o.t << p.x, p.y, p.z;
+    o.q = eq;
+    return o;
+}
+
+std::shared_ptr<pc_t> pcFromROS(const sensor_msgs::PointCloud2ConstPtr& msg)
+{
+    auto cloud = std::make_shared<pc_t>();
+    pcl::fromROSMsg(*msg, *cloud);
+    pcl_conversions::toPCL(msg->header.stamp, cloud->header.stamp);
+    return cloud;
 }
 
 int main(int argc, char* argv[])
@@ -113,13 +151,13 @@ int main(int argc, char* argv[])
 
             if(tp == imu_topic){
                 sensor_msgs::ImuConstPtr imu = m.instantiate<sensor_msgs::Imu>();
-                edp->imuHandler(imu);
+                edp->imuHandler(imuFromROS(imu));
             }else if(tp == wheel_topic){
-                nav_msgs::OdometryConstPtr odom = m.instantiate<nav_msgs::Odometry>();
-                edp->wheelHandler(odom);
+                nav_msgs::OdometryConstPtr wheel = m.instantiate<nav_msgs::Odometry>();
+                edp->wheelHandler(wheelFromROS(wheel));
             }else if(tp == lidar_topic){
                 sensor_msgs::PointCloud2ConstPtr pc = m.instantiate<sensor_msgs::PointCloud2>();
-                ldp->subscribe(pc);  
+                ldp->subscribe(pcFromROS(pc));  
             }
 
             if(!nh.ok())  break;
