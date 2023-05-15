@@ -54,9 +54,12 @@ protected:
 
     struct VectorOfVectorsAdaptor
     {
-        VectorOfVectorsAdaptor() = default;
+        VectorOfVectorsAdaptor() { m_data = nullptr; }
         // Must return the number of data points
-        inline IndexType kdtree_get_point_count() const { return m_data->size(); }
+        inline IndexType kdtree_get_point_count() const { 
+            if(m_data)  return m_data->size();
+            return 0;
+        }
         // Returns the dim'th component of the idx'th point in the class:
         inline num_t kdtree_get_pt(const IndexType idx, int dim) const { return (*m_data)[idx](dim); }
     	template <class BBOX> bool kdtree_get_bbox(BBOX & /*bb*/) const { return false; }
@@ -82,6 +85,8 @@ public:
     size_t nearestKSearch(const num_t* const point, int k, std::vector<size_t> &k_indices,
         std::vector<num_t> &k_sqr_distances) const
     {
+        k_indices.resize(k);
+        k_sqr_distances.resize(k);
         return _kdtree.knnSearch(point, k, k_indices.data(), k_sqr_distances.data());
     }
 

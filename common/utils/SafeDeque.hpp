@@ -32,6 +32,7 @@ public:
     SafeDeque(const SafeDeque&) = delete;
     SafeDeque& operator= (const SafeDeque&) = delete;
 
+    void resize(int sz) noexcept;
     bool empty() const noexcept;
     int size() const noexcept;
 
@@ -64,6 +65,12 @@ public:
     ~SafeDeque() = default;
 };
 
+template <typename T>
+void SafeDeque<T>::resize(int sz) noexcept
+{
+    std::lock_guard<std::mutex> lk(mLock);
+    mSize = sz;
+}
 
 template <typename T>
 bool SafeDeque<T>::empty() const noexcept

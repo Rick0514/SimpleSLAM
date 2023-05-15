@@ -111,3 +111,14 @@ target_link_libraries(file
     spdlog
 )
 
+add_executable(lcm lcm.cpp)
+target_include_directories(lcm PRIVATE
+    ${catkin_INCLUDE_DIRS}
+    ${ROOT_DIR}/frontend/include
+    ${ROOT_DIR}/backend/include
+)
+target_link_libraries(lcm
+    ${catkin_LIBRARIES}
+    frontend
+    loopclosure
+)

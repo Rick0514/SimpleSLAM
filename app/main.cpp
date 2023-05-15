@@ -93,6 +93,7 @@ int main(int argc, char* argv[])
     }
 
     auto mode = cfg["mode"].get<std::string>();
+    auto enable_vis = cfg["vis"]["enable"].get<bool>();
     auto enable_lc = cfg["backend"]["lc"]["enable"].get<bool>();
     auto lidar_size = cfg["dataproxy"]["lidar_size"].get<int>();
     auto local_size = cfg["frontend"]["local_size"].get<int>();
@@ -114,7 +115,8 @@ int main(int argc, char* argv[])
     if(mode == "lio")   ftd = std::make_shared<Frontend>(edp->get(), global_size);
 
     // mapmanager
-    auto mmp = std::make_shared<MapManager>(ldp);
+    auto mmp = std::make_shared<MapManager>();
+    if(enable_vis)  mmp->registerVis(ldp);
 
     // construct LO
     auto lo = std::make_unique<LidarOdometry>(ldp, ftd, rdp, mmp);

@@ -275,14 +275,14 @@ void Backend::optimHandler()
     KFEvent kfe = mKFObjPtr->getEvent();
     mKFObjPtr->resetEvent();
 
-    lg->info("backend start to optimize!!");
-
     if(lg->isProgramExit()){
         lg->info("program is about exit, give up this optim!");
         return;
     }
 
     if(kfe == KFEvent::NewKFCome){
+        lg->info("new keyframe comes in backend!");
+
         // before saveKfs, use raw pc to make context, ds rate depend on loop-closure module
         if(mLCManagerPtr)   mLCManagerPtr->addContext();
         
@@ -292,6 +292,7 @@ void Backend::optimHandler()
         mKFObjPtr->mKFNums = mKFObjPtr->keyframes.size();
         mKFObjPtr->mClosestKfIdx.clear();
     }else if(kfe == KFEvent::LC){
+        lg->info("loop closure comes in backend!");
         addLoopFactor();        
     }
 

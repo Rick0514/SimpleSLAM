@@ -8,7 +8,8 @@
 
 namespace backend {
 
-LoopClosureManager::LoopClosureManager(const MapManagerPtr& mmp) : mmp_(mmp), lc_size_(0), lcq_(10)
+LoopClosureManager::LoopClosureManager(const MapManagerPtr& mmp) : mmp_(mmp), lc_size_(0), lcq_(10),
+    lc_scan_(pcl::make_shared<pc_t>()), lc_map_(pcl::make_shared<pc_t>())
 {
     lg = logger::Logger::getInstance();
 
@@ -66,6 +67,8 @@ void LoopClosureManager::lcHandler()
     std::unique_lock<std::mutex> lk(lc_lock_);
     lc_cv_.wait(lk, [&](){ return lc_size_ < ctb_->size() || lg->isProgramExit(); });
 
+    lg->info("enter lc handler...");
+
     const auto& kfo = mmp_->getKeyFrameObjPtr();
 
     for(int i=lc_size_; i<ctb_->size(); i++){
@@ -86,9 +89,10 @@ void LoopClosureManager::lcHandler()
         
             // pcr
             bool conv = pcr_->scan2Map(lc_scan_, lc_map_, cur_pose);
-
-            if(conv && pcr_->getFitnessScore() < fitness_score_){
-                auto r = std::make_shared<LCResult_t>(oldKey, curKey, cur_pose.inverse() * old_pose);
+            auto fs = pcr_->getFitnessScore();
+            lg->debug("{} to {} fitness score: {}", oldKey, curKey, fs);
+            if(conv && fs < fitness_score_){
+                auto r = std::make_shared<LCResult_t>(oldKey, curKey, old_pose.inverse() * cur_pose);
                 lcq_.push_back<true>(std::move(r));
             }
         }

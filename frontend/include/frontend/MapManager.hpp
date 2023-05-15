@@ -91,9 +91,10 @@ private:
 
 public:
 
-    MapManager() = delete;
-    MapManager(LidarDataProxyPtr ldp=LidarDataProxyPtr());
+    MapManager();
     MapManager(std::string pcd_file);
+
+    void registerVis(const LidarDataProxyPtr& ldp) { mLidarDataProxyPtr = ldp; }
 
     void setCurPose(const pose_t& p);
 

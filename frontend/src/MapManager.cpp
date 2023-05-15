@@ -12,8 +12,8 @@
 
 namespace frontend {
 
-MapManager::MapManager(LidarDataProxyPtr ldp) : mKFObjPtr(std::make_shared<KeyFramesObj>()),
-    mSubmap(pcl::make_shared<pc_t>()), mLidarDataProxyPtr(ldp)
+MapManager::MapManager() : mKFObjPtr(std::make_shared<KeyFramesObj>()),
+    mSubmap(pcl::make_shared<pc_t>())
 {
     lg = logger::Logger::getInstance();
 
