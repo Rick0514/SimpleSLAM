@@ -1,9 +1,10 @@
 #include <geometry/trans.hpp>
 
-#include <backend/Backend.hpp>
-#include <backend/LoopClosureManager.hpp>
 #include <frontend/Frontend.hpp>
 #include <frontend/MapManager.hpp>
+
+#include <backend/Backend.hpp>
+#include <backend/LoopClosureManager.hpp>
 
 // add a tmp macro to enable c++11 for tbb, https://github.com/oneapi-src/oneTBB/issues/22
 // clang++-12 -v to see what glibcxx version you got
@@ -32,10 +33,10 @@ private:
     gtsam::noiseModel::Diagonal::shared_ptr gtOdomNoise;
     gtsam::noiseModel::Diagonal::shared_ptr gtLcNoise;
 
-    std::string mSaveMapDir;
 
 public:
 
+    std::string mSaveMapDir;
     Backend* bkd;
 
     std::unique_ptr<gtsam::ISAM2> isam2;
@@ -100,10 +101,9 @@ Backend::Gtsam::Gtsam()
     param.relinearizeThreshold = 0.1;
     param.relinearizeSkip = 1;
     isam2 = std::make_unique<gtsam::ISAM2>(param);
-
 }
 
-Backend::Backend(const FrontendPtr& ft, const MapManagerPtr& mp) : mRunning(true), mFrontendPtr(ft),
+Backend::Backend(const FrontendPtr& ft, const MapManagerPtr& mp, LCManagerPtr lcm) : mRunning(true), mFrontendPtr(ft),
     mMapManagerPtr(mp), mGtsamImpl(std::make_unique<Gtsam>())
 {
     // lg should init first !!
@@ -113,8 +113,9 @@ Backend::Backend(const FrontendPtr& ft, const MapManagerPtr& mp) : mRunning(true
     mGtsamImpl->bkd = this;
     mGtsamImpl->loadFactorGraph();
 
-    auto cfg = config::Params::getInstance();
-    mSaveMapDir = cfg["saveMapDir"];
+    mSaveMapDir = mGtsamImpl->mSaveMapDir;
+
+    if(lcm) mLCManagerPtr = lcm;
 
     // get keyframe obj to optimize
     mKFObjPtr = mMapManagerPtr->getKeyFrameObjPtr();
@@ -255,13 +256,15 @@ void Backend::addOdomFactor()
 void Backend::addLoopFactor()
 {
     // consume lcq
-    auto& lcq = mLCManagerPtr->getLCQ();
-    auto n = lcq.size();
+    if(mLCManagerPtr){
+        auto& lcq = mLCManagerPtr->getLCQ();
+        auto n = lcq.size();
 
-    for(int i=0; i<n; i++){
-        auto r = lcq.consume_front();
-        auto p = gtsam::Pose3(r->between.matrix().cast<double>());
-        mGtsamImpl->addLC(r->from, r->to, p);
+        for(int i=0; i<n; i++){
+            auto r = lcq.consume_front();
+            auto p = gtsam::Pose3(r->between.matrix().cast<double>());
+            mGtsamImpl->addLC(r->from, r->to, p);
+        }
     }
 }
 
@@ -281,7 +284,8 @@ void Backend::optimHandler()
 
     if(kfe == KFEvent::NewKFCome){
         // before saveKfs, use raw pc to make context, ds rate depend on loop-closure module
-        mLCManagerPtr->addContext();
+        if(mLCManagerPtr)   mLCManagerPtr->addContext();
+        
         mMapManagerPtr->saveKfs();
         // new kf is put
         addOdomFactor();

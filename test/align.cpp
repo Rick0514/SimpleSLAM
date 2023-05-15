@@ -1,5 +1,6 @@
 #include <PCR/NdtRegister.hpp>
 #include <PCR/LoamRegister.hpp>
+#include <PCR/VgicpRegister.hpp>
 
 #include <pcl/io/pcd_io.h>
 #include <pcl/filters/voxel_grid.h>
@@ -112,6 +113,8 @@ int main(int argc, char const *argv[])
         pcr = std::make_shared<LoamRegister>();
     }else if(method == "ndt"){
         pcr = std::make_shared<NdtRegister>();
+    }else if(method == "vgicp"){
+        pcr = std::make_shared<VgicpRegister>();
     }else{
         lg->error("no such method!!");
         return -1;

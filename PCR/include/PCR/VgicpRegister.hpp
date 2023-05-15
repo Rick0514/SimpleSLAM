@@ -3,7 +3,7 @@
 
 namespace PCR {
 
-class VgicpRegister : public PCR::PointCloudRegister
+class VgicpRegister : public PointCloudRegister
 {
 protected:
 

@@ -8,6 +8,7 @@
 
 #include <PCR/LoamRegister.hpp>
 #include <PCR/NdtRegister.hpp>
+#include <PCR/VgicpRegister.hpp>
 
 #include <pcl/pcl_config.h>
 #include <pcl/io/pcd_io.h>
@@ -27,6 +28,7 @@ LidarOdometry::LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, RelocDataProxyPt
 : mDataProxyPtr(dp), mFrontendPtr(ft), mMapManagerPtr(mmp), reloc(false), mDownSampleScan(pcl::make_shared<pc_t>())
 {
     auto cfg = config::Params::getInstance();
+    auto pcr_type = cfg["frontend"]["pcr"].get<std::string>();
     auto grid_size = cfg["downSampleVoxelGridSize"].get<float>();
     // mVoxelGrid.setDownsampleAllData(false);
     mVoxelGrid.setLeafSize(grid_size, grid_size, grid_size);
@@ -36,9 +38,18 @@ LidarOdometry::LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, RelocDataProxyPt
 
     mLastPos.setZero();
     mRelocPose.setIdentity();
-    // xyz for temp
-    mPcr.reset(new PCR::LoamRegister);
-    // mPcr.reset(new PCR::NdtRegister);
+
+    if(pcr_type == "loam")    
+        mPcr.reset(new PCR::LoamRegister);
+    else if(pcr_type == "ndt")
+        mPcr.reset(new PCR::NdtRegister);
+    else if(pcr_type == "vgicp")
+        mPcr.reset(new PCR::VgicpRegister);
+    else{
+        auto msg = fmt::format("such pcr type({}) is not exist, please implemented your self!", pcr_type);
+        lg->error(msg);
+        throw std::runtime_error(msg);
+    }
 
     if(rdp) rdp->registerFunc(std::bind(&LidarOdometry::setRelocFlag, this, std::placeholders::_1));
 }

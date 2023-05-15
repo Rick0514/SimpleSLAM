@@ -56,7 +56,7 @@ protected:
 public:
 
     Backend() = delete;
-    explicit Backend(const FrontendPtr&, const MapManagerPtr&);
+    explicit Backend(const FrontendPtr&, const MapManagerPtr&, LCManagerPtr lcm=LCManagerPtr(nullptr));
 
     void optimHandler();
 

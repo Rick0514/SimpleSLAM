@@ -42,17 +42,11 @@ public:
         {
             sensor_msgs::PointCloud2ConstPtr pc = m.instantiate<sensor_msgs::PointCloud2>();
             if(pc){
-                auto cloud = pcl::make_shared<pc_t>();
+                auto cloud = std::make_shared<pc_t>();
                 pcl::fromROSMsg(*pc, *cloud);
                 pcl_conversions::toPCL(pc->header.stamp, cloud->header.stamp);
                 lg->info("pre deque size {}", ldp.get()->size());
-
-                #if PCL_VERSION_COMPARE(<=, 1, 10, 0)
-                    auto stdcloud = utils::make_shared_ptr(cloud);
-                    ldp->subscribe(stdcloud);
-                #else
-                    ldp.subscribe(cloud);
-                #endif
+                ldp.subscribe(cloud);
                 lg->info("push one");
                 this_thread::sleep_for(chrono::milliseconds(200));
             }

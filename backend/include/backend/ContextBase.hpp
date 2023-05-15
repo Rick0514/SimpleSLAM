@@ -23,6 +23,7 @@ public:
     virtual void saveContext(){};
     virtual void loadContext(){};
     
+    virtual ~ContextBase() = default;
 };
 
 }

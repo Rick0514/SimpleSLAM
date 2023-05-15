@@ -27,6 +27,7 @@
     "backend" : {
 
         "lc": {
+            "enable" : false,
             "contextDownSampleGridSize" : 0.5,
             "historySubmapRange" : 5,
             "fitnessThreshold" : 0.3
@@ -34,6 +35,7 @@
     },
     
     "frontend" : {
+        "pcr" : "loam",     // loam, ndt or vgicp
         "local_size": 100,
         "global_size": 10
     }

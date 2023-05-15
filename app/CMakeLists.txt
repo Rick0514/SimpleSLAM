@@ -21,6 +21,7 @@ target_link_libraries(${PROJECT_NAME}
     dataproxy
     frontend
     backend
+    loopclosure
     ${catkin_LIBRARIES}
 )
 

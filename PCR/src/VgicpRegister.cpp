@@ -43,7 +43,6 @@ scalar_t VgicpRegister::getFitnessScore()
     return vgicp_->vgicp_.getFitnessScore();
 }
 
-
 VgicpRegister::~VgicpRegister() = default;
 
 }

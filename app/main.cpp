@@ -1,11 +1,13 @@
-#include <frontend/Frontend.hpp>
-#include <frontend/MapManager.hpp>
-#include <frontend/LidarOdometry.hpp>
-#include <backend/Backend.hpp>
-
 #include <dataproxy/LidarDataProxy.hpp>
 #include <dataproxy/EkfOdomProxy.hpp>
 #include <dataproxy/RelocDataProxy.hpp>
+
+#include <frontend/Frontend.hpp>
+#include <frontend/MapManager.hpp>
+#include <frontend/LidarOdometry.hpp>
+
+#include <backend/Backend.hpp>
+#include <backend/LoopClosureManager.hpp>
 
 #include <config/params.hpp>
 #include <boost/filesystem.hpp>
@@ -71,6 +73,9 @@ std::shared_ptr<pc_t> pcFromROS(const sensor_msgs::PointCloud2ConstPtr& msg)
 
 int main(int argc, char* argv[])
 {
+    bool memcheck = false;
+    if(argc == 2 && strcmp(argv[1], "memcheck") == 0)   memcheck = true;
+
     // set log first
     auto lg = utils::logger::Logger::getInstance();
 #ifdef LOG_FILE
@@ -88,6 +93,7 @@ int main(int argc, char* argv[])
     }
 
     auto mode = cfg["mode"].get<std::string>();
+    auto enable_lc = cfg["backend"]["lc"]["enable"].get<bool>();
     auto lidar_size = cfg["dataproxy"]["lidar_size"].get<int>();
     auto local_size = cfg["frontend"]["local_size"].get<int>();
     auto global_size = cfg["frontend"]["global_size"].get<int>();
@@ -112,8 +118,13 @@ int main(int argc, char* argv[])
 
     // construct LO
     auto lo = std::make_unique<LidarOdometry>(ldp, ftd, rdp, mmp);
+
+    // construct LC
+    std::shared_ptr<LoopClosureManager> lc;
+    if(enable_lc)   lc = std::make_shared<LoopClosureManager>(mmp);
+
     // backend
-    auto bkd = std::make_unique<Backend>(ftd, mmp);
+    auto bkd = std::make_unique<Backend>(ftd, mmp, lc);
 
     // run lo, no dependency of lo and ftd, because lo alreay own a copy of
     // ftd, if ftd own lo, circular reference will happen!!
@@ -121,8 +132,21 @@ int main(int argc, char* argv[])
         lo->generateOdom();
     });
 
-    if constexpr (constant::usebag)
-    {
+    if (!constant::usebag){
+
+        if(memcheck){
+            // check 10s
+            int checkCnt = 10 * 100;
+            while (checkCnt) {
+                ros::spinOnce();
+                --checkCnt;
+                ros::Duration(0.01).sleep();
+            }
+        }else{
+            ros::spin();
+        }
+
+    }else{
         std::string fn = cfg["rosbag"];
         rosbag::Bag bag;
         bag.open(fn, rosbag::bagmode::Read);
@@ -165,6 +189,8 @@ int main(int argc, char* argv[])
             auto perc = (cur_time - start_time).toSec() / total_time;
             progressBar(perc);
             
+            // memcheck for 5%
+            if(memcheck && perc > 5.0 / 100)    break;
         }
 
         bag.close();
@@ -172,14 +198,9 @@ int main(int argc, char* argv[])
         std::cout << std::endl;
         std::cout << fmt::format("run time: {:.3f}s", tt.elapsed().count()) << std::endl;
         std::cout << fmt::format("bag time: {:.3f}s", total_time) << std::endl;
-
-    }else{
-        ros::spin();
     }
-
+    
     // for valgrind test
-    // ros::spinOnce();
-    // sleep(2);
     lg->exitProgram();
 
     return 0;
