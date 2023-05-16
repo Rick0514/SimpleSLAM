@@ -13,6 +13,10 @@
     // "rosbag": "/home/hgy/sda2/rosbag/zhengzhou0711.orig.bag",
     // "rosbag": "/home/rick/jtcx/hgy_gitee/minimal_ws/bag/zhengzhou0711.orig.bag",
 
+    "tf":{
+        "lidar_height": 2.0
+    },
+
     "dataproxy": {
         "lidar": "/lidar_points",
         "lidar_size": 10,
@@ -34,6 +38,16 @@
             "contextDownSampleGridSize" : 0.5,
             "historySubmapRange" : 1,
             "fitnessThreshold" : 0.3
+        },
+
+        "context": {
+            "scancontext":{
+                "numExcludeRecent" : 30,
+                "buildTreeGap": 5,
+                "numCandidatesFromTree" : 10,
+                "searchRatio": 0.1,
+                "scDistThres": 0.2
+            }
         }
     },
     

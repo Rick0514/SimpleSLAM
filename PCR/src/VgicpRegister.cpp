@@ -11,7 +11,7 @@ struct VgicpRegister::Vgicp
     Vgicp()
     {
         vgicp_.setResolution(1.0);
-        vgicp_.setNumThreads(constant::numCores);
+        vgicp_.setNumThreads(1);
     }
 };
 

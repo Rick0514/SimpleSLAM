@@ -8,8 +8,7 @@
 
 namespace backend {
 
-LoopClosureManager::LoopClosureManager(const MapManagerPtr& mmp) : mmp_(mmp), lc_size_(0), lcq_(10),
-    lc_scan_(pcl::make_shared<pc_t>()), lc_map_(pcl::make_shared<pc_t>())
+LoopClosureManager::LoopClosureManager(const MapManagerPtr& mmp) : mmp_(mmp), lc_size_(0), lcq_(10)
 {
     lg = logger::Logger::getInstance();
 
@@ -40,8 +39,8 @@ void LoopClosureManager::addContext()
 // not thread-safe, kf should be guard
 void LoopClosureManager::loopFindNearKeyframes(pc_t::Ptr& nearKeyframes, int key, int searchNum)
 {
+    // be noted, nearkeyframes should be brand new pc!!
     // extract near keyframes
-    nearKeyframes->clear();
     const auto& kfs = mmp_->getKeyFrameObjPtr();
     int cloudSize = kfs->keyframes.size();
     for(int i = -searchNum; i <= searchNum; ++i)
@@ -55,8 +54,6 @@ void LoopClosureManager::loopFindNearKeyframes(pc_t::Ptr& nearKeyframes, int key
             *nearKeyframes += dst;
         }
     }
-
-    if(nearKeyframes->empty())  return;
 
     // downsample near keyframes
     pcp::voxelDownSample<pt_t>(nearKeyframes, context_pc_ds_);
@@ -72,25 +69,36 @@ void LoopClosureManager::lcHandler()
     const auto& kfo = mmp_->getKeyFrameObjPtr();
 
     for(int i=lc_size_; i<ctb_->size(); i++){
+        
         auto q = ctb_->query(i);
-
         if(q.first >= 0){
             int curKey = i;
             int oldKey = q.first;
 
             pose_t old_pose, cur_pose;
+            
+            // make new address, because vgicp set input pc change kdtree only if pc address is changed
+            // for efficiency, if only change content other than address, vgicp wont actually set the input
+            // source or target!!!! 
+            lc_scan_ = pcl::make_shared<pc_t>();
+            lc_map_ = pcl::make_shared<pc_t>();
+
             {
                 std::lock_guard<std::mutex> lk(kfo->mLockKF);
                 old_pose = kfo->keyframes[oldKey].pose;
                 cur_pose = kfo->keyframes[curKey].pose;
-                loopFindNearKeyframes(lc_scan_, curKey, 0);
+                *lc_scan_ = *(kfo->keyframes[curKey].pc);
                 loopFindNearKeyframes(lc_map_, oldKey, history_submap_range_);
             }
         
             // pcr
             bool conv = pcr_->scan2Map(lc_scan_, lc_map_, cur_pose);
             auto fs = pcr_->getFitnessScore();
+            lg->debug("scan size: {}, map size: {}", lc_scan_->size(), lc_map_->size());
             lg->debug("{} to {} fitness score: {}", oldKey, curKey, fs);
+
+            vis_func_(lc_scan_, lc_map_, cur_pose);
+
             if(conv && fs < fitness_score_){
                 auto r = std::make_shared<LCResult_t>(oldKey, curKey, old_pose.inverse() * cur_pose);
                 lcq_.push_back<true>(std::move(r));

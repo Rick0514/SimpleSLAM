@@ -1,7 +1,7 @@
 #include <backend/ScanContext.hpp>
 
 #include <geometry/trans.hpp>
-
+#include <config/params.hpp>
 
 namespace backend {
 
@@ -10,7 +10,17 @@ namespace context {
 using namespace geometry;
 using VContext = ScanContext::VContext;
 
-ScanContext::ScanContext() {}
+ScanContext::ScanContext() {
+    // read some params
+    auto cfg = config::Params::getInstance();
+    LIDAR_HEIGHT = cfg["tf"]["lidar_height"].get<float>();
+    cfg = cfg["backend"]["context"]["scancontext"];
+    NUM_EXCLUDE_RECENT = cfg["numExcludeRecent"].get<int>();
+    BUILD_TREE_GAP = cfg["buildTreeGap"].get<int>();
+    NUM_CANDIDATES_FROM_TREE = cfg["numCandidatesFromTree"].get<int>();
+    SEARCH_RATIO = cfg["searchRatio"].get<float>();
+    SC_DIST_THRES = cfg["scDistThres"].get<float>();
+}
 
 float ScanContext::xy2theta( const float & _x, const float & _y )
 {
@@ -219,12 +229,14 @@ QueryResult ScanContext::query(int id)
     const VContext& key = ringcontexts_.at(id);
     const Context& desc = polarcontexts_.at(id);
 
-    if(ringcontexts_.size() < NUM_EXCLUDE_RECENT + 1)   return {-1, 0};
+    if(id <= NUM_EXCLUDE_RECENT + NUM_CANDIDATES_FROM_TREE)   return {-1, 0};
 
-    if(ringcontexts_.size() - ring_sub_.size() > NUM_EXCLUDE_RECENT + BUILD_TREE_GAP)
+    // build tree immediately
+    if(ring_sub_.empty() || id - ring_sub_.size() > NUM_EXCLUDE_RECENT + BUILD_TREE_GAP)
     {
+        // lg->debug("{} build tree...", id);
         ring_sub_.clear();
-        int n = ringcontexts_.size() - NUM_EXCLUDE_RECENT;
+        int n = id - NUM_EXCLUDE_RECENT;
         ring_sub_.resize(n);
         for(int i=0; i<n; i++)  ring_sub_[i] = ringcontexts_[i];
         ring_kdtree_.setInput(&ring_sub_);
@@ -253,6 +265,9 @@ QueryResult ScanContext::query(int id)
             nn_idx = k_indices[i];
         }
     }
+
+    lg->debug("id: {} get k indices: {}", id, k_indices);
+    lg->debug("{} to {} min dist: {}", id, nn_idx, min_dist);
 
     if(min_dist > SC_DIST_THRES)    return {-1, 0};
     

@@ -19,13 +19,13 @@ private:
     scpr_t float PC_MAX_RADIUS = 80.0f;  // 80 meter max in the original paper (IROS 18)
 
     // tree
-    scpr_t int NUM_EXCLUDE_RECENT = 50; // simply just keyframe gap, but node position distance-based exclusion is ok. 
-    scpr_t int BUILD_TREE_GAP = 20;
-    scpr_t int NUM_CANDIDATES_FROM_TREE = 10; // 10 is enough. (refer the IROS 18 paper)
+    int NUM_EXCLUDE_RECENT; // simply just keyframe gap, but node position distance-based exclusion is ok. 
+    int BUILD_TREE_GAP;
+    int NUM_CANDIDATES_FROM_TREE; // 10 is enough. (refer the IROS 18 paper)
 
     // loop thres
-    scpr_t float SEARCH_RATIO = 0.1f; // for fast comparison, no Brute-force, but search 10 % is okay. // not was in the original conf paper, but improved ver.
-    scpr_t float SC_DIST_THRES = 0.13f; // empirically 0.1-0.2 is fine (rare false-alarms) for 20x60 polar context (but for 0.15 <, DCS or ICP fit score check (e.g., in LeGO-LOAM) should be required for robustness)
+    float SEARCH_RATIO;     // for fast comparison, no Brute-force, but search 10 % is okay. // not was in the original conf paper, but improved ver.
+    float SC_DIST_THRES;    // empirically 0.1-0.2 is fine (rare false-alarms) for 20x60 polar context (but for 0.15 <, DCS or ICP fit score check (e.g., in LeGO-LOAM) should be required for robustness)
     // const double SC_DIST_THRES = 0.5; // 0.4-0.6 is good choice for using with robust kernel (e.g., Cauchy, DCS) + icp fitness threshold / if not, recommend 0.1-0.15
 
 public:    
@@ -34,7 +34,7 @@ public:
     using RingKdtree = nanoflann::VectorOfVectorsKdTree<VcContainer, double, PC_NUM_RING>;
 
 protected:
-    const float LIDAR_HEIGHT = 2.0;    // lidar height : add this for simply directly using lidar scan in the lidar local coord (not robot base coord) / if you use robot-coord-transformed lidar scans, just set this as 0.
+    float LIDAR_HEIGHT;    // lidar height : add this for simply directly using lidar scan in the lidar local coord (not robot base coord) / if you use robot-coord-transformed lidar scans, just set this as 0.
 
     const float PC_UNIT_SECTORANGLE = 360.0f / float(PC_NUM_SECTOR);
     const float PC_UNIT_RINGGAP = PC_MAX_RADIUS / float(PC_NUM_RING);

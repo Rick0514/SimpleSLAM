@@ -1,5 +1,6 @@
 #pragma once
 #include <types/basic.hpp>
+#include <utils/Logger.hpp>
 
 namespace backend {
 
@@ -11,6 +12,11 @@ using QueryResult = std::pair<int, float>;
 
 class ContextBase
 {
+
+protected:
+    std::shared_ptr<utils::logger::Logger> lg;
+    ContextBase() { lg = utils::logger::Logger::getInstance(); }
+
 public:
 
     virtual void addContext(const SourceType& input) = 0;

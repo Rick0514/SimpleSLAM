@@ -246,8 +246,7 @@ bool FastGICP<PointSource, PointTarget>::calculate_covariances(
     kdtree.setInputCloud(cloud);
   }
   covariances.resize(cloud->size());
-
-#pragma omp parallel for num_threads(num_threads_) schedule(guided, 8)
+// #pragma omp parallel for num_threads(num_threads_) schedule(guided, 8)
   for (int i = 0; i < cloud->size(); i++) {
     std::vector<int> k_indices;
     std::vector<float> k_sq_distances;
