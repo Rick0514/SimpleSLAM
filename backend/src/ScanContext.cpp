@@ -24,17 +24,9 @@ ScanContext::ScanContext() {
 
 float ScanContext::xy2theta( const float & _x, const float & _y )
 {
-    if(_x >= 0 && _y >= 0) 
-        return trans::rad2deg(atan(_y / _x));
-
-    if(_x < 0 && _y >= 0) 
-        return 180.0f - trans::rad2deg(atan(_y / (-_x)));
-
-    if ( _x < 0 && _y < 0) 
-        return 180 + trans::rad2deg((180/M_PI) * atan(_y / _x));
-
-    if ( _x >= 0 && _y < 0)
-        return 360 - trans::rad2deg((180/M_PI) * atan((-_y) / _x));
+    float res = std::atan2(_y, _x) + M_PI;
+    res = std::max(0.0f, std::min((float)(2 * M_PI), res));
+    return trans::rad2deg(res);
 } // xy2theta
 
 Context ScanContext::circshift(const Context &_mat, int _num_shift)
@@ -114,11 +106,14 @@ int ScanContext::fastAlignUsingVkey(const Context& _vkey1, const Context& _vkey2
 
 } // fastAlignUsingVkey
 
-std::pair<double, int> ScanContext::distanceBtnScanContext(const Context& _sc1, const Context& _sc2)
+std::pair<double, int> ScanContext::distanceBtnScanContext(int idx1, int idx2)
 {
     // 1. fast align using variant key (not in original IROS18)
-    Context vkey_sc1 = makeSectorkeyFromScancontext( _sc1 );
-    Context vkey_sc2 = makeSectorkeyFromScancontext( _sc2 );
+    const Context& _sc1 = polarcontexts_[idx1];    
+    const Context& _sc2 = polarcontexts_[idx2];
+
+    Context vkey_sc1 = sectorcontexts_[idx1];
+    Context vkey_sc2 = sectorcontexts_[idx2];
     int argmin_vkey_shift = fastAlignUsingVkey( vkey_sc1, vkey_sc2 );
 
     const int SEARCH_RADIUS = round( 0.5 * SEARCH_RATIO * _sc1.cols() ); // a half of search range 
@@ -227,7 +222,6 @@ VContext ScanContext::makeSectorkeyFromScancontext(const Context& _desc)
 QueryResult ScanContext::query(int id)
 {
     const VContext& key = ringcontexts_.at(id);
-    const Context& desc = polarcontexts_.at(id);
 
     if(id <= NUM_EXCLUDE_RECENT + NUM_CANDIDATES_FROM_TREE)   return {-1, 0};
 
@@ -252,8 +246,7 @@ QueryResult ScanContext::query(int id)
     int nn_idx = 0;
 
     for(int i=0; i<NUM_CANDIDATES_FROM_TREE; i++){
-        const Context& cand_desc = polarcontexts_[k_indices[i]];
-        auto res = distanceBtnScanContext(desc, cand_desc);
+        auto res = distanceBtnScanContext(id, k_indices[i]);
 
         double candidate_dist = res.first;
         int candidate_align = res.second;
@@ -267,7 +260,7 @@ QueryResult ScanContext::query(int id)
     }
 
     lg->debug("id: {} get k indices: {}", id, k_indices);
-    lg->debug("{} to {} min dist: {}", id, nn_idx, min_dist);
+    lg->info("{} to {} min dist: {}", id, nn_idx, min_dist);
 
     if(min_dist > SC_DIST_THRES)    return {-1, 0};
     

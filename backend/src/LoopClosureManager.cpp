@@ -64,6 +64,8 @@ void LoopClosureManager::lcHandler()
     std::unique_lock<std::mutex> lk(lc_lock_);
     lc_cv_.wait(lk, [&](){ return lc_size_ < ctb_->size() || lg->isProgramExit(); });
 
+    if(lg->isProgramExit()) return;
+
     lg->info("enter lc handler...");
 
     const auto& kfo = mmp_->getKeyFrameObjPtr();
@@ -92,12 +94,14 @@ void LoopClosureManager::lcHandler()
             }
         
             // pcr
-            bool conv = pcr_->scan2Map(lc_scan_, lc_map_, cur_pose);
+            pose_t guess = cur_pose;
+            bool conv = pcr_->scan2Map(lc_scan_, lc_map_, guess);
             auto fs = pcr_->getFitnessScore();
             lg->debug("scan size: {}, map size: {}", lc_scan_->size(), lc_map_->size());
             lg->debug("{} to {} fitness score: {}", oldKey, curKey, fs);
 
-            vis_func_(lc_scan_, lc_map_, cur_pose);
+            vis_lc_(old_pose, cur_pose);
+            vis_pc_(lc_scan_, lc_map_, cur_pose);
 
             if(conv && fs < fitness_score_){
                 auto r = std::make_shared<LCResult_t>(oldKey, curKey, old_pose.inverse() * cur_pose);

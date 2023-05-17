@@ -42,11 +42,11 @@
 
         "context": {
             "scancontext":{
-                "numExcludeRecent" : 30,
-                "buildTreeGap": 5,
+                "numExcludeRecent" : 40,
+                "buildTreeGap": 10,
                 "numCandidatesFromTree" : 10,
                 "searchRatio": 0.1,
-                "scDistThres": 0.2
+                "scDistThres": 0.4
             }
         }
     },

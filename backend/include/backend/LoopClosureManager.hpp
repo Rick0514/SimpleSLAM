@@ -50,8 +50,10 @@ protected:
     LCQ_t lcq_;
 
     // for debug
-    using visfunc_t = std::function<void(const pc_t::ConstPtr&, const pc_t::ConstPtr&, const pose_t&)>;
-    visfunc_t vis_func_;
+    using vispc_t = std::function<void(const pc_t::ConstPtr&, const pc_t::ConstPtr&, const pose_t&)>;
+    using vislc_t = std::function<void(const pose_t&, const pose_t&)>;
+    vispc_t vis_pc_;
+    vislc_t vis_lc_;
 
 public:
     
@@ -64,7 +66,10 @@ public:
 
     LCQ_t& getLCQ() { return lcq_; }
 
-    void registerVis(const visfunc_t& vf) { vis_func_ = vf; }
+    void registerVis(const vispc_t& vp, const vislc_t& vl) {
+        vis_pc_ = vp;
+        vis_lc_ = vl;
+    }
 
     ~LoopClosureManager();
 

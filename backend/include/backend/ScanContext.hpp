@@ -51,7 +51,7 @@ protected:
     static float xy2theta(const float & _x, const float & _y);
     static Context circshift(const Context &_mat, int _num_shift);
 
-    std::pair<double, int> distanceBtnScanContext (const Context &_sc1, const Context &_sc2); // "D" (eq 6) in the original paper (IROS 18)
+    std::pair<double, int> distanceBtnScanContext (int idx1, int idx2); // "D" (eq 6) in the original paper (IROS 18)
     int fastAlignUsingVkey(const Context& _vkey1, const Context& _vkey2);
 
     Context makeScanContext(const SourceType& input);
