@@ -1,4 +1,5 @@
-#include <dataproxy/LidarDataProxy.hpp>
+#include <dataproxy/Vis.hpp>
+
 #include <frontend/MapManager.hpp>
 #include <nanoflann/kfs_adaptor.hpp>
 
@@ -12,7 +13,9 @@
 
 namespace frontend {
 
-MapManager::MapManager() : mKFObjPtr(std::make_shared<KeyFramesObj>()),
+using namespace EigenTypes;
+
+MapManager::MapManager() : isMapping(true), mKFObjPtr(std::make_shared<KeyFramesObj>()),
     mSubmap(pcl::make_shared<pc_t>())
 {
     lg = logger::Logger::getInstance();
@@ -26,8 +29,6 @@ MapManager::MapManager() : mKFObjPtr(std::make_shared<KeyFramesObj>()),
     p.setIdentity();
     mLastPose = p;
     mCurPose.store(p);
-
-    mUpdateMapThreadPtr = std::make_unique<trd::ResidentThread>(&MapManager::updateMap, this);
 
     // load from tum
     auto t2p = utils::file::loadFromTum<scalar_t>(mSaveMapDir);
@@ -46,12 +47,9 @@ MapManager::MapManager() : mKFObjPtr(std::make_shared<KeyFramesObj>()),
         mKFObjPtr->keyframes.emplace_back(kf);
     }
     mKFObjPtr->mKFNums = mKFObjPtr->keyframes.size();
-
-    notifyUpdateMap();
 }
 
-// deprecated
-MapManager::MapManager(std::string pcd_file)
+MapManager::MapManager(std::string pcd_file) : isMapping(false), mSubmap(pcl::make_shared<pc_t>())
 {
     lg = logger::Logger::getInstance();
 
@@ -63,9 +61,6 @@ MapManager::MapManager(std::string pcd_file)
     p.setIdentity();
     mLastPose = p;
     mCurPose.store(p);
-
-    isMapping = false;
-    mSubmap = pcl::make_shared<pc_t>();
 
     mKFObjPtr = std::make_shared<KeyFramesObj>();
     mKFObjPtr->mSubmapIdx.insert(0);
@@ -86,7 +81,29 @@ MapManager::MapManager(std::string pcd_file)
 
     lg->info("submap ds cost: {:.3f}", tt);
     lg->info("submap size: {}", mSubmap->size());
-    // lg->info("submap mm: {}", vds.getMaxMin());
+}
+
+void MapManager::initAndRunUpdateMap()
+{
+    mUpdateMapThreadPtr = std::make_unique<trd::ResidentThread>(&MapManager::updateMap, this);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    notifyUpdateMap();
+}
+
+void MapManager::registerVis(const VisPtr &vis)
+{
+    auto cfg = config::Params::getInstance();
+    mSubmapTopic = cfg["vis"]["submap"];
+    mVisPtr = vis;
+    mVisPtr->registerPCPub(mSubmapTopic);
+}
+
+void MapManager::showSubmap()
+{
+    if(mVisPtr){
+        std::lock_guard<std::mutex> lk(mLockMap);
+        mVisPtr->publishPC(mSubmapTopic, *mSubmap);
+    }
 }
 
 void MapManager::setCurPose(const pose_t &p)
@@ -165,7 +182,7 @@ void MapManager::updateMap()
     for(auto i : k_indices){
         const auto& src = keyframes[i].pc;
         pc_t pc;
-        pcp::transformPointCloud<pt_t, scalar_t>(src, pc, keyframes[i].pose);
+        pcp::transformPointCloud<pt_t, scalar_t>(*src, pc, keyframes[i].pose);
         *mSubmap += pc;
         mKFObjPtr->mSubmapIdx.insert(i);
     }
@@ -180,7 +197,7 @@ void MapManager::updateMap()
     lg->info("submap pts: {}", mSubmap->size());
 
     // vis
-    if(mLidarDataProxyPtr)    mLidarDataProxyPtr->setVisGlobalMap(mSubmap);
+    if(mVisPtr) mVisPtr->publishPC(mSubmapTopic, *mSubmap);
 }
 
 void MapManager::saveKfs()

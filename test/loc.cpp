@@ -7,6 +7,7 @@
 
 #include <dataproxy/LidarDataProxy.hpp>
 #include <dataproxy/RelocDataProxy.hpp>
+#include <dataproxy/Vis.hpp>
 
 #include <utils/Logger.hpp>
 #include <config/params.hpp>
@@ -30,9 +31,12 @@ int main(int argc, char* argv[])
     // lg->setLogFile(LOG_FILE);
 #endif
 
-    string pcd_file = cfg["pcd_file"];  
+    string pcd_file = cfg["pcd_file"];
     ros::init(argc, argv, "loc");
     ros::NodeHandle nh;
+
+    bool enable_vis = cfg["vis"]["enable"].get<bool>();
+    auto vis = std::make_shared<Vis>(nh);
 
     // lidar data proxy
     auto ldp = std::make_shared<LidarDataProxy>(nh, lidar_size);   
@@ -45,13 +49,13 @@ int main(int argc, char* argv[])
     // construct LO
     auto lo = std::make_unique<LidarOdometry>(ldp, ftd, rdp, mmp);
 
-    // show global pc
-    ros::Publisher gpc_pub = nh.advertise<sensor_msgs::PointCloud2>("/global_map", 1, true);
-    sensor_msgs::PointCloud2 rospc;
-    pcl::toROSMsg(*(mmp->getSubmap()), rospc);
-    rospc.header.frame_id = "map";
-    gpc_pub.publish(rospc);
+    // vis or not
+    if(enable_vis){
+        mmp->registerVis(vis);
+        lo->registerVis(vis);
+    }
 
+    mmp->showSubmap();
     // run lo, no dependency of lo and ftd, because lo alreay own a copy of
     // ftd, if ftd own lo, circular reference will happen!!
     trd::ResidentThread lo_thread([&](){

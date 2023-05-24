@@ -35,7 +35,7 @@ void removeNaNFromPointCloud(PC<PointType> &cloud)
 }
 
 template<typename PointType, typename Scalar=float>
-void transformPointCloud(const typename PC<PointType>::ConstPtr cloudIn, PC<PointType>& cloudOut, Pose6<Scalar> trans)
+void transformPointCloud(const PC<PointType>& cloudIn, PC<PointType>& cloudOut, Pose6<Scalar> trans)
 {
     Pose6<float> tr;
     if constexpr (std::is_same_v<Scalar, float>){
@@ -44,19 +44,19 @@ void transformPointCloud(const typename PC<PointType>::ConstPtr cloudIn, PC<Poin
         tr = trans.template cast<float>();
     }
 
-    cloudOut.header = cloudIn->header;
+    cloudOut.header = cloudIn.header;
 
-    auto cloudSize = cloudIn->size();
+    auto cloudSize = cloudIn.size();
     cloudOut.resize(cloudSize);
 
     #pragma omp parallel for num_threads(2)
     for (int i = 0; i < cloudSize; ++i)
     {
-        pcl::Vector3fMapConst pfrom = cloudIn->points[i].getVector3fMap();
+        pcl::Vector3fMapConst pfrom = cloudIn.points[i].getVector3fMap();
         pcl::Vector3fMap pto = cloudOut.points[i].getVector3fMap();
         pto.noalias() = tr * pfrom;
         if constexpr (std::is_same_v<PointType, Pxyzi>){
-            cloudOut.points[i].intensity = cloudIn->points[i].intensity;
+            cloudOut.points[i].intensity = cloudIn.points[i].intensity;
         }
     }
 }

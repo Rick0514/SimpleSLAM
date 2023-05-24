@@ -5,6 +5,7 @@
 
 #include <dataproxy/LidarDataProxy.hpp>
 #include <dataproxy/RelocDataProxy.hpp>
+#include <dataproxy/Vis.hpp>
 
 #include <PCR/LoamRegister.hpp>
 #include <PCR/NdtRegister.hpp>
@@ -30,6 +31,8 @@ LidarOdometry::LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, RelocDataProxyPt
     auto cfg = config::Params::getInstance();
     auto pcr_type = cfg["frontend"]["pcr"].get<std::string>();
     auto grid_size = cfg["downSampleVoxelGridSize"].get<float>();
+    mScanTopic = cfg["vis"]["align"];
+
     // mVoxelGrid.setDownsampleAllData(false);
     mVoxelGrid.setLeafSize(grid_size, grid_size, grid_size);
     
@@ -52,6 +55,12 @@ LidarOdometry::LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, RelocDataProxyPt
     }
 
     if(rdp) rdp->registerFunc(std::bind(&LidarOdometry::setRelocFlag, this, std::placeholders::_1));
+}
+
+void LidarOdometry::registerVis(const VisPtr &vis)
+{
+    mVisPtr = vis;
+    mVisPtr->registerPCPub(mScanTopic);
 }
 
 void LidarOdometry::setRelocFlag(const pose_t& p)
@@ -213,7 +222,7 @@ void LidarOdometry::generateOdom()
         }
 
         // visualize downsample scan
-        mDataProxyPtr->setVisAligned(mDownSampleScan, init_pose);
+        if(mVisPtr) mVisPtr->publishPC(mScanTopic, *mDownSampleScan, init_pose);
 
         // push the refined odom to deque
         auto global_odom = std::make_shared<Odometry>(stamp, init_pose);

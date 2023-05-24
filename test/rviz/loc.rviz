@@ -6,6 +6,7 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /globalmap1
         - /aligned1
       Splitter Ratio: 0.5
     Tree Height: 549
@@ -27,7 +28,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: globalmap
+    SyncSource: ""
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -76,7 +77,7 @@ Visualization Manager:
       Size (Pixels): 3
       Size (m): 0.10000000149011612
       Style: Flat Squares
-      Topic: /global_map
+      Topic: /globalmap
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true

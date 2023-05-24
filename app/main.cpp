@@ -1,6 +1,7 @@
 #include <dataproxy/LidarDataProxy.hpp>
 #include <dataproxy/EkfOdomProxy.hpp>
 #include <dataproxy/RelocDataProxy.hpp>
+#include <dataproxy/Vis.hpp>
 
 #include <frontend/Frontend.hpp>
 #include <frontend/MapManager.hpp>
@@ -102,6 +103,8 @@ int main(int argc, char* argv[])
     ros::init(argc, argv, "app");
     ros::NodeHandle nh;
 
+    // vis
+    auto vis = std::make_shared<Vis>(nh);
     // lidar data proxy
     auto ldp = std::make_shared<LidarDataProxy>(nh, lidar_size);   
     // ekf data proxy
@@ -116,18 +119,19 @@ int main(int argc, char* argv[])
 
     // mapmanager
     auto mmp = std::make_shared<MapManager>();
-    if(enable_vis)  mmp->registerVis(ldp);
-
     // construct LO
     auto lo = std::make_unique<LidarOdometry>(ldp, ftd, rdp, mmp);
-
     // construct LC
     std::shared_ptr<LoopClosureManager> lc;
-    if(enable_lc)   lc = std::make_shared<LoopClosureManager>(mmp);
-
     // backend
     auto bkd = std::make_unique<Backend>(ftd, mmp, lc);
+    // vis or not
+    if(enable_vis){
+        mmp->registerVis(vis);
+        lo->registerVis(vis);
+    }  
 
+    mmp->initAndRunUpdateMap();
     // run lo, no dependency of lo and ftd, because lo alreay own a copy of
     // ftd, if ftd own lo, circular reference will happen!!
     trd::ResidentThread lo_thread([&](){

@@ -9,6 +9,7 @@
 
 // ------------ forward declaration ------------
 namespace dataproxy { 
+    class Vis;
     class LidarDataProxy; 
     class RelocDataProxy;
 }
@@ -34,10 +35,13 @@ public:
     using MapManagerPtr = std::shared_ptr<MapManager>;
     using RelocDataProxyPtr = std::shared_ptr<RelocDataProxy>;
 
+    using VisPtr = std::shared_ptr<Vis>;
+
 private:
 
     DataProxyPtr mDataProxyPtr;
     FrontendPtr mFrontendPtr;
+    VisPtr mVisPtr;
 
     std::unique_ptr<PCR::PointCloudRegister> mPcr; 
 
@@ -54,12 +58,16 @@ private:
     pcp::VoxelDownSampleV2 mVoxelDownSampleV2;
     pcp::VoxelDownSampleV3 mVoxelDownSampleV3;
 
+    std::string mScanTopic;
+
 public:
 
     void setRelocFlag(const pose_t& p);
     auto getMapManger() { return mMapManagerPtr; }
 
     explicit LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, RelocDataProxyPtr& rdp, MapManagerPtr& mmp);
+
+    void registerVis(const VisPtr &vis);
 
     void selectKeyFrame(const KeyFrame&);
 

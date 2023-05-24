@@ -8,7 +8,7 @@
 #include <utils/Logger.hpp>
 #include <types/basic.hpp>
 
-namespace dataproxy { class LidarDataProxy; }
+namespace dataproxy { class Vis; }
 
 namespace frontend {
 
@@ -60,7 +60,7 @@ class MapManager
 private:
 
     using KeyFramesObjPtr = std::shared_ptr<KeyFramesObj>;
-    using LidarDataProxyPtr = std::shared_ptr<dataproxy::LidarDataProxy>;
+    using VisPtr = std::shared_ptr<dataproxy::Vis>;
 
     std::shared_ptr<logger::Logger> lg;
 
@@ -77,7 +77,7 @@ private:
     trd::AtomicVar<pose_t> mCurPose;
     pose_t mLastPose;
 
-    LidarDataProxyPtr mLidarDataProxyPtr;
+    VisPtr mVisPtr;
 
     bool isMapping{true};
 
@@ -86,15 +86,21 @@ private:
 
     std::unique_ptr<trd::ResidentThread> mUpdateMapThreadPtr;
 
+    std::string mSubmapTopic;
+
     // private
     void updateMap();
 
 public:
 
     MapManager();
+
     MapManager(std::string pcd_file);
 
-    void registerVis(const LidarDataProxyPtr& ldp) { mLidarDataProxyPtr = ldp; }
+    void registerVis(const VisPtr &vis);
+
+    void initAndRunUpdateMap();
+    void showSubmap();
 
     void setCurPose(const pose_t& p);
 

@@ -50,7 +50,7 @@ void LoopClosureManager::loopFindNearKeyframes(pc_t::Ptr& nearKeyframes, int key
         {
             const auto& src = kfs->keyframes[keyNear].pc;
             pc_t dst;
-            pcp::transformPointCloud(src, dst, kfs->keyframes[keyNear].pose);
+            pcp::transformPointCloud(*src, dst, kfs->keyframes[keyNear].pose);
             *nearKeyframes += dst;
         }
     }
