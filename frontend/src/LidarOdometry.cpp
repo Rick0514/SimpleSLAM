@@ -31,7 +31,6 @@ LidarOdometry::LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, RelocDataProxyPt
     auto cfg = config::Params::getInstance();
     auto pcr_type = cfg["frontend"]["pcr"].get<std::string>();
     auto grid_size = cfg["downSampleVoxelGridSize"].get<float>();
-    mScanTopic = cfg["vis"]["align"];
 
     // mVoxelGrid.setDownsampleAllData(false);
     mVoxelGrid.setLeafSize(grid_size, grid_size, grid_size);
@@ -59,6 +58,8 @@ LidarOdometry::LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, RelocDataProxyPt
 
 void LidarOdometry::registerVis(const VisPtr &vis)
 {
+    auto cfg = config::Params::getInstance();
+    mScanTopic = cfg["vis"]["align"];
     mVisPtr = vis;
     mVisPtr->registerPCPub(mScanTopic);
 }

@@ -14,8 +14,7 @@ class ResidentThread : public noncopyable::NonCopyable
 {
 private:
 
-    std::atomic_bool running;
-    std::atomic_bool stop;
+    std::atomic_bool running, stop;
     std::thread thd;
 
     mutable std::mutex lk;
@@ -33,8 +32,8 @@ public:
         thd = std::move(std::thread([&](){
             while(running.load()){
                 std::unique_lock<std::mutex> lock(lk);
-                cv.wait(lock, [&](){ return !stop; });
-                func();
+                cv.wait(lock, [&](){ return !stop.load(); });
+                if(running.load())  func();
             }
         }));
     }
@@ -45,7 +44,7 @@ public:
 
     void Resume() {
         stop.store(false);
-        cv.notify_all();
+        cv.notify_one();
     }
 
     bool IsActive() {

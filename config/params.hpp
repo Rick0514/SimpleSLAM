@@ -1,3 +1,5 @@
+#pragma once
+
 #include <utils/NonCopyable.hpp>
 #include <fstream>
 

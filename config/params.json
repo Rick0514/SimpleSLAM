@@ -2,16 +2,18 @@
     // mode has lio or lo
     "mode": "lio",
 
+    "cores": 8,
+
     // use ndt maybe no need to downsample, or sample rate should be small
     "downSampleVoxelGridSize": 0.5, 
 
     "pcd_file": "/home/gy/.robot/data/maps/hqc/hqc.pcd",
     
-    // "saveMapDir" : "/home/rick/pcr/test/data/map",
-    "saveMapDir" : "/home/hgy/hgy/PCR/test/data/map",
-    "rosbag": "/home/hgy/hgy/slam_ws/src/husky-sim/husky/husky_description/bag/lc1.bag",
+    "saveMapDir" : "/home/rick/pcr/test/data/map",
+    // "saveMapDir" : "/home/hgy/hgy/PCR/test/data/map",
+    // "rosbag": "/home/hgy/hgy/slam_ws/src/husky-sim/husky/husky_description/bag/lc1.bag",
     // "rosbag": "/home/hgy/sda2/rosbag/zhengzhou0711.orig.bag",
-    // "rosbag": "/home/rick/jtcx/hgy_gitee/minimal_ws/bag/zhengzhou0711.orig.bag",
+    "rosbag": "/home/rick/jtcx/hgy_gitee/minimal_ws/bag/zhengzhou0711.orig.bag",
 
     "tf":{
         "lidar_height": 2.0
@@ -52,7 +54,7 @@
     },
     
     "frontend" : {
-        "pcr" : "loam",     // loam, ndt or vgicp
+        "pcr" : "ndt",     // loam, ndt or vgicp
         "local_size": 100,
         "global_size": 10
     }

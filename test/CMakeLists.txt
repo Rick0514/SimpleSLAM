@@ -66,7 +66,7 @@ target_link_libraries(loc
     dataproxy
     frontend
 )
-target_compile_definitions(loc PRIVATE LOG_FILE="${CMAKE_CURRENT_SOURCE_DIR}/data/loc.log")
+# target_compile_definitions(loc PRIVATE LOG_FILE="${CMAKE_CURRENT_SOURCE_DIR}/data/loc.log")
 
 add_executable(thread thread.cpp)
 target_include_directories(thread PUBLIC

@@ -33,7 +33,6 @@ private:
     gtsam::noiseModel::Diagonal::shared_ptr gtOdomNoise;
     gtsam::noiseModel::Diagonal::shared_ptr gtLcNoise;
 
-
 public:
 
     std::string mSaveMapDir;
@@ -87,14 +86,14 @@ Backend::Gtsam::Gtsam()
 {
     // bkd is not init, should not use this pointer
     // noise --> gtsam use double
-    Eigen::Matrix<double, 6, 1> priorNoise, odomNoise, lcNoise;
 
+    gtsam::Vector6 priorNoise, odomNoise, lcNoise;
     priorNoise << 1e-2, 1e-2, M_PI / 72, 1e-1, 1e-1, 1e-1;
     odomNoise << 1e-4, 1e-4, 1e-4, 1e-1, 1e-1, 1e-1;
     lcNoise << 1e-1, 1e-1, 1e-1, 1e-1, 1e-1, 1e-1;
     
-    gtOdomNoise = noiseModel::Diagonal::Variances(odomNoise);
     gtPriorNoise = noiseModel::Diagonal::Variances(priorNoise);
+    gtOdomNoise = noiseModel::Diagonal::Variances(odomNoise);
     gtLcNoise = noiseModel::Diagonal::Variances(lcNoise);
 
     gtsam::ISAM2Params param;
@@ -103,7 +102,7 @@ Backend::Gtsam::Gtsam()
     isam2 = std::make_unique<gtsam::ISAM2>(param);
 }
 
-Backend::Backend(const FrontendPtr& ft, const MapManagerPtr& mp, LCManagerPtr lcm) : mRunning(true), mFrontendPtr(ft),
+Backend::Backend(const FrontendPtr& ft, const MapManagerPtr& mp, LCManagerPtr lcm) : mFrontendPtr(ft),
     mMapManagerPtr(mp), mGtsamImpl(std::make_unique<Gtsam>())
 {
     // lg should init first !!

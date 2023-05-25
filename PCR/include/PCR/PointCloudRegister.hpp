@@ -2,6 +2,7 @@
 
 #include <types/basic.hpp>
 #include <utils/Logger.hpp>
+#include <config/params.hpp>
 
 namespace PCR
 {
@@ -13,6 +14,7 @@ class PointCloudRegister
 
 protected:
     bool isConverge;
+    int cores;
     std::shared_ptr<utils::logger::Logger> lg;
 
 public:
@@ -25,6 +27,8 @@ public:
 public:
     PointCloudRegister(){
         lg = utils::logger::Logger::getInstance();
+        auto cfg = config::Params::getInstance();
+        cores = cfg["cores"].get<int>();
     }
 
     virtual scalar_t getFitnessScore() { return 0; }

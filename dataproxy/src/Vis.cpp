@@ -26,6 +26,7 @@ public:
     std::unordered_map<std::string, ros::Publisher> _pubmap;
     std::unordered_map<std::string, pc_t> _pcmap;
 
+    std::shared_ptr<utils::logger::Logger> _lg;
 
     Ros(ros::NodeHandle& nh);
 
@@ -38,13 +39,14 @@ public:
 
 Vis::Ros::Ros(ros::NodeHandle& nh) : _nh(nh)
 {
+    _lg = utils::logger::Logger::getInstance();
     _pc_thd = std::make_unique<utils::trd::ResidentThread>(&Ros::visPCHandler, this);
 }
 
 void Vis::Ros::visPCHandler()
 {
     std::unique_lock<std::mutex> lk(_pc_lock);
-    _pc_cv.wait(lk);
+    _pc_cv.wait(lk, [&](){ return !_pc_name.empty() || _lg->isProgramExit(); });
 
     // trans to ros pc
     if(_pcmap.count(_pc_name)){
@@ -69,6 +71,8 @@ void Vis::Ros::notifyPC(const std::string &name, const pc_t &pc)
 
 Vis::Ros::~Ros(){
     _pc_thd->Stop();
+    std::lock_guard<std::mutex> lk(_pc_lock);
+    _pc_name = "exit";
     _pc_cv.notify_one();
 }
 
@@ -80,7 +84,7 @@ Vis::Vis(ros::NodeHandle& nh) : mRosImpl(std::make_unique<Ros>(nh))
 void Vis::registerPCPub(const std::string &name)
 {
     if(mRosImpl->_pubmap.count(name) == 0){
-        mRosImpl->_pubmap[name] = mRosImpl->_nh.advertise<sensor_msgs::PointCloud2>(name, 1);
+        mRosImpl->_pubmap[name] = mRosImpl->_nh.advertise<sensor_msgs::PointCloud2>(name, 1, true);
     }
 }
 
@@ -98,7 +102,7 @@ void Vis::publishPC(const std::string& name, const pc_t& pc, const pose_t& pose)
 
 Vis::~Vis()
 {
-
+    lg->info("vis exit!");
 }
 
 }

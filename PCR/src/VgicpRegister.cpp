@@ -11,11 +11,12 @@ struct VgicpRegister::Vgicp
     Vgicp()
     {
         vgicp_.setResolution(1.0);
-        vgicp_.setNumThreads(constant::numCores);
     }
 };
 
-VgicpRegister::VgicpRegister() : vgicp_(std::make_unique<Vgicp>()) {}
+VgicpRegister::VgicpRegister() : vgicp_(std::make_unique<Vgicp>()) {
+    vgicp_->vgicp_.setNumThreads(cores);
+}
     
 void VgicpRegister::initForLC()
 {

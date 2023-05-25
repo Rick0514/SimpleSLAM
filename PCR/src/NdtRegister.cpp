@@ -10,12 +10,13 @@ struct NdtRegister::Ndt
     
     Ndt(){
         _ndt_omp.setResolution(resol);
-        _ndt_omp.setNumThreads(constant::numCores);
         _ndt_omp.setNeighborhoodSearchMethod(pclomp::DIRECT7);
     }
 };
 
-NdtRegister::NdtRegister() : _ndt(std::make_unique<Ndt>()) {}
+NdtRegister::NdtRegister() : _ndt(std::make_unique<Ndt>()) {
+    _ndt->_ndt_omp.setNumThreads(cores);
+}
 
 bool NdtRegister::scan2Map(const PC_cPtr& src, const PC_cPtr& dst, pose_t& res)
 {

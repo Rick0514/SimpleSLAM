@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
     // lidar data proxy
     auto ldp = std::make_shared<LidarDataProxy>(nh, lidar_size);   
     // reloc data proxy
-    auto rdp = make_shared<RelocDataProxy>(nh);
+    auto rdp = std::make_shared<RelocDataProxy>(nh);
     // frontend
     auto ftd = std::make_shared<Frontend>(local_size, global_size);
     // mapmanager

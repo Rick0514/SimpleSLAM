@@ -43,7 +43,6 @@ private:
     std::unique_ptr<Gtsam> mGtsamImpl;
 
     // optimize thread
-    std::atomic_bool mRunning;
     std::unique_ptr<trd::ResidentThread> mOptimThread;
 
     std::string mSaveMapDir;
