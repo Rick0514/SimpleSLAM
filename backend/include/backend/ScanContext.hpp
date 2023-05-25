@@ -10,7 +10,7 @@ namespace backend {
 namespace context {
 
 // adapt from https://github.com/irapkaist/scancontext/blob/master/cpp/module/Scancontext/Scancontext.h
-class ScanContext : public ContextBase
+class ScanContext final : public ContextBase
 {
 
 private:
@@ -28,8 +28,13 @@ private:
     float SC_DIST_THRES;    // empirically 0.1-0.2 is fine (rare false-alarms) for 20x60 polar context (but for 0.15 <, DCS or ICP fit score check (e.g., in LeGO-LOAM) should be required for robustness)
     // const double SC_DIST_THRES = 0.5; // 0.4-0.6 is good choice for using with robust kernel (e.g., Cauchy, DCS) + icp fitness threshold / if not, recommend 0.1-0.15
 
-public:    
+public:  
+
+    using Source = pc_t;
+    using Context = Eigen::MatrixXd;
     using VContext = Eigen::VectorXd;
+    using QueryResult = std::pair<int, float>;
+
     using VcContainer = std::vector<VContext>;
     using RingKdtree = nanoflann::VectorOfVectorsKdTree<VcContainer, double, PC_NUM_RING>;
 
@@ -54,7 +59,7 @@ protected:
     std::pair<double, int> distanceBtnScanContext (int idx1, int idx2); // "D" (eq 6) in the original paper (IROS 18)
     int fastAlignUsingVkey(const Context& _vkey1, const Context& _vkey2);
 
-    Context makeScanContext(const SourceType& input);
+    Context makeScanContext(const Source& input);
     VContext makeRingkeyFromScancontext(const Context& _desc);
     VContext makeSectorkeyFromScancontext(const Context& _desc);
 
@@ -64,10 +69,10 @@ public:
 
     virtual size_t size() const override { return polarcontexts_.size(); }
 
-    virtual void addContext(const SourceType& input) override;
-    virtual QueryResult query(int id) override;
+    virtual void addContext(const cbtype::Source& input) override;
+    virtual cbtype::QueryResult query(int id) override;
     // virtual double computeSimularity(size_t from, size_t to) override;
-    virtual double computeSimularity(const Context& from, const Context& to) override;
+    virtual double computeSimularity(const cbtype::Context& from, const cbtype::Context& to) override;
 
 };
 

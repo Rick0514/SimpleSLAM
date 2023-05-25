@@ -8,7 +8,10 @@ namespace backend {
 namespace context {
 
 using namespace geometry;
+using Source = ScanContext::Source;
+using Context = ScanContext::Context;
 using VContext = ScanContext::VContext;
+using QueryResult = ScanContext::QueryResult;
 
 ScanContext::ScanContext() {
     // read some params
@@ -50,9 +53,10 @@ Context ScanContext::circshift(const Context &_mat, int _num_shift)
     return shifted_mat;
 } // circshift
 
-void ScanContext::addContext(const SourceType &input)
+void ScanContext::addContext(const cbtype::Source& input)
 {
-    Context sc = makeScanContext(input); // v1 
+    auto src = std::any_cast<const Source&>(input);
+    Context sc = makeScanContext(src); // v1 
     VContext ringct = makeRingkeyFromScancontext( sc );
     VContext sectorct = makeSectorkeyFromScancontext( sc );
 
@@ -61,8 +65,11 @@ void ScanContext::addContext(const SourceType &input)
     sectorcontexts_.push_back(sectorct); 
 }
 
-double ScanContext::computeSimularity(const Context& _sc1, const Context& _sc2)
+double ScanContext::computeSimularity(const cbtype::Context& sc1, const cbtype::Context& sc2)
 {
+    auto _sc1 = std::any_cast<const Context&>(sc1);
+    auto _sc2 = std::any_cast<const Context&>(sc2);
+    
     int num_eff_cols = 0; // i.e., to exclude all-nonzero sector
     double sum_sector_similarity = 0;
     for ( int col_idx = 0; col_idx < _sc1.cols(); col_idx++ )
@@ -142,10 +149,9 @@ std::pair<double, int> ScanContext::distanceBtnScanContext(int idx1, int idx2)
     return std::make_pair(min_sc_dist, argmin_shift);
 } // distanceBtnScanContext
 
-Context ScanContext::makeScanContext(const pc_t& _scan_down)
+Context ScanContext::makeScanContext(const Source& _scan_down)
 {
     // TicToc t_making_desc;
-
     int num_pts_scan_down = _scan_down.points.size();
 
     // main
@@ -219,12 +225,14 @@ VContext ScanContext::makeSectorkeyFromScancontext(const Context& _desc)
     return variant_key;
 } // SCManager::makeSectorkeyFromScancontext
 
-QueryResult ScanContext::query(int id)
+cbtype::QueryResult ScanContext::query(int id)
 {
     const VContext& key = ringcontexts_.at(id);
 
-    if(id <= NUM_EXCLUDE_RECENT + NUM_CANDIDATES_FROM_TREE)   return {-1, 0};
+    QueryResult ans{-1, 0};
 
+    if(id <= NUM_EXCLUDE_RECENT + NUM_CANDIDATES_FROM_TREE) return ans;
+    
     // build tree immediately
     if(ring_sub_.empty() || id - ring_sub_.size() > NUM_EXCLUDE_RECENT + BUILD_TREE_GAP)
     {
@@ -262,9 +270,11 @@ QueryResult ScanContext::query(int id)
     lg->debug("id: {} get k indices: {}", id, k_indices);
     lg->info("{} to {} min dist: {}", id, nn_idx, min_dist);
 
-    if(min_dist > SC_DIST_THRES)    return {-1, 0};
+    if(min_dist > SC_DIST_THRES)    return ans;
     
-    return {nn_idx, trans::deg2rad(PC_UNIT_SECTORANGLE * nn_align)};
+    ans.first = nn_idx;
+    ans.second = trans::deg2rad(PC_UNIT_SECTORANGLE * nn_align);
+    return ans;
 }
 
 }

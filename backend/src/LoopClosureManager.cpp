@@ -72,7 +72,7 @@ void LoopClosureManager::lcHandler()
 
     for(int i=lc_size_; i<ctb_->size(); i++){
         
-        auto q = ctb_->query(i);
+        auto q = std::any_cast<context::ScanContext::QueryResult>(ctb_->query(i));
         if(q.first >= 0){
             int curKey = i;
             int oldKey = q.first;

@@ -9,11 +9,16 @@ namespace context {
 
 class DistContext final : public ContextBase
 {
-private:
-    
-    using context_t = Eigen::Matrix<scalar_t, 2, 1>;
+public:
+    using Context = EigenTypes::V3<scalar_t>;
+    using QueryResult = int;
 
-    std::vector<context_t> cont_;
+    using Container = std::vector<Context>;
+    using Kdtree = nanoflann::VectorOfVectorsKdTree<Container, scalar_t, 3>;
+
+private:
+    Container cont_;
+    Kdtree kdtree_;
 
 public:
 
@@ -21,10 +26,10 @@ public:
 
     virtual size_t size() const override { return cont_.size(); }
 
-    virtual void addContext(const SourceType& input) override;
-    virtual QueryResult query(int id) override;
+    virtual void addContext(const cbtype::Source& input) override;
+    virtual cbtype::QueryResult query(int id) override;
     // virtual double computeSimularity(size_t from, size_t to) override;
-    virtual double computeSimularity(const Context& from, const Context& to) override;
+    virtual double computeSimularity(const cbtype::Context& from, const cbtype::Context& to) override;
 
 };
 
