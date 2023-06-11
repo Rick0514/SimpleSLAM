@@ -1,4 +1,4 @@
-## NaiveSLAM
+## SimpleSLAM
 
 A generalizable SLAM framework. But there is still a far way to go!
 
