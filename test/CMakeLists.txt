@@ -124,3 +124,12 @@ target_link_libraries(lcm
     frontend
     loopclosure
 )
+
+add_executable(visgm vis_globalmap.cpp)
+target_include_directories(visgm PRIVATE
+    ${PCL_INCLUDE_DIRS}
+    ${config_INCLUDE_DIRS}
+)
+target_link_libraries(visgm
+    ${PCL_LIBRARIES}
+)
