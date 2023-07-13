@@ -2,7 +2,6 @@
 
 A lidar-centric simple slam integrated with sensors like imu and wheel odometer, with lots of interfaces for easily re-developing
 
-
 ### Modules
 
 * dataproxy
@@ -36,12 +35,150 @@ There are lots of unit test to check each modules working properly. Some are lis
 5. `lcm.cpp` test Loop Closure Manager function with visualization.
 6. `logger.cpp` test logger and progress bar.
 7. `thread.cpp` test resident thread which means the thread's life extend utils whole program exit.
-8. `loc.cpp` minimal lidar odometry case, if you has static point cloud maps, you can test localization performance with mouse relocalization on rviz.
+8. `loc.cpp` minimal lidar odometry case, if you has static pointcloud maps, you can test localization performance with mouse relocalization on rviz.
 
 * app
 
 The main entry of the project! It depends on configuration file at `config/params.json`.
 
+* common
+
+The project contains many practical tools at `common`.
+1. geometry: matrix calculations, angle or pose translation, basic manifolds calculations.
+2. pcp: pointcloud preprocesser.
+3. time: time counter intergrate with spdlog[10].
+4. types: basic types alias used in project.
+5. utils: singleton logger, blocked or non-blocked queue, compatible share ptr between std and boost, file operation etc.
+
+### Framework
+
+![](docs/imgs/fw.png)
+
+* loose-coupled update schem
+
+![](docs/imgs/ud.png)
+
+m means map frame, o means odom frame, t means time stamp.
+
+
+### Features
+
+1. Non ROS except `dataproxy`.
+2. Support parsing rosbag directly, very fast mapping offline without multi-core CPU.
+3. Change pointcloud register method via config file.
+4. Automatically switch to mapping or localization mode.
+5. Support factor graph reload for remapping.
+6. Support designing your own pointcloud descriptor or even visual descriptor.
+7. Save all keyframe and ensure keyframe insertion is sparse.
+
+### Config
+
+```json
+{
+    // mode has lio or lo
+    "mode": "lio",
+    // speed up pointcloud register
+    "cores": 4,
+    // use ndt maybe no need to downsample, or sample rate should be small
+    "downSampleVoxelGridSize": 0.5, 
+    // use for pure location mode for unit test loc.cpp
+    "pcd_file": "/home/gy/.robot/data/maps/hqc/hqc.pcd",
+    // save map location
+    "saveMapDir" : "/home/rick/pcr/test/data/map",
+    // rosbag location
+    "rosbag": "/media/gy/201E-43FF/binhai_gps0711-0706.bag",
+    "tf":{
+        // distance from ground use for ScanContext 
+        "lidar_height": 2.0
+    },
+
+    "dataproxy": {
+        // topic name
+        "lidar": "/lidar_points",
+        "lidar_size": 10,
+        "imu": "/imu/data",
+        "wheel": "/odom/raw"
+    },
+
+    // visualization stuff
+    "vis": {
+        "enable" : true,
+        "align": "/aligned",
+        "submap": "/globalmap"
+    },
+    "backend" : {
+        // loop closure parameters
+        "lc": {
+            "enable" : false,
+            "contextDownSampleGridSize" : 0.5,
+            "historySubmapRange" : 1,
+            "fitnessThreshold" : 0.3
+        },
+        "context": {
+            "scancontext":{
+                "numExcludeRecent" : 40,
+                "buildTreeGap": 10,
+                "numCandidatesFromTree" : 10,
+                "searchRatio": 0.1,
+                "scDistThres": 0.4
+            }
+        }
+    },
+    "frontend" : {
+        "pcr" : "loam",     // loam, ndt or vgicp
+        // queue size for global odometry or local odometry
+        "local_size": 100,
+        "global_size": 10
+    }
+}
+```
+
+### Usage
+
+1. Build
+
+```bash
+# build under real-time mode
+bash build.sh 
+# build under rosbag mode
+bash build.sh rosbag
+# rebuild project
+bash build.sh rebuild
+```
+
+2. Run
+
+```bash
+# rviz means launch rviz
+# rebuild means rebuild whole map, factor graph will be deleted
+bash run.sh <rviz> <rebuild>
+
+# if you use rosbag, play it then.
+```
+
+3. Memory check using Valgrind
+
+Before memory check, you need to install valgrind first.
+
+```bash
+bash memcheck.sh
+```
+
+### Perf.
+
+1. Fast rosbag parsing offline mapping
+
+![](./docs/imgs/time-rosbag.png)
+
+2. Precision
+
+No loop closure case, LIO-SAM is better for now.
+
+![](./docs/imgs/perf.png)
+
+3. Trajectory
+
+![](./docs/imgs/traj.png)
 
 ### Ref.
 
@@ -62,3 +199,5 @@ The main entry of the project! It depends on configuration file at `config/param
 [8] https://github.com/jlblancoc/nanoflann
 
 [9] https://github.com/YJZLuckyBoy/liorf
+
+[10] https://github.com/gabime/spdlog
