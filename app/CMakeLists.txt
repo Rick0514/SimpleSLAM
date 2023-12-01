@@ -9,7 +9,8 @@ find_package(catkin REQUIRED COMPONENTS
     rosbag
 )
 
-add_executable(${PROJECT_NAME} main.cpp)
+# add_executable(${PROJECT_NAME} main.cpp)
+add_executable(${PROJECT_NAME} grad.cpp)
 target_include_directories(${PROJECT_NAME} PUBLIC
     ${ROOT_DIR}/dataproxy/include
     ${ROOT_DIR}/frontend/include

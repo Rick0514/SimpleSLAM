@@ -8,6 +8,7 @@ add_library(${PROJECT_NAME} SHARED ${srcs})
 target_include_directories(${PROJECT_NAME} PUBLIC
     include
     ${PCL_INCLUDE_DIRS}
+    ${filter_INCLUDE_DIRS}
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE

@@ -142,6 +142,19 @@ void test_io_format()
     cout << ss.str() << endl;
 }
 
+void test_sim_trans()
+{
+    Eigen::Matrix<double, 29, 12> Fw;
+    Fw.setZero();
+    
+    Eigen::Matrix<double, 12, 12> Q;
+    Q.setIdentity();
+
+    Eigen::Matrix<double, 29, 29> R = Fw * Q * Fw.transpose();
+
+    cout << R << endl;
+}
+
 int main(int argc, char const *argv[])
 {
     // test_setPose6d();
@@ -153,8 +166,10 @@ int main(int argc, char const *argv[])
     // test_map();
     // test_map_pcl();
 
-    test_type_same();
-    test_io_format();
+    // test_type_same();
+    // test_io_format();
+
+    test_sim_trans();
 
     return 0;
 }

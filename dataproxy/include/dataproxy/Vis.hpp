@@ -27,6 +27,7 @@ public:
     void publishPC(const std::string& name, const pc_t& pc);
     void publishPC(const std::string& name, const pc_t& pc, const pose_t& pose);
 
+    void publishOdom(const EigenTypes::Pose6d& p, double t);
 
     ~Vis();
 

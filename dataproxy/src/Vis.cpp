@@ -1,14 +1,17 @@
 #include <dataproxy/Vis.hpp>
 
 #include <ros/ros.h>
-
+#include <nav_msgs/Odometry.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <pcl_conversions/pcl_conversions.h>
 
 #include <utils/Thread.hpp>
 #include <pcp/pcp.hpp>
+#include <config/params.hpp>
 
 namespace dataproxy {
+
+using namespace EigenTypes;
 
 class Vis::Ros
 {
@@ -23,6 +26,7 @@ private:
 public:
 
     ros::NodeHandle& _nh;
+    ros::Publisher _pub_lidar_odom;
     std::unordered_map<std::string, ros::Publisher> _pubmap;
     std::unordered_map<std::string, pc_t> _pcmap;
 
@@ -41,6 +45,10 @@ Vis::Ros::Ros(ros::NodeHandle& nh) : _nh(nh)
 {
     _lg = utils::logger::Logger::getInstance();
     _pc_thd = std::make_unique<utils::trd::ResidentThread>(&Ros::visPCHandler, this);
+
+    auto params = config::Params::getInstance()["vis"];
+    auto lidar_odom_topic = params["lidar_odom"].get<std::string>();
+    _pub_lidar_odom = _nh.advertise<nav_msgs::Odometry>(lidar_odom_topic, 10);
 }
 
 void Vis::Ros::visPCHandler()
@@ -98,6 +106,25 @@ void Vis::publishPC(const std::string& name, const pc_t& pc, const pose_t& pose)
     pc_t align;
     pcp::transformPointCloud<pt_t>(pc, align, pose.cast<float>());
     publishPC(name, align);
+}
+
+void Vis::publishOdom(const Pose6d& p, double t)
+{
+    nav_msgs::Odometry msg;
+    msg.header.stamp = ros::Time().fromSec(t);
+    msg.header.frame_id = "map";
+    msg.child_frame_id = "lidar";
+
+    V3d pt = p.translation();
+    Qd pq(p.rotation());
+    msg.pose.pose.position.x = pt.x();
+    msg.pose.pose.position.y = pt.y();
+    msg.pose.pose.position.z = pt.z();
+    msg.pose.pose.orientation.w = pq.w();
+    msg.pose.pose.orientation.x = pq.x();
+    msg.pose.pose.orientation.y = pq.y();
+    msg.pose.pose.orientation.z = pq.z();
+    mRosImpl->_pub_lidar_odom.publish(msg);
 }
 
 Vis::~Vis()

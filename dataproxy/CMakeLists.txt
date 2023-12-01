@@ -19,15 +19,16 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     ${EIGEN3_INCLUDE_DIRS}
     ${PCL_INCLUDE_DIRS}
     ${config_INCLUDE_DIRS}
+    ${filter_INCLUDE_DIRS}
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${catkin_INCLUDE_DIRS}
-    ${filter_INCLUDE_DIRS}
 )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
     ${PCL_LIBRARIES}
+    eskf
 )
     
 target_link_libraries(${PROJECT_NAME} PRIVATE

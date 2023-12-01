@@ -12,8 +12,19 @@ cmd="$@"
 if echo $cmd | grep -q "rviz"; then
     echo "start rviz..."
 
-    rviz -d ./test/rviz/slam.rviz > /dev/null 2>&1 &
+    # rviz -d ./test/rviz/slam.rviz > /dev/null 2>&1 &
+    rviz -d ./test/rviz/calib.rviz > /dev/null 2>&1 &
     
+    sleep 1
+fi
+
+if echo $cmd | grep -q "rqt"; then
+    echo "start rqt plot..."
+    # rqt_plot /eskf/v/x:y:z > /dev/null 2>&1 &
+    # rqt_plot /eskf/w/x:y:z > /dev/null 2>&1 &
+    rqt_plot /eskf/RW/x:y:z > /dev/null 2>&1 &
+    rqt_plot /eskf/hr/x:y:z > /dev/null 2>&1 &
+
     sleep 1
 fi
 

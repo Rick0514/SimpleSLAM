@@ -7,6 +7,8 @@
 #include <utils/Atomic.hpp>
 #include <utils/Logger.hpp>
 
+#include <filter/Eskf.hpp>
+
 namespace frontend
 {
 
@@ -25,16 +27,19 @@ protected:
     bool mOdom2MapInitFlag;
     trd::AtomicVar<pose_t> mOdom2Map;
 
-    OdomDequePtr mLocalOdometry;
+    // OdomDequePtr mLocalOdometry;
+    filter::State* mLocalOdometry;
     OdomDequePtr mGlobalOdometry;
 
     std::shared_ptr<logger::Logger> lg;
 
+
 public:
     Frontend() = delete;
     void init() noexcept;
-    Frontend(const OdomDequePtr& local_dq, int global_size);    // if local dq is already get!!
+    // Frontend(const OdomDequePtr& local_dq, int global_size);    // if local dq is already get!!
     Frontend(int local_size, int global_size);
+    Frontend(filter::State* eskf, int global_size);
 
     void setInitOdom2Map() noexcept { mOdom2MapInitFlag = true; }
     bool isInitOdom2Map() noexcept { return mOdom2MapInitFlag; }
@@ -43,9 +48,10 @@ public:
 
     auto& get() { return mOdom2Map; }
 
-    Odometry::Ptr getClosestLocalOdom(double stamp) const;
+    // Odometry::Ptr getClosestLocalOdom(double stamp) const;
 
-    OdomDequePtr& getLocal() { return mLocalOdometry; }
+    // OdomDequePtr& getLocal() { return mLocalOdometry; }
+    filter::State* getLocal() { return mLocalOdometry; }
     OdomDequePtr& getGlobal() { return mGlobalOdometry; }
 
     ~Frontend();

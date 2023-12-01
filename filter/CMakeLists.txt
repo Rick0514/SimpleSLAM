@@ -16,6 +16,13 @@ find_package(catkin REQUIRED COMPONENTS
     nav_msgs
 )
 
+add_library(eskf SHARED src/Eskf.cpp)
+target_include_directories(eskf PRIVATE
+    include
+    ${COMMON_HEADER}
+    ${EIGEN3_INCLUDE_DIRS}
+)
+
 add_executable(ekf test/ekf.cpp)
 
 target_compile_definitions(ekf PRIVATE DATA_FILE="${CMAKE_CURRENT_SOURCE_DIR}/test/data")
@@ -33,4 +40,13 @@ target_link_libraries(ekf PUBLIC
     ${catkin_LIBRARIES}
 )
 
+add_executable(test_eskf test/test_eskf.cpp)
 
+target_include_directories(test_eskf PRIVATE
+    include
+    ${COMMON_HEADER}
+    ${EIGEN3_INCLUDE_DIRS}
+)
+target_link_libraries(test_eskf PUBLIC
+    eskf
+)

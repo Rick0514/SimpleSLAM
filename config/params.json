@@ -14,24 +14,28 @@
     // "rosbag": "/home/hgy/hgy/slam_ws/src/husky-sim/husky/husky_description/bag/lc1.bag",
     // "rosbag": "/home/hgy/sda2/rosbag/zhengzhou0711.orig.bag",
     // "rosbag": "/home/rick/jtcx/hgy_gitee/minimal_ws/bag/zhengzhou0711.orig.bag",
-    "rosbag": "/media/gy/201E-43FF/binhai_gps0711-0706.bag",
+    "rosbag": "/home/rick/github-demo/robot-urdf/steer_bot_ws/src/steer_bot/steer_bot_gazebo/bag/onc/ronc.bag",
 
     "tf":{
         "lidar_height": 2.0
     },
 
     "dataproxy": {
-        "lidar": "/lidar_points",
+        "lidar": "/bicycle_bot/lidar_points",
         "lidar_size": 10,
-        "imu": "/imu/data",
-        "wheel": "/odom/raw"
+        "imu": "/bicycle_bot/imu/data",
+        // "wheel": "/odom/raw",
+        "wheel": "/bicycle_bot/ackermann_steering_controller/odom",
+        "r": 0.1,
+        "h": 0.4
         // "wheel": "/husky_velocity_controller/odom"
     },
 
     "vis": {
         "enable" : true,
         "align": "/aligned",
-        "submap": "/globalmap"
+        "submap": "/globalmap",
+        "lidar_odom": "/lidar_odom"
     },
 
     "backend" : {
