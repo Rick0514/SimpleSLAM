@@ -7,8 +7,8 @@
 #include <frontend/MapManager.hpp>
 #include <frontend/LidarOdometry.hpp>
 
-#include <backend/Backend.hpp>
-#include <backend/LoopClosureManager.hpp>
+// #include <backend/Backend.hpp>
+// #include <backend/LoopClosureManager.hpp>
 
 #include <config/params.hpp>
 #include <boost/filesystem.hpp>
@@ -26,7 +26,7 @@
 
 using namespace std;
 using namespace frontend;
-using namespace backend;
+// using namespace backend;
 namespace bfs = boost::filesystem;
 // using Odom_t = EkfOdomProxy::Odom;
 
@@ -104,55 +104,38 @@ int main(int argc, char* argv[])
     ros::NodeHandle nh;
 
     // vis
-    // auto vis = std::make_shared<Vis>(nh);
+    auto vis = std::make_shared<Vis>(nh);
     // lidar data proxy
-    // auto ldp = std::make_shared<LidarDataProxy>(nh, lidar_size);   
+    auto ldp = std::make_shared<LidarDataProxy>(nh, lidar_size);   
     // ekf data proxy
     auto esp = std::make_shared<EskfProxy>();
 
     // when slam mode, no reloc data proxy
-    // std::shared_ptr<RelocDataProxy> rdp;
+    std::shared_ptr<RelocDataProxy> rdp;
     // frontend
-    // std::shared_ptr<Frontend> ftd;
-    // if(mode == "lo")    ftd = std::make_shared<Frontend>(local_size, global_size);
-    // if(mode == "lio")   ftd = std::make_shared<Frontend>(esp->getEskf(), global_size);
+    auto ftd = std::make_shared<Frontend>(esp->getEskf(), global_size);
 
     // mapmanager
-    // auto mmp = std::make_shared<MapManager>();
+    auto mmp = std::make_shared<MapManager>();
     // construct LO
-    // auto lo = std::make_unique<LidarOdometry>(ldp, ftd, rdp, mmp);
+    auto lo = std::make_unique<LidarOdometry>(ldp, ftd, rdp, mmp);
     // construct LC
     // std::shared_ptr<LoopClosureManager> lc;
     // backend
     // auto bkd = std::make_unique<Backend>(ftd, mmp, lc);
     // vis or not
-    // if(enable_vis){
-    //     mmp->registerVis(vis);
-    //     lo->registerVis(vis);
-    // }  
+    if(enable_vis){
+        mmp->registerVis(vis);
+        lo->registerVis(vis);
+    }  
 
-    // mmp->initAndRunUpdateMap();
+    mmp->initAndRunUpdateMap();
     // run lo, no dependency of lo and ftd, because lo alreay own a copy of
     // ftd, if ftd own lo, circular reference will happen!!
     // trd::ResidentThread lo_thread([&](){
     //     lo->generateOdom();
     // });
 
-    // if (!constant::usebag){
-
-    //     if(memcheck){
-    //         // check 10s
-    //         int checkCnt = 10 * 100;
-    //         while (checkCnt) {
-    //             ros::spinOnce();
-    //             --checkCnt;
-    //             ros::Duration(0.01).sleep();
-    //         }
-    //     }else{
-    //         ros::spin();
-    //     }
-
-    // }else{
     std::string fn = cfg["rosbag"];
     rosbag::Bag bag;
     bag.open(fn, rosbag::bagmode::Read);
@@ -171,7 +154,10 @@ int main(int argc, char* argv[])
     std::string lidar_topic = cfg["dataproxy"]["lidar"];
     std::string imu_topic = cfg["dataproxy"]["imu"];
     std::string wheel_topic = cfg["dataproxy"]["wheel"];
-    std::vector<std::string> topics{imu_topic, wheel_topic, lidar_topic};
+    std::string gt_topic = cfg["dataproxy"]["gt"];
+    std::vector<std::string> topics{imu_topic, wheel_topic, lidar_topic, gt_topic};
+    
+    ofstream read_time("/root/ws/src/SimpleSLAM/test/data/log/read_time.txt");
 
     common::time::tictoc tt;
     for(const rosbag::MessageInstance& m : rosbag::View(bag, rosbag::TopicQuery(topics)))
@@ -182,12 +168,19 @@ int main(int argc, char* argv[])
         if(tp == imu_topic){
             sensor_msgs::ImuConstPtr imu = m.instantiate<sensor_msgs::Imu>();
             esp->onImu(imu);
+            read_time << "imu: " << imu->header.stamp.toSec() << endl;
         }else if(tp == wheel_topic){
             nav_msgs::OdometryConstPtr wheel = m.instantiate<nav_msgs::Odometry>();
             esp->onWheel(wheel);
+            read_time << "wheel: " << wheel->header.stamp.toSec() << endl;
         }else if(tp == lidar_topic){
-            // sensor_msgs::PointCloud2ConstPtr pc = m.instantiate<sensor_msgs::PointCloud2>();
-            // ldp->subscribe(pcFromROS(pc));  
+            sensor_msgs::PointCloud2ConstPtr pc = m.instantiate<sensor_msgs::PointCloud2>();
+            ldp->subscribe(pcFromROS(pc));
+            lo->generateOdom();
+            read_time << "pc: " << pc->header.stamp.toSec() << endl;
+        }else if(tp == gt_topic){
+            nav_msgs::OdometryConstPtr gt = m.instantiate<nav_msgs::Odometry>();
+            esp->pubGtPath(gt);
         }
 
         if(!nh.ok())  break;
@@ -199,7 +192,7 @@ int main(int argc, char* argv[])
         if(memcheck && perc > 5.0 / 100)    break;
 
         ros::spinOnce();
-        std::this_thread::sleep_for(chrono::milliseconds(5));
+        std::this_thread::sleep_for(chrono::milliseconds(1));
     }
 
     bag.close();

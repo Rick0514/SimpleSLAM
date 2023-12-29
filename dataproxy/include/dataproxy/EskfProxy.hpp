@@ -2,6 +2,7 @@
 #include <ros/ros.h>
 #include <sensor_msgs/Imu.h>
 #include <nav_msgs/Odometry.h>
+#include <nav_msgs/Path.h>
 
 #include <types/basic.hpp>
 #include <filter/Eskf.hpp>
@@ -17,6 +18,7 @@ public:
     void onWheel(const nav_msgs::OdometryConstPtr& msg);
 
     void pubEskfState(const ros::TimerEvent& e);
+    void pubGtPath(const nav_msgs::OdometryConstPtr& msg);
 
     filter::State* getEskf() { return eskf; }
 
@@ -36,11 +38,14 @@ protected:
     
     ros::Publisher vis_odom;
 
+    ros::Publisher vis_odom_path;
+    ros::Publisher vis_gt_path;
+
+    nav_msgs::Path odom_path, gt_path;
+
     ros::Timer timer;
 
     filter::State* eskf;
-
-    bool is_init;
 
     std::shared_ptr<utils::logger::Logger> lg;
 

@@ -5,16 +5,16 @@
     "cores": 4,
 
     // use ndt maybe no need to downsample, or sample rate should be small
-    "downSampleVoxelGridSize": 0.5, 
+    "downSampleVoxelGridSize": 0.4, 
 
     "pcd_file": "/home/gy/.robot/data/maps/hqc/hqc.pcd",
     
-    "saveMapDir" : "/home/rick/pcr/test/data/map",
+    "saveMapDir" : "/root/ws/src/SimpleSLAM/test/data/map",
     // "saveMapDir" : "/home/hgy/hgy/PCR/test/data/map",
     // "rosbag": "/home/hgy/hgy/slam_ws/src/husky-sim/husky/husky_description/bag/lc1.bag",
     // "rosbag": "/home/hgy/sda2/rosbag/zhengzhou0711.orig.bag",
     // "rosbag": "/home/rick/jtcx/hgy_gitee/minimal_ws/bag/zhengzhou0711.orig.bag",
-    "rosbag": "/home/rick/github-demo/robot-urdf/steer_bot_ws/src/steer_bot/steer_bot_gazebo/bag/onc/ronc.bag",
+    "rosbag": "/root/ws/src/SimpleSLAM/bag/ronc1.bag",
 
     "tf":{
         "lidar_height": 2.0
@@ -26,8 +26,7 @@
         "imu": "/bicycle_bot/imu/data",
         // "wheel": "/odom/raw",
         "wheel": "/bicycle_bot/ackermann_steering_controller/odom",
-        "r": 0.1,
-        "h": 0.4
+        "gt": "/bicycle_bot/odom"
         // "wheel": "/husky_velocity_controller/odom"
     },
 
@@ -62,6 +61,22 @@
         "pcr" : "loam",     // loam, ndt or vgicp
         "local_size": 100,
         "global_size": 10
+    },
+
+    "eskf": {
+        "v_imu": [1e-3, 1e-3, 1e-3],
+        
+        "v_wheel": [1e-1, 1e-3, 1e-3],
+        "v_lidar": [1e-4, 1e-4, 1e-4, 1e-4, 1e-4, 1e-4],
+        "grav": [0, 0, -9.8],
+        "Q": [1, 1, 1e-4, 1e-4],
+        
+        "r": 0.2,
+        "h": 0.3,
+        // rpy
+        "RLI": [0, 0, 0],
+        "RWI": [0, 0, 0],
+        "tLI": [0.15, 0.25, 0.3]
     }
 
 }

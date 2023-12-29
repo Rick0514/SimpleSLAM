@@ -72,15 +72,16 @@ namespace manifolds
         M3d J;
         J.setIdentity();
         double theta = v.norm();
+        M3d sv = matrix::skewd(v);
 
         if (theta < 1e-6) {
-            return J;
+            return J + 0.5 * sv;
+            // return J;
         }
         double ht = theta / 2;
         double a = ht * cos(ht) / sin(ht);
-        M3d sv = matrix::skewd(v);
         J = M3d::Identity() - 0.5 * sv + (1.0 - a) * sv * sv / theta / theta;
-        return J;
+        return J;    
     }
 
     inline V3d log_SO3(const M3d &R) 

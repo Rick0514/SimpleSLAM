@@ -1,6 +1,9 @@
 #pragma once
-
 #include <geometry/manifolds.hpp>
+
+#include <sophus/types.hpp>
+#include <sophus/geometry.hpp>
+
 #include <mutex>
 #include <utils/Logger.hpp>
 
@@ -12,6 +15,7 @@ namespace filter {
 
 using namespace geometry;
 using namespace EigenTypes;
+using namespace Sophus;
 
 using CovMat = Eigen::Matrix<double, 29, 29>;
 using QMat = Eigen::Matrix<double, 12, 12>;
@@ -21,17 +25,17 @@ using ESVec = Eigen::Matrix<double, 29, 1>;
 // in imu frame
 struct State
 {
-    M3d R;
-    V3d p;
-    V3d v;
-    V3d w;
+    SO3d R_;
+    V3d p_;
+    V3d v_;
+    V3d w_;
     V3d bg;
     V3d ba;
-    M3d R_L_I;
+    SO3d R_L_I;
     V3d t_L_I;
-    M3d R_W_I;
-    double r, h;
-    V3d g;
+    SO3d R_W_I;
+    double r_, h_;
+    V3d g_;
 
     CovMat cov, Fx;
     Eigen::Matrix<double, 29, 12> Fw;
@@ -40,8 +44,8 @@ struct State
     QMat Q;
 
     // meas noise
-    M3d V_IMU;
-    Eigen::Matrix<double, 6, 6> V_Wheel, V_Lidar;
+    M3d V_IMU, V_Wheel;
+    Eigen::Matrix<double, 6, 6> V_Lidar;
 
     // error state
     ESVec es;
@@ -51,11 +55,12 @@ struct State
 
     std::shared_ptr<utils::logger::Logger> lg;
 
-    State(double r_, double h_);
+    bool imu_init;
 
-    void reset();
+    State();
 
     void predict(const V3d& am, double dt);
+    void predict(const V3d& wm, const V3d& am, double dt);
 
     void boxplus(const ESVec& es);
 
@@ -63,9 +68,9 @@ struct State
 
     void get_imu(const V3d& wm);
 
-    void get_wheel(double alpha, double beta);
+    void get_wheel(double alpha, double beta, double timestamp);
 
-    void get_lidar(const Pose6d& pos);
+    void get_lidar(const Pose6d& pos, double timestamp);
 
     Pose6d get_lidar_prior();
 

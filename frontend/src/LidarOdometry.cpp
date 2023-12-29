@@ -31,6 +31,7 @@ LidarOdometry::LidarOdometry(DataProxyPtr& dp, FrontendPtr& ft, RelocDataProxyPt
     auto cfg = config::Params::getInstance();
     auto pcr_type = cfg["frontend"]["pcr"].get<std::string>();
     auto grid_size = cfg["downSampleVoxelGridSize"].get<float>();
+    mode = cfg["mode"];
 
     // mVoxelGrid.setDownsampleAllData(false);
     mVoxelGrid.setLeafSize(grid_size, grid_size, grid_size);
@@ -283,10 +284,33 @@ void LidarOdometry::generateOdom()
             lg->info("reloc-ing...");
             // clear global odom
             mFrontendPtr->getGlobal()->clear();  
-        }else{
+        }else if(mode == "lio"){
             // only if local_odom is available and already init can be used
             // init_pose.matrix() = odom2map.load().matrix() * local_odom->odom.matrix();
             init_pose = mFrontendPtr->getLocal()->get_lidar_prior();
+        }else{
+            // if not get, use average velocity model
+            const auto& gb = mFrontendPtr->getGlobal();
+            std::lock_guard<std::mutex> _lk(gb->getLock());
+            auto& gbq = gb->getDequeInThreadUnsafeWay();
+
+            auto cidx = Frontend::getClosestItem(gbq, stamp);
+            lg->info("cidx: {}", cidx);
+            
+            // here maybe some bug when dt is larger than 0.1
+            if(cidx <= 0){
+                lg->warn("global odom deque has not enough items to infer average velocity model!!");
+            }else{
+
+                if(std::abs(gbq.at(cidx)->stamp - stamp) > 0.15)
+                    lg->warn("closest odom is out-dated!!");
+                            
+                pose_t last_1 = gbq.at(cidx)->odom;
+                // pose_t last_2 = gbq->at(cidx-1)->odom;
+                // init_pose = last_1 * (last_2.inverse() * last_1);
+                // geometry::trans::T2SE3(init_pose.matrix());
+                init_pose = last_1;
+            }
         }
         
         // use pcr to get refined pose
@@ -341,7 +365,7 @@ void LidarOdometry::generateOdom()
         {
             std::stringstream ss;
             ss << init_pose.translation().transpose();
-            lg->info("pose: {}", ss.str());
+            lg->info("pose: {}, now: {}", ss.str(), stamp);
         }
 
         // constrain to 2d case
@@ -349,7 +373,7 @@ void LidarOdometry::generateOdom()
         // use scan2map refined pose for current pose for now!! 
         mMapManagerPtr->setCurPose(init_pose);
         // update eskf
-        mFrontendPtr->getLocal()->get_lidar(init_pose);
+        mFrontendPtr->getLocal()->get_lidar(init_pose, stamp);
 
         KeyFrame kf(scan, init_pose);
         if(mMapManagerPtr->getKeyFrameObjPtr()->isSubmapEmpty())
@@ -371,9 +395,6 @@ void LidarOdometry::generateOdom()
         auto global_odom = std::make_shared<Odometry>(stamp, init_pose);
         mFrontendPtr->getGlobal()->template push_back<false>(global_odom);  // false for now!!
 
-    }else if(!constant::usebag){
-        // lg->warn("scan deque is empty for now, please check!!");
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
 }

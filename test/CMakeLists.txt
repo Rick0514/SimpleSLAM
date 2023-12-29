@@ -111,19 +111,19 @@ target_link_libraries(file
     spdlog
 )
 
-add_executable(lcm lcm.cpp)
-target_include_directories(lcm PRIVATE
-    ${catkin_INCLUDE_DIRS}
-    ${PCL_INCLUDE_DIRS}
-    ${ROOT_DIR}/frontend/include
-    ${ROOT_DIR}/backend/include
-)
-target_link_libraries(lcm
-    ${catkin_LIBRARIES}
-    ${PCL_LIBRARIES}
-    frontend
-    loopclosure
-)
+# add_executable(lcm lcm.cpp)
+# target_include_directories(lcm PRIVATE
+#     ${catkin_INCLUDE_DIRS}
+#     ${PCL_INCLUDE_DIRS}
+#     ${ROOT_DIR}/frontend/include
+#     ${ROOT_DIR}/backend/include
+# )
+# target_link_libraries(lcm
+#     ${catkin_LIBRARIES}
+#     ${PCL_LIBRARIES}
+#     frontend
+#     loopclosure
+# )
 
 add_executable(visgm vis_globalmap.cpp)
 target_include_directories(visgm PRIVATE

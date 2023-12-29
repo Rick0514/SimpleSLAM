@@ -21,6 +21,11 @@ target_include_directories(eskf PRIVATE
     include
     ${COMMON_HEADER}
     ${EIGEN3_INCLUDE_DIRS}
+    ${config_INCLUDE_DIRS}
+)
+
+target_include_directories(eskf PUBLIC
+    ${Sophus}
 )
 
 add_executable(ekf test/ekf.cpp)
@@ -46,6 +51,7 @@ target_include_directories(test_eskf PRIVATE
     include
     ${COMMON_HEADER}
     ${EIGEN3_INCLUDE_DIRS}
+    ${Sophus}
 )
 target_link_libraries(test_eskf PUBLIC
     eskf

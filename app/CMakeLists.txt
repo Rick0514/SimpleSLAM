@@ -14,15 +14,15 @@ add_executable(${PROJECT_NAME} grad.cpp)
 target_include_directories(${PROJECT_NAME} PUBLIC
     ${ROOT_DIR}/dataproxy/include
     ${ROOT_DIR}/frontend/include
-    ${ROOT_DIR}/backend/include
+    # ${ROOT_DIR}/backend/include
     ${catkin_INCLUDE_DIRS}
 )
 
 target_link_libraries(${PROJECT_NAME}
     dataproxy
     frontend
-    backend
-    loopclosure
+    # backend
+    # loopclosure
     ${catkin_LIBRARIES}
 )
 

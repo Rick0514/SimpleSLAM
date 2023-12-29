@@ -60,6 +60,8 @@ private:
 
     std::string mScanTopic;
 
+    std::string mode;
+
 public:
 
     void setRelocFlag(const pose_t& p);
