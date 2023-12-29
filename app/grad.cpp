@@ -157,8 +157,6 @@ int main(int argc, char* argv[])
     std::string gt_topic = cfg["dataproxy"]["gt"];
     std::vector<std::string> topics{imu_topic, wheel_topic, lidar_topic, gt_topic};
     
-    ofstream read_time("/root/ws/src/SimpleSLAM/test/data/log/read_time.txt");
-
     common::time::tictoc tt;
     for(const rosbag::MessageInstance& m : rosbag::View(bag, rosbag::TopicQuery(topics)))
     {   
@@ -168,16 +166,13 @@ int main(int argc, char* argv[])
         if(tp == imu_topic){
             sensor_msgs::ImuConstPtr imu = m.instantiate<sensor_msgs::Imu>();
             esp->onImu(imu);
-            read_time << "imu: " << imu->header.stamp.toSec() << endl;
         }else if(tp == wheel_topic){
             nav_msgs::OdometryConstPtr wheel = m.instantiate<nav_msgs::Odometry>();
             esp->onWheel(wheel);
-            read_time << "wheel: " << wheel->header.stamp.toSec() << endl;
         }else if(tp == lidar_topic){
             sensor_msgs::PointCloud2ConstPtr pc = m.instantiate<sensor_msgs::PointCloud2>();
             ldp->subscribe(pcFromROS(pc));
             lo->generateOdom();
-            read_time << "pc: " << pc->header.stamp.toSec() << endl;
         }else if(tp == gt_topic){
             nav_msgs::OdometryConstPtr gt = m.instantiate<nav_msgs::Odometry>();
             esp->pubGtPath(gt);

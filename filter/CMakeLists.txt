@@ -16,6 +16,8 @@ find_package(catkin REQUIRED COMPONENTS
     nav_msgs
 )
 
+add_definitions(-DESKF_LOG="${ROOT_DIR}/test/data/log/")
+
 add_library(eskf SHARED src/Eskf.cpp)
 target_include_directories(eskf PRIVATE
     include

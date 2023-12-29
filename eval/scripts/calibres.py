@@ -1,4 +1,7 @@
 import numpy as np
+
+import matplotlib
+matplotlib.use("Qt4Agg")
 import matplotlib.pyplot as plt
 # Load data
 log_dir = '../../test/data/log/'
