@@ -18,7 +18,7 @@ ofstream f_RWI;
 ofstream f_tLI;
 ofstream f_bgba;
 
-const std::string log_dir = "/root/ws/src/SimpleSLAM/test/data/log/";
+const std::string log_dir = std::string(ESKF_LOG);
 
 State::State() : imu_init(false)
 {

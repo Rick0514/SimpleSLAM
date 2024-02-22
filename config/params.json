@@ -9,12 +9,12 @@
 
     "pcd_file": "/home/gy/.robot/data/maps/hqc/hqc.pcd",
     
-    "saveMapDir" : "/root/ws/src/SimpleSLAM/test/data/map",
+    "saveMapDir" : "/root/SimpleSLAM/test/data/map",
     // "saveMapDir" : "/home/hgy/hgy/PCR/test/data/map",
     // "rosbag": "/home/hgy/hgy/slam_ws/src/husky-sim/husky/husky_description/bag/lc1.bag",
     // "rosbag": "/home/hgy/sda2/rosbag/zhengzhou0711.orig.bag",
     // "rosbag": "/home/rick/jtcx/hgy_gitee/minimal_ws/bag/zhengzhou0711.orig.bag",
-    "rosbag": "/root/ws/src/SimpleSLAM/bag/ronc1.bag",
+    "rosbag": "/root/ronc1.bag",
 
     "tf":{
         "lidar_height": 2.0

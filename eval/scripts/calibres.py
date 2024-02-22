@@ -1,4 +1,7 @@
 import numpy as np
+
+import matplotlib
+matplotlib.use("Qt4Agg")
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 

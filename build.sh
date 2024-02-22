@@ -1,5 +1,16 @@
 #! /bin/bash
 
+# init
+if [ ! -d "./test/data/log" ]; then
+    mkdir -p "./test/data/log"
+    echo "Folder '$folder_name' created."
+fi
+
+if [ ! -d "./test/data/map" ]; then
+    mkdir -p "./test/data/map"
+    echo "Folder '$folder_name' created."
+fi
+
 usebag_flag=""
 
 cmd="$@"
